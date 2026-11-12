@@ -26,7 +26,8 @@ EYE_X0, EYE_X1 = 0.0145, 0.0445
 TOP = np.array([[0.0, 1.3800], [0.12, 1.3915], [0.40, 1.3995], [0.72, 1.3990], [0.90, 1.3940], [1.0, 1.3868]])
 BOT = np.array([[0.0, 1.3762], [0.15, 1.3728], [0.50, 1.3708], [0.82, 1.3726], [1.0, 1.3812]])
 CLOSE = 0.30          # blink: both lids meet 30% of the way up from the lower lid (a soft downward arc)
-SMILE_LIFT = 0.0018   # smile: the whole eye bows upward (happy eyes) - it moves, it never opens or grows
+SMILE_LIFT = 0.0012   # smile: the whole eye bows upward a touch - it moves, it never opens or grows
+LID_LIFT = 0.0036     # smile: the lower lid rises this far over the bottom of the eye
 
 
 def _top(s):
@@ -50,6 +51,30 @@ def _lids(s, state):
         u = SMILE_LIFT * np.sin(np.pi * sc) ** 0.8
         top, bot = top + u, bot + u
     return top, bot
+
+
+def _lid_lift(s, state):
+    """How far the lower lid (a skin-coloured band + its lash line) rides up over the bottom of
+    the eye: the 'happy eyes' of the smile. The eye itself is not resized. It stays below the
+    closed lid line (30% up), so blink + smile is still one clean line."""
+    if state != "smile":
+        return np.zeros_like(np.asarray(s, float))
+    return LID_LIFT * np.sin(np.pi * np.clip(s, 0, 1)) ** 0.8
+
+
+def lid_geo(state):
+    """Lower lid: a skin band tucked under the eye's lower edge (invisible at rest)."""
+    cols = 13
+    s = np.linspace(0, 1, cols)
+    x = EYE_X0 + s * (EYE_X1 - EYE_X0)
+    bot = _bot(s)
+    X = np.stack([x, x])
+    # The band's lower edge is sunk into the skin, so it has no visible edge and casts no shadow.
+    if state == "blink":      # closed eyes: the band folds away under the skin
+        V = np.vstack([_decal_grid(x, bot - 0.0030, -0.0006), _decal_grid(x, bot - 0.0030, -0.0006)])
+        return V, _grid_faces(2, cols)
+    V = np.vstack([_decal_grid(x, bot - 0.0030, -0.0006), _decal_grid(x, bot + _lid_lift(s, state), 0.0010)])
+    return V, _grid_faces(2, cols)
 
 
 def _decal_grid(xs, zs, off):
@@ -119,12 +144,15 @@ def lower_lash_geo(state):
     cols = 9
     s = np.linspace(0.45, 1.0, cols)
     x = EYE_X0 + s * (EYE_X1 - EYE_X0)
-    _, bot = _lids(s, state)
+    top, bot = _lids(s, state)
     w = 0.00035 + 0.00055 * (s - 0.45) / 0.55
+    if state == "smile":
+        bot = _bot(s) + _lid_lift(s, state)      # rides on the raised lower lid
+    lo, hi = bot - w, bot + 0.0002
     if state == "blink":
-        w = w * 0.0 + 0.00005
+        lo = hi = top - 0.0004                   # folds to nothing inside the closed lid line
     X = np.stack([x, x])
-    Z = np.stack([bot - w, bot + 0.0002])
+    Z = np.stack([lo, hi])
     V = _decal_grid(X, Z, 0.0013)
     return V, _grid_faces(2, cols)
 
@@ -136,7 +164,7 @@ def brow_geo(state):
     x = 0.0120 + s * 0.0345
     zc = 1.4130 + 0.0032 * np.sin(np.pi * (s * 0.85 + 0.1)) - 0.0022 * s
     if state == "smile":
-        zc = zc + 0.0010
+        zc = zc + 0.0016
     w = 0.0008 + 0.0008 * np.sin(np.pi * np.clip(s * 0.9 + 0.05, 0, 1)) - 0.0003 * s
     X = np.stack([x, x])
     Z = np.stack([zc - w, zc + w])
@@ -149,8 +177,9 @@ def blush_geo(state="basis"):
     n = 14
     a = np.linspace(0, 2 * np.pi, n, endpoint=False)
     cx, cz, rx, rz = 0.0370, 1.3595, 0.0105, 0.0042
-    if state == "smile":
-        cz += 0.0010
+    if state == "smile":                      # cheeks lift
+        cz += 0.0030
+        rx, rz = rx * 1.08, rz * 1.15
     X = np.concatenate([[cx], cx + rx * np.cos(a)])
     Z = np.concatenate([[cz], cz + rz * np.sin(a)])
     V, _ = S.head_front(X, Z, 0.0006)
@@ -162,12 +191,13 @@ def mouth_geo(state):
     """A small soft closed mouth with the corners turned up a touch (pleasant, not blank)."""
     cols = 11
     s = np.linspace(-1, 1, cols)
-    half = 0.0068 if state != "smile" else 0.0080
+    half = 0.0068 if state != "smile" else 0.0108
     x = s * half
     zc = 1.3180 - 0.0003 * (1 - s * s) + 0.0007 * s ** 4
-    if state == "smile":
-        zc = 1.3172 + 0.0030 * s ** 2 - 0.0004
     w = 0.00045 + 0.00035 * (1 - np.abs(s)) ** 0.7
+    if state == "smile":                      # a clear, warm closed smile: wider, corners well up
+        zc = 1.3166 + 0.0050 * np.abs(s) ** 2.2
+        w = w * 1.45 + 0.0001
     X = np.stack([x, x])
     Z = np.stack([zc - w, zc + w])
     V = _decal_grid(X, Z, 0.0010)
@@ -197,33 +227,59 @@ def nose_geo():
 
 
 def skin_geo():
-    """Head skin: rays from the head centre to the SDF surface (lat-long), plus ears."""
-    rows, cols = 40, 48
-    th = np.linspace(0, np.pi, rows + 2)[1:-1]
-    ph = np.linspace(0, 2 * np.pi, cols, endpoint=False)
+    """Head skin: rays from the head centre to the SDF surface on a lat-long grid whose rows and
+    columns crowd toward the centre of the face (rows ~1.9 mm apart from the nose to the chin,
+    columns ~2.5 mm apart at the nose), so the profile on the centre line (bridge, nose tip,
+    lips, chin) is carried by real geometry. Skin that is hidden well inside the hair cap is
+    left out."""
+    from . import hair as H
+    # Rows: polar angles chosen so the centre-line profile is sampled at the wanted heights.
+    tf = np.linspace(0.02, np.pi - 0.02, 1500)
+    Df = np.stack([np.zeros_like(tf), -np.sin(tf), np.cos(tf)], -1)
+    zf = S.HEAD_C[2] + Df[:, 2] * S.head_radius(Df)
+    zf = np.minimum.accumulate(zf)
+
+    def th_at(z):
+        return np.interp(-np.asarray(z), -zf, tf)
+
+    z_rows = np.concatenate([np.arange(1.3990, 1.3525, -0.0042), np.arange(1.3525, 1.3000, -0.0019),
+                             np.arange(1.3000, 1.2870, -0.0030)])
+    t0, t1 = th_at(1.4032), th_at(z_rows[-1])
+    th = np.concatenate([np.linspace(0, t0, 10)[1:], th_at(z_rows), np.linspace(t1, np.pi, 7)[1:-1]])
+    half = np.array([0.03, 0.06, 0.095, 0.135, 0.18, 0.235, 0.30, 0.38, 0.47, 0.57, 0.68, 0.80, 0.93, 1.07, 1.22,
+                     1.38, 1.55, 1.75, 2.0, 2.3, 2.65])
+    ph = np.concatenate([[0.0], half, [np.pi], 2 * np.pi - half[::-1]])
+    rows, cols = len(th), len(ph)
     TH, PH = np.meshgrid(th, ph, indexing="ij")
     D = np.stack([np.sin(TH) * np.sin(PH), -np.sin(TH) * np.cos(PH), np.cos(TH)], axis=-1).reshape(-1, 3)
     r = S.head_radius(D)
     V = S.HEAD_C + D * r[:, None]
+    # Hidden under the hair: more than 13 mm above the hairline at its azimuth.
+    d = V - S.HEAD_C
+    az = np.degrees(np.abs(np.arctan2(d[:, 0], -d[:, 1])))
+    hidden = V[:, 2] > catmull(H.HAIRLINE, az)[:, 0] + 0.013
     F = []
     for i in range(rows - 1):
         for j in range(cols):
             a = i * cols + j
             b = i * cols + (j + 1) % cols
-            F.append((a, b, b + cols, a + cols))
-    top = len(V)
-    bot = top + 1
-    V = np.vstack([V, S.HEAD_C + np.array([0, 0, S.head_radius(np.array([[0, 0, 1.0]]))[0]]),
-                   S.HEAD_C - np.array([0, 0, S.head_radius(np.array([[0, 0, -1.0]]))[0]])])
+            q = (a, b, b + cols, a + cols)
+            if not all(hidden[k] for k in q):
+                F.append(q)
+    bot = len(V)
+    V = np.vstack([V, S.HEAD_C - np.array([0, 0, S.head_radius(np.array([[0, 0, -1.0]]))[0]])])
+    o = (rows - 1) * cols
     for j in range(cols):
-        F.append((top, (j + 1) % cols, j))
-        o = (rows - 1) * cols
         F.append((bot, o + j, o + (j + 1) % cols))
+    used = sorted({i for f in F for i in f})
+    remap = {k: n for n, k in enumerate(used)}
+    V = V[used]
+    F = [tuple(remap[i] for i in f) for f in F]
     F = _outward(V, F)
     return V, F
 
 
-def _ear_centre(y=0.014, z=1.3790, sink=0.0012):
+def _ear_centre(y=0.018, z=1.3790, sink=0.0012):
     """Ear centre: on the head's side surface at (y, z), sunk a touch so it sits flush."""
     lo, hi = 0.0, 0.2
     for _ in range(40):
@@ -235,7 +291,9 @@ def _ear_centre(y=0.014, z=1.3790, sink=0.0012):
     return np.array([0.5 * (lo + hi) - sink, y, z])
 
 
-EAR_C = _ear_centre()   # top level with the brows' underside, lobe at the nose
+# Top just under brow level (1.405), lobe at nose-tip level (1.352), behind the middle of the jaw.
+EAR_C = _ear_centre()
+EAR_HZ = 0.0265
 
 
 def ear_geo():
@@ -244,10 +302,10 @@ def ear_geo():
     th = np.linspace(0.15, np.pi - 0.15, rows)
     ph = np.linspace(0, 2 * np.pi, cols, endpoint=False)
     TH, PH = np.meshgrid(th, ph, indexing="ij")
-    lx = 0.0048 * np.sin(TH) * np.cos(PH)
-    ly = 0.0115 * np.sin(TH) * np.sin(PH) * (1.0 + 0.18 * np.cos(TH))   # a little wider at the top
-    lz = 0.0210 * np.cos(TH)
-    ly = ly + 0.0026 * (lz / 0.0210) ** 2               # rim curls back at top and bottom
+    lx = 0.0050 * np.sin(TH) * np.cos(PH)
+    ly = 0.0130 * np.sin(TH) * np.sin(PH) * (1.0 + 0.18 * np.cos(TH))   # a little wider at the top
+    lz = EAR_HZ * np.cos(TH)
+    ly = ly + 0.0030 * (lz / EAR_HZ) ** 2               # rim curls back at top and bottom
     P = np.stack([lx, ly, lz], -1).reshape(-1, 3)
     tilt = np.radians(-14)
     R = np.array([[1, 0, 0], [0, math.cos(tilt), -math.sin(tilt)], [0, math.sin(tilt), math.cos(tilt)]])
@@ -297,6 +355,7 @@ def build(col):
         ev, ef, eu = eye_geo(state)
         add((ev, ef), 1, eu)
         add(lash_geo(state), 2)
+        add(lid_geo(state), 0)
         add(lower_lash_geo(state), 2)
         add(brow_geo(state), 3)
         add(mouth_geo(state), 4, both=False)
@@ -316,7 +375,7 @@ def build(col):
     me = ob.data
     vn = np.zeros(len(V) * 3)
     me.vertices.foreach_get("normal", vn)
-    N = S.head_grad(V)
+    N = S.head_grad_soft(V)
     N[ear] = vn.reshape(-1, 3)[ear]
     me.normals_split_custom_set_from_vertices([tuple(n) for n in N])
     from .common import set_uv_vertex

@@ -65,6 +65,7 @@ async function boot() {
   await game.init();
   const play = new Play(game);
   await play.init();
+  play.warmUp();
   bytesK = 1; stageK = 1; setBar();
   game.start();
   // The world renders behind the title card; it clears on the first click or key.

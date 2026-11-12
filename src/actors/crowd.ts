@@ -172,6 +172,9 @@ export class Crowd {
     return npc;
   }
 
+  /** A posed copy of every outfit prototype (for the loading-screen warm-up). */
+  prototypes(): THREE.Object3D[] { return [...this.protos.values()].map((p) => skClone(p)); }
+
   has(name: string): boolean { return this.clips.some((c) => c.name === name); }
 
   /** Ground speed (m/s) `clip` covers on `n` at rate 1: the clip rate for a speed v is v / this. */
@@ -221,7 +224,8 @@ export class Crowd {
     // Chatting clusters near the food and shaved-ice stalls.
     const spots = stalls.filter((s) => !s.spot.task).slice(0, 4);
     for (const s of spots) {
-      const c = s.use.clone().add(new THREE.Vector3(s.spot.side * -0.9, 0, rand(-1.4, 1.4)));
+      // Beside the counter, never on the spot where she stands to order.
+      const c = s.use.clone().add(new THREE.Vector3(s.spot.side * -0.7, 0, (Math.random() < 0.5 ? -1 : 1) * rand(1.9, 2.5)));
       const who: Variant[] = Math.random() < 0.5 ? ["woman", "woman"] : ["man", "woman", "elder"];
       who.forEach((v, i) => {
         const a = (i / who.length) * Math.PI * 2 + rand(0, 1);

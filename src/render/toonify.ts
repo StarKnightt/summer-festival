@@ -1,4 +1,5 @@
 // @ts-nocheck -- TSL node graphs: @types/three node typings reject valid swizzles/overloads.
+import { texture, uv, smoothstep } from "three/tsl";
 import * as THREE from "three/webgpu";
 import { Fn, vec3, float, sin, positionWorld, diffuseColor, mix, uniform } from "three/tsl";
 import { ToonMaterial, paperGlow, windCloth } from "./toon";
@@ -73,7 +74,20 @@ function convert(src: any, mesh: THREE.Mesh, wind: boolean, o: ToonifyOpts): THR
   else if (name.startsWith("fur")) opts = { paint: 0.25, rim: 0.6, soft: 0.05 };
   else if (name.startsWith("paper")) opts = { paint: 0.0, rim: 0.3, soft: 0.1 };
   else if (name.startsWith("metal") || name.startsWith("plastic")) opts = { paint: 0.1, rim: 0.7 };
-  const m = new ToonMaterial({ ...base, ...opts });
+  // A tinted cloth with a pattern map (townspeople's yukata): the map is a greyscale motif on
+  // white. Multiplying it in just darkens the cloth, which on pale colours reads as stains, so
+  // the motif is drawn crisply in the outfit's accent colour instead.
+  const accent = o.tint && Object.entries(o.tint).find(([k]) => k !== tint?.[0] && k.includes("accent"));
+  const motif = tint && map && accent && name.startsWith("cloth_main");
+  const m = new ToonMaterial({ ...base, ...(motif ? { map: null } : {}), ...opts });
+  if (motif) {
+    const ground = color.clone();
+    // Pale cloth takes the accent colour (red blossoms on cream); mid and dark cloth takes a
+    // soft pale tone of itself (tone on tone), which always reads as print, never as dirt.
+    const lumG = 0.2126 * ground.r + 0.7152 * ground.g + 0.0722 * ground.b;
+    const ink = lumG > 0.62 ? ground.clone().lerp(new THREE.Color(accent![1]), 0.85) : ground.clone().lerp(new THREE.Color(1, 0.98, 0.95), 0.62);
+    m.colorNode = Fn(() => mix(vec3(ink.r, ink.g, ink.b), vec3(ground.r, ground.g, ground.b), smoothstep(0.72, 0.9, texture(map, uv()).r)))();
+  }
   if (name.startsWith("paper")) paperGlow(m, o.paperGlowNode ?? U.lantern, new THREE.Color("#ffb060"), 2.2);
   if (wind || name.startsWith("fabric_flag")) {
     mesh.geometry.computeBoundingBox();

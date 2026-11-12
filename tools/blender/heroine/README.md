@@ -43,18 +43,18 @@ metadata, and the same JSON is stored on the armature node as `extras.heroine`.
   z −0.162…+0.174 (glTF).
 - The bind pose is a relaxed A-pose (arms about 30° from the body), not a T-pose.
 
-## Meshes (all skinned to one skin, 39,136 triangles)
+## Meshes (all skinned to one skin, 39,936 triangles)
 
 | node | tris | | node | tris |
 |---|---|---|---|---|
-| heroine_head | 4840 | | heroine_yukata | 7844 |
+| heroine_head | 5640 | | heroine_yukata | 7844 |
 | heroine_hair | 8168 | | heroine_sleeve_L | 1992 |
 | heroine_kanzashi | 2148 | | heroine_sleeve_R | 1992 |
 | heroine_neck | 1520 | | heroine_obi | 3216 |
 | heroine_arms | 3888 | | heroine_legs | 2048 |
 | heroine_geta | 1480 | | | |
 
-The GLB is 2.94 MB (2,943,244 bytes), uncompressed (no Draco/Meshopt). Each vertex has at most 4 normalized influences.
+The GLB is 2.98 MB (2,978,900 bytes), uncompressed (no Draco/Meshopt). Each vertex has at most 4 normalized influences.
 It has two packed PNG textures: `T_heroine_yukata` (1024², tiling pattern) and `T_heroine_eye` (256²).
 
 ## Materials (base colour or texture = albedo, metallic 0, roughness 1)
@@ -170,22 +170,33 @@ Proportions follow the usual modern-anime front-view construction, checked again
 photos of young women in yukata at summer festivals (kept locally in `refs/heroine/`, never
 committed). Heights below are glTF y (barefoot frame + 0.05).
 
-- Head: crown 1.555, chin 1.341 (0.214 m). One broad, softly blended lower-face volume forms a
-  continuous oval from the cheekbones to a small round chin, with no crease beside the nose. Head
-  normals come from the analytic surface, not the tessellation, so a hard toon terminator crosses the
-  face cleanly. They are kept in the GLB (exported normals are within 0.04° of the analytic ones).
-  The ears keep their mesh normals and sit flush on the actual head surface.
-- Eyes: centre 1.436, about the vertical middle of the head. 30 mm wide, 29 mm tall (about 1/6 of
-  the hairline-to-chin face), one eye width (29 mm) apart. Warm brown iris with two highlights and a
-  sparkle, a firm upper lash line with a small outer flick, and a thin lower lid on the outer half.
-- Brows about 1.465, soft and arched, below the bang tips. The bangs end above the brows
-  (tips 1.463 to 1.482), so the eyes and brows are always clear.
-- A small nose tick (1.389), a small closed mouth with the corners slightly up (1.368), a faint
-  lower-lip shade, and soft oval blush under the outer half of each eye. Ears 1.408 to 1.450.
-- All 2,637 head vertices are weighted 100% to `head`. No bone or shape key enlarges the eyes:
-  `blink` only closes them and `smile` only moves them. Measured on the exported GLB, the left eye
-  is 30.3 × 29.6 mm at rest (29.7 with `smile`, which lifts the eye along an arc without opening it), and 30.3 × 13.4 mm (the closed arc) with `blink`
-  or with `blink` + `smile`, which close cleanly together without overshoot.
+- **Head shape** (`lib/shape.py`): a round cranium and a soft oval face, plus a two-layer relief on
+  the front. The broad layer sets the face plane: a soft dip at the nose bridge, a fuller mouth
+  area and a small chin that comes forward. The narrow layer is the nose and lips.
+- **Profile** (centre line): gentle forehead, bridge dip at eye level, a scooped line to a small
+  pointed nose tip at 1.400, a short philtrum, two small lip bumps either side of the mouth line
+  (1.368), a dip under the lower lip and a rounded chin. The nose tip projects 11.1 mm beyond the
+  line from brow to upper lip. The chin projects 2.8 mm beyond the dip under the lip.
+- **Shading normals** come from a soft version of the same surface: it leaves out the lips, keeps
+  12% of the nose and half of the mouth/chin fullness. The profile is in the silhouette, and a hard
+  toon terminator sees one soft face. The ears keep their mesh normals.
+- **Eye planes**: each eye sits on a nearly flat plane turned 20 degrees outward (a very gentle
+  dome), set 2.2 mm behind the round of the face, so the painted eye keeps its shape from
+  three-quarter and side views. The eye decals are still projected straight from the front, so
+  the front view is unchanged: 30 mm wide, 29 mm tall, one eye width (29 mm) apart, centre 1.436.
+- **Skin mesh**: a lat-long grid whose rows and columns crowd toward the centre of the face (rows
+  about 1.9 mm apart from nose to chin), so the profile is real geometry. Skin hidden more than
+  13 mm inside the hair cap is left out.
+- Brows about 1.465, a small nose tick, a small closed mouth with the corners slightly up, a faint
+  lower-lip shade, and soft oval blush under the outer half of each eye.
+- **Ears**: top just under brow level (1.455), lobe at nose-tip level (1.402), behind the middle of
+  the jaw, sitting flush on the head surface.
+- **Side locks**: the long lock starts at the temple just in front of the ear and falls along the
+  back edge of the jaw, with a short sideburn wisp in front of the ear. The eye, cheek and profile
+  are clear from an exact side view. Chains `hairSideL1-2` / `hairSideR1-2` follow the new lock.
+- All 3,111 head vertices are weighted 100% to `head`. No bone or shape key enlarges the eyes.
+  Measured on the exported GLB, the left eye is 30.3 x 29.6 mm at rest and 30.3 x 29.7 mm with
+  `smile`; with `blink` or `blink` + `smile` it is the closed lid line (30.3 mm wide).
 
 Hair cap: the shell is a grid aligned to the hairline (112 columns). Its last ring lies on the
 hairline curve, 1.2 mm under the skin, and it reaches full thickness within about 9 mm. The edge is
@@ -197,7 +208,7 @@ the ear to the nape under the bun (`HAIRLINE` in `lib/hair.py`).
 | name | effect |
 |---|---|
 | `blink` | both lids meet on a soft arc 30% up from the lower lid; the lash line folds onto it |
-| `smile` | closed-mouth smile (wider, corners up), eyes bow upward a little, brows and blush lift |
+| `smile` | a clear closed-mouth smile: mouth wider with the corners well up, lower lids raised over the bottom of the eyes (a skin-coloured band, the eye is not resized), blush and brows lift |
 
 Both are 0 at rest, and no clip animates them. The game drives them, for example with a random blink every 2–6 s that lasts about 0.12 s.
 
@@ -215,7 +226,8 @@ make it a child of the bone and set its position to the local offset.
 ## Previews (`previews/`)
 
 Turnaround: `front`, `three_quarter`, `side`, `back`. Also `game_camera` (3 m behind, 1.7 m up),
-`face`, `face_3q`, `face_side`, `face_blink`, `face_smile`, `face_blink_smile` and `face_at_3m`.
+`face`, `face_3q`, `face_side` (exact 90 degrees), `face_3q_rear` (120 degrees), `face_blink`,
+`face_smile`, `face_smile_3q`, `face_blink_smile` and `face_at_3m`.
 Lit face checks (EEVEE on the GPU, skin swapped for a hard-terminator toon shader like the game's
 cel step): `face_toon_key` and `face_toon_key_3q` (one sun from the upper front-left),
 `face_toon_side` (sun from her left side) and `face_flat` (unshaded).
@@ -230,7 +242,7 @@ and stops if it is not the NVIDIA GPU (`HEROINE_ALLOW_SOFTWARE=1` overrides that
 
 ## GLB summary (re-imported in Blender after export, see `glb_summary.json`)
 
-- 11 meshes, 39,136 triangles, 67 bones, 2874.3 KiB (2,943,244 bytes)
+- 11 meshes, 39,936 triangles, 67 bones, 2909.1 KiB (2,978,900 bytes)
 - 19 clips: idle 10.0, walk 0.8667, run 0.4, talk 6.8333, look 6.3333, wave 1.8667, bow 2.2667,
   eat 3.9333, cheer 2.9, point 2.2667, crouch 3.0, reach 3.0, throw 1.2, lookup 4.0, add_ref 0,
   add_nod 0.6, add_shake 0.8, add_look_l 0.4, add_look_r 0.4

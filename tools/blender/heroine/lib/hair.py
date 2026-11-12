@@ -31,8 +31,8 @@ def cap_thickness(P):
 HAIRLINE = np.array([  # |azimuth| (deg, 0 = front), hairline height (barefoot frame)
     # forehead, temple, a soft sideburn in front of the ear (tip ~1.375), an arc over the ear
     # (ear top 1.400), then down behind the ear to the nape under the bun.
-    [0, 1.444], [25, 1.439], [50, 1.421], [64, 1.403], [73, 1.384], [79, 1.376], [85, 1.390],
-    [91, 1.407], [99, 1.413], [107, 1.407], [115, 1.391], [126, 1.366], [150, 1.341], [180, 1.333]])
+    [0, 1.444], [25, 1.439], [50, 1.421], [64, 1.403], [73, 1.384], [79, 1.376], [85, 1.392],
+    [91, 1.411], [99, 1.418], [107, 1.412], [115, 1.393], [126, 1.366], [150, 1.341], [180, 1.333]])
 
 
 def hair_mask(P):
@@ -172,18 +172,21 @@ def bang_locks():
 def side_locks():
     """Her left side locks (a long one framing the face to the jaw + a shorter one behind it);
     chain hairSideL."""
-    main = [(0.056, -0.046, 1.470), (0.069, -0.046, 1.432), (0.074, -0.048, 1.390), (0.071, -0.050, 1.346),
-            (0.064, -0.047, 1.306), (0.058, -0.040, 1.272)]
+    # The long lock starts at the temple just in front of the ear and falls along the back edge
+    # of the jaw: it frames the cheek, and the eye, cheek and whole profile stay clear from the side.
+    main = [(0.062, -0.013, 1.468), (0.075, -0.014, 1.432), (0.080, -0.013, 1.392), (0.081, -0.010, 1.352),
+            (0.077, -0.005, 1.316), (0.072, 0.000, 1.288)]
     main = push_out(np.array(main), 0.005)
 
     def out_side(P):
         return np.stack([P[:, 0], (P[:, 1] + 0.01) * 0.25, np.zeros(len(P))], 1)
 
-    V1, F1, P1 = lock(main, 18, lambda t: 0.0150 + 0.0040 * np.sin(np.pi * np.clip(t * 1.2, 0, 1)) - 0.0180 * t ** 2.5,
+    V1, F1, P1 = lock(main, 18, lambda t: 0.0110 + 0.0030 * np.sin(np.pi * np.clip(t * 1.2, 0, 1)) - 0.0135 * t ** 2.5,
                       lambda t: 0.0045 * (1 - 0.55 * t) + 0.0005, out_side, sides=6, twist=0.30, sharp=0.75)
-    back = push_out(np.array([(0.064, -0.026, 1.462), (0.077, -0.024, 1.418), (0.079, -0.026, 1.378),
-                              (0.075, -0.030, 1.336)]), 0.005)
-    V2, F2, _ = lock(back, 12, lambda t: 0.0120 * (1 - t ** 1.6) + 0.0006, lambda t: 0.0036 * (1 - 0.5 * t) + 0.0005,
+    # A short sideburn wisp right in front of the ear.
+    back = push_out(np.array([(0.066, -0.004, 1.458), (0.078, -0.003, 1.422), (0.081, -0.004, 1.394),
+                              (0.081, -0.006, 1.368)]), 0.005)
+    V2, F2, _ = lock(back, 12, lambda t: 0.0070 * (1 - t ** 1.6) + 0.0006, lambda t: 0.0036 * (1 - 0.5 * t) + 0.0005,
                      out_side, sides=6, sharp=0.75)
     return [("sideL", V1, F1), ("sideL2", V2, F2)], P1
 
@@ -372,7 +375,7 @@ def build(col):
         pieces.append((V, F, {"head": 1 - k, "hairBun1": k}))
     for role, V, F in sides:
         z = V[:, 2]
-        J = [np.array([0.07, -0.04, 1.47])] + list(rig.chain_points("hairSideL"))
+        J = [np.array([0.07, -0.013, 1.47])] + list(rig.chain_points("hairSideL"))
         W, sp_ = rig.chain(V, J, ["head", "hairSideL1", "hairSideL2"], [0.025, 0.02])
         pieces.append((V, F, W))
         Vm, Fm = mirror(V, F)

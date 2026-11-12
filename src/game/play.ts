@@ -16,7 +16,7 @@ import { Goldfish, Tub, goldfishBag } from "./mg/goldfish";
 import { CandyApple, Masks, wearMask } from "./mg/pickers";
 import { RingToss } from "./mg/ringtoss";
 import { Lantern, prepareLantern, updateLantern, type LanternState } from "./mg/lantern";
-import { Snack, type SnackKind } from "./mg/snack";
+import { Snack, snackProps, type SnackKind } from "./mg/snack";
 import { buildGallery, Shooting, type GalleryStall } from "./mg/gallery";
 import { buildShrine, Omikuji, type Shrine } from "./mg/omikuji";
 import { Social, EMOTES } from "./social";
@@ -249,6 +249,45 @@ export class Play {
     else if (task === "masks") mg = new Masks(ctx, (i) => { this.prog.data.mask = i; wearMask(g, i); });
     else mg = new Lantern(ctx, this.lantern!, () => this.lightLantern(false));
     this.startMini(mg, s);
+  }
+
+  /**
+   * Draws everything once behind the loading screen: every townsperson outfit with its close-up
+   * and distant bodies, every hairstyle and pair of glasses, the food, and everything in the town
+   * whether or not the first camera can see it. The GPU compiles a material the first time it is
+   * drawn, and without this the first close look at a shopkeeper froze the game for seconds.
+   */
+  warmUp(): void {
+    const g = this.g;
+    const undo: (() => void)[] = [];
+    const temps = new THREE.Group();
+    let i = 0;
+    for (const p of this.crowd.prototypes()) {
+      p.position.set(g.camera.position.x + ((i % 6) - 2.5) * 0.9, 0, g.camera.position.z - 6 - Math.floor(i / 6) * 1.2);
+      temps.add(p);
+      i++;
+    }
+    for (const kind of ["yakisoba", "takoyaki", "shavedice"] as SnackKind[]) temps.add(...snackProps(kind));
+    g.scene.add(temps);
+    g.scene.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (!m.isMesh && !(o as any).isPoints && !(o as any).isSprite) return;
+      const fc = o.frustumCulled;
+      o.frustumCulled = false;
+      undo.push(() => { o.frustumCulled = fc; });
+    });
+    // Everything in the warm-up set is shown, whatever LOD or accessory it is.
+    temps.traverse((o) => { o.visible = true; });
+    for (const n of this.crowd.npcs) {
+      const vis = [n.root.visible, n.near?.visible, n.far?.visible];
+      n.root.visible = true;
+      if (n.near) n.near.visible = true;
+      if (n.far) n.far.visible = true;
+      undo.push(() => { n.root.visible = vis[0]!; if (n.near) n.near.visible = vis[1]!; if (n.far) n.far.visible = vis[2]!; });
+    }
+    try { g.post.render(); g.post.render(); } catch (e) { console.warn("[warm-up]", e); }
+    for (const u of undo) u();
+    g.scene.remove(temps);
   }
 
   /** Walks her to the spot, frames it, and hands over to the mini-game. */
@@ -600,7 +639,8 @@ export class Play {
       const key = `k${s.spot.z}`;
       const sc = b > 0 && d < 9 ? toScreen(g, s.keeper.clone().setY(2.05)) : null;
       // Only a bubble that's actually on screen counts toward the two allowed.
-      if (sc && !sc.behind && sc.x > -80 && sc.x < innerWidth + 80 && shown < 2) {
+      // (A shopkeeper's call waits its turn if two people are already talking.)
+      if (sc && !sc.behind && sc.x > -80 && sc.x < innerWidth + 80 && shown + this.social.count < 2) {
         shown++;
         this.hud.bubble(key, s.spot.call, sc.x, sc.y);
       } else this.hud.bubble(key, "", null);

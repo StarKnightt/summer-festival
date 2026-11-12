@@ -72,6 +72,8 @@ export class Social {
   constructor(private g: Game, private hud: Hud, private audio: Audio, private crowd: Crowd, private moments: () => Moments | null) {}
 
   get busy(): boolean { return this.emoteT > 0; }
+  /** Crowd bubbles showing right now. */
+  get count(): number { return this.lines.length; }
 
   /** A bubble over someone's head. Low-priority lines are dropped when two are already up. */
   say(n: Npc, text: string, secs = 2.8, pri = 0): boolean {

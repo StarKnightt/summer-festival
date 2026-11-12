@@ -87,7 +87,8 @@ def assert_gpu():
 FACE_SHOTS = {
     "face": ((0.0, -0.75, 1.47), (0, 0, 1.43), 85),
     "face_3q": ((0.45, -0.6, 1.48), (0, 0, 1.43), 85),
-    "face_side": ((0.75, 0.0, 1.45), (0, 0, 1.43), 85),
+    "face_side": ((0.75, -0.02, 1.43), (0, -0.02, 1.43), 85),          # exact 90 degrees
+    "face_3q_rear": ((0.65, 0.355, 1.45), (0, -0.02, 1.43), 85),        # 120 degrees from the front
 }
 
 
@@ -104,6 +105,9 @@ def faces(outdir, tag=""):
                 kb[k].value = 1.0
             out.append(shoot(os.path.join(outdir, f"face_{'_'.join(keys)}{tag}.png"), (0.0, -0.75, 1.47), (0, 0, 1.43), 85,
                              (900, 900)))
+            if keys == ("smile",):
+                out.append(shoot(os.path.join(outdir, f"face_smile_3q{tag}.png"), (0.45, -0.6, 1.48), (0, 0, 1.43), 85,
+                                 (900, 900)))
             for k in keys:
                 kb[k].value = 0.0
         # Eyes at the game's distance: 3 m, 50 mm, 1280x720.

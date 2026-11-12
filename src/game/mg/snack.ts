@@ -70,6 +70,11 @@ function utensil(kind: SnackKind): THREE.Group {
   return g;
 }
 
+/** Every prop a snack uses (for the loading-screen warm-up). */
+export function snackProps(kind: SnackKind): THREE.Object3D[] {
+  return [dish(kind, SYRUPS[0][1]).g, utensil(kind)];
+}
+
 /**
  * Buying something to eat at a food stall. She orders (at the shaved-ice stall she picks the
  * syrup first), the keeper hands it over, she turns to the street and eats it in a few bites:

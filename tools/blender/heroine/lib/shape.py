@@ -110,30 +110,124 @@ def _ell(P, c, r):
     return k0 * (k0 - 1.0) / np.maximum(k1, 1e-9)
 
 
-def head_sdf(P):
-    """Signed distance (approx.) to her head: round cranium, soft cheeks, narrow anime jaw, small
-    chin, a hint of a nose."""
-    P = np.asarray(P, float)
+EYE_XZ = (0.0295, 1.3858)     # eye centre (her left): x, z
+EYE_TURN = 20.0               # deg the eye plane is turned outward (as on anime figures)
+EYE_R = 0.11                  # the eye plane is a very gentle dome of this radius
+
+
+def _base_sdf(P):
     cran = _ell(P, (0.0, 0.010, 1.412), (0.079, 0.089, 0.093))
-    # One broad, softly blended lower-face volume (no separate cheek blobs, which left a crease
-    # beside the nose): a smooth oval from the cheekbones to a small, round chin at 1.291.
+    # One broad, softly blended lower-face volume: a smooth oval from the cheekbones to the chin.
     jaw = _ell(P, (0.0, -0.011, 1.360), (0.0675, 0.068, 0.066))
     d = smin(cran, jaw, 0.036)
-    chin = _ell(P, (0.0, -0.041, 1.309), (0.023, 0.023, 0.018))
-    d = smin(d, chin, 0.024)
-    nose = _ell(P, (0.0, -0.0768, 1.345), (0.0034, 0.0058, 0.0062))   # just a tiny tip
-    d = smin(d, nose, 0.004)
+    chin = _ell(P, (0.0, -0.047, 1.309), (0.023, 0.024, 0.018))
+    return smin(d, chin, 0.024)
+
+
+def _eye_y():
+    lo, hi = -0.2, 0.0
+    for _ in range(50):
+        m = 0.5 * (lo + hi)
+        if _base_sdf(np.array([[EYE_XZ[0], m, EYE_XZ[1]]]))[0] < 0:
+            hi = m
+        else:
+            lo = m
+    return 0.5 * (lo + hi)
+
+
+EYE_Y = _eye_y() + 0.0022     # the eye planes sit a little behind the nose bridge
+
+
+def _ss(a, b, x):
+    t = np.clip((x - a) / (b - a), 0.0, 1.0)
+    return t * t * (3 - 2 * t)
+
+
+def _eye_planes(P, d):
+    """Each eye sits on a nearly flat plane turned EYE_TURN degrees outward (instead of on the
+    round of the face), so the painted eye keeps its shape from three-quarter and side views."""
+    t = np.radians(EYE_TURN)
+    front = 1.0 - _ss(-0.035, -0.012, P[..., 1])
+    for s in (-1.0, 1.0):
+        n = np.array([s * np.sin(t), -np.cos(t), 0.0])
+        C = np.array([s * EYE_XZ[0], EYE_Y, EYE_XZ[1]])
+        sph = np.linalg.norm(P - (C - n * EYE_R), axis=-1) - EYE_R
+        q = np.hypot((P[..., 0] - C[0]) / 0.021, (P[..., 2] - C[2]) / 0.020)
+        w = (1.0 - _ss(0.72, 1.55, q)) * front
+        d = d * (1 - w) + sph * w
     return d
 
 
-def head_grad(P, h=1e-4):
+# Profile on the centre line. Outward displacement (m) of the front of the face as a function of
+# (x, z), in two layers: a BROAD one that sets the face plane (forehead, a soft dip at the nose
+# bridge, a fuller mouth area and a chin that comes forward instead of receding), and a NARROW one
+# with the nose and lips, which only the silhouette sees (shading normals leave it out).
+NOSE_TIP_Z, NOSE_ROOT_Z, NOSE_H = 1.3500, 1.3880, 0.0098
+BROAD = np.array([  # z, displacement
+    [1.284, 0.0000], [1.290, 0.0048], [1.297, 0.0082], [1.304, 0.0030], [1.311, 0.0012], [1.320, 0.0025],
+    [1.332, 0.0018], [1.344, 0.0008], [1.356, -0.0016], [1.368, -0.0032], [1.380, -0.0041], [1.390, -0.0040],
+    [1.400, -0.0024], [1.410, -0.0008], [1.420, 0.0000], [1.440, 0.0000]])
+
+
+def _gauss(v, s):
+    return np.exp(-(v / s) ** 2)
+
+
+def _relief(P, soft=False):
+    x, z = P[..., 0], P[..., 2]
+    zc = np.clip(z, BROAD[0, 0], BROAD[-1, 0])
+    b = catmull(BROAD, zc.ravel())[:, 0].reshape(zc.shape)
+    # Wider at the mouth (a soft fullness), narrow at the chin (small and round) and the bridge dip.
+    h = b * _gauss(x, np.interp(z, [1.284, 1.301, 1.313, 1.335, 1.365], [0.0135, 0.0145, 0.0180, 0.0180, 0.0130]))
+    # Nose: a slightly scooped line from the bridge down to a small pointed, upturned tip, cut
+    # back sharply underneath to a short philtrum. Narrow, so the front view stays soft.
+    u = np.clip((NOSE_ROOT_Z - z) / (NOSE_ROOT_Z - NOSE_TIP_Z), 0.0, 1.0)
+    up = u ** 2.2
+    under = 1.0 - _ss(0.0, 0.0080, NOSE_TIP_Z - z)
+    nose = NOSE_H * np.where(z >= NOSE_TIP_Z, up, under) * _gauss(x, 0.0034 + 0.0022 * u)
+    # Lips: two small bumps either side of the mouth line (1.318).
+    lips = (0.0020 * _gauss(z - 1.3226, 0.0028) * _gauss(x, 0.0105)
+            + 0.0026 * _gauss(z - 1.3134, 0.0029) * _gauss(x, 0.0090)
+            - 0.0006 * _gauss(z - 1.3180, 0.0016) * _gauss(x, 0.0110))
+    if soft:   # shading sees the dips in full, half of the mouth/chin fullness, a trace of the nose
+        return np.where(h > 0, 0.5 * h, h) + 0.12 * nose
+    return h + nose + lips
+
+
+def _head(P, soft):
+    P = np.asarray(P, float)
+    d = _eye_planes(P, _base_sdf(P))
+    front = 1.0 - _ss(-0.040, -0.018, P[..., 1])
+    return d - _relief(P, soft) * front
+
+
+def head_sdf(P):
+    """Signed distance (approx.) to her head: round cranium, soft oval face, eye planes turned
+    outward, and a real anime profile on the centre line (bridge dip, small pointed nose, lips,
+    rounded chin)."""
+    return _head(P, False)
+
+
+def head_sdf_soft(P):
+    """The same head WITHOUT the lips and with only a trace of the nose. Shading normals come
+    from this surface (see head_grad_soft): the profile is in the silhouette, but a hard toon
+    terminator sees one soft face with no crease beside the nose."""
+    return _head(P, True)
+
+
+def head_grad(P, h=1e-4, sdf=None):
+    sdf = sdf or head_sdf
     P = np.asarray(P, float)
     g = np.zeros_like(P)
     for k in range(3):
         e = np.zeros(3)
         e[k] = h
-        g[:, k] = (head_sdf(P + e) - head_sdf(P - e)) / (2 * h)
+        g[:, k] = (sdf(P + e) - sdf(P - e)) / (2 * h)
     return norm(g)
+
+
+def head_grad_soft(P):
+    return head_grad(P, h=4e-4, sdf=head_sdf_soft)
 
 
 def head_radius(D, c=HEAD_C, off=0.0, sdf=None):

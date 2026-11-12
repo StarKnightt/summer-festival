@@ -29,7 +29,24 @@ try {
         }, 8);
       }, [ang, dist]);
       await page.waitForTimeout(1600);
+      // Make sure the close-up camera has actually cut in before the shot.
+      for (let i = 0; i < 30; i++) {
+        const d = await page.evaluate(() => __game.camera.position.distanceTo(__game.her.bone("head").getWorldPosition(new __game.her.position.constructor())));
+        if (d < 1.4) break;
+        await page.waitForTimeout(200);
+      }
+      await page.waitForTimeout(300);
       await shot(`face_${label}_${view}`);
+      if (label === "noon" && view === "threequarter") {
+        // Her smile, from the same three-quarter view (two frames, in case one lands on a blink).
+        await page.evaluate(() => { window.__s = setInterval(() => { __game.her.smile = 1; }, 30); });
+        await page.waitForTimeout(1500);
+        await shot("face_noon_smile");
+        await page.waitForTimeout(450);
+        await shot("face_noon_smile_b");
+        await page.evaluate(() => { clearInterval(window.__s); __game.her.smile = 0; });
+        await page.waitForTimeout(900);
+      }
     }
     await page.evaluate(() => { clearInterval(window.__f); __game.rig.setShot(null); });
   }
