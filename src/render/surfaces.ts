@@ -10,6 +10,20 @@ import { U } from "./uniforms";
 const h2 = (p: any) => hash(p.x.mul(127.1).add(p.y.mul(311.7)).floor());
 const nz = (p: any) => mx_noise_float(vec3(p.x, p.y, 0.0)).mul(0.5).add(0.5);
 
+/**
+ * A mortar joint at both ends of a cell (f in 0..1), antialiased. `d` is how much of a cell one
+ * pixel covers (fwidth of the cell coordinate). The soft edge is never thinner than a pixel, and
+ * once the joint itself is thinner than a pixel it fades to its average (1 - w), so far-off and
+ * grazing paving reads as an even tone instead of shimmering as the camera moves.
+ */
+const seam = (f: any, d: any, w: number) => {
+  const ww = d.add(w);
+  const m = smoothstep(0.0, ww, f).mul(smoothstep(0.0, ww, float(1).sub(f)));
+  return mix(m, float(1 - w), smoothstep(0.15, 0.5, d));
+};
+/** 1 up close, 0 where one pixel spans `at` cells or more: fades per-block detail before it aliases. */
+const near = (d: any, at = 0.5) => float(1).sub(smoothstep(at * 0.3, at, d));
+
 /** Street paving: running-bond granite slabs with grout, worn smoother down the middle. */
 export function pavingMaterial(): ToonMaterial {
   const m = new ToonMaterial({ color: "#ffffff", paint: 0.5, rim: 0.2 });
@@ -19,11 +33,13 @@ export function pavingMaterial(): ToonMaterial {
     const cell = vec2(p.x.div(0.66).add(fract(row.mul(0.37))), p.y.div(0.42));
     const id = floor(cell);
     const f = fract(cell);
-    const g = smoothstep(0.0, 0.03, f.x).mul(smoothstep(1.0, 0.97, f.x)).mul(smoothstep(0.0, 0.045, f.y)).mul(smoothstep(1.0, 0.955, f.y));
-    const tone = h2(id).mul(0.22).add(0.82);
-    const warm = mix(vec3(0.46, 0.45, 0.46), vec3(0.58, 0.52, 0.45), h2(id.add(9.0)));
+    const dx = fwidth(p.x).div(0.66), dy = fwidth(p.y).div(0.42);
+    const g = seam(f.x, dx, 0.03).mul(seam(f.y, dy, 0.045));
+    const k = near(max(dx, dy));
+    const tone = mix(float(0.93), h2(id).mul(0.22).add(0.82), k);
+    const warm = mix(vec3(0.52, 0.485, 0.455), mix(vec3(0.46, 0.45, 0.46), vec3(0.58, 0.52, 0.45), h2(id.add(9.0))), k);
     const wear = float(1).sub(smoothstep(1.2, 3.6, abs(p.x))).mul(0.06);
-    const speck = nz(p.mul(6.0)).mul(0.08).add(0.96);
+    const speck = mix(float(1.0), nz(p.mul(6.0)).mul(0.08).add(0.96), near(max(dx, dy).mul(9.0)));
     const c = warm.mul(tone).mul(speck).add(wear);
     return mix(c.mul(0.55), c, g);
   })();
@@ -49,9 +65,8 @@ export function seawallMaterial(): ToonMaterial {
     const id = floor(cell);
     const f = fract(cell);
     // Mortar: soft recessed joints, with a lighter lip just above each joint.
-    const jx = smoothstep(0.0, 0.035, f.x).mul(smoothstep(1.0, 0.965, f.x));
-    const jy = smoothstep(0.0, 0.07, f.y).mul(smoothstep(1.0, 0.93, f.y));
-    const joint = jx.mul(jy);
+    const dx = fwidth(p.x), dy = fwidth(p.y).div(0.46);
+    const joint = seam(f.x, dx, 0.035).mul(seam(f.y, dy, 0.07));
     const lip = smoothstep(0.07, 0.16, f.y).mul(smoothstep(0.3, 0.16, f.y)).mul(0.06);
     // Each block: its own tone and warmth; the face mottled, pitted and edge-worn.
     const tone = h2(id).mul(0.2).add(0.86);
@@ -84,8 +99,11 @@ export function stoneMaterial(base = "#9a948c", scale = 1): ToonMaterial {
     const row = floor(p.y.div(0.5));
     const cell = vec2(p.x.div(1.1).add(fract(row.mul(0.5))), p.y.div(0.5));
     const f = fract(cell);
-    const g = smoothstep(0.0, 0.03, f.x).mul(smoothstep(1.0, 0.97, f.x)).mul(smoothstep(0.0, 0.06, f.y)).mul(smoothstep(1.0, 0.94, f.y));
-    const tone = h2(floor(cell)).mul(0.16).add(0.88).mul(nz(p.mul(3.0)).mul(0.1).add(0.95));
+    const dx = fwidth(p.x).div(1.1), dy = fwidth(p.y).div(0.5);
+    const g = seam(f.x, dx, 0.03).mul(seam(f.y, dy, 0.06));
+    const k = near(max(dx, dy));
+    const tone = mix(float(0.96), h2(floor(cell)).mul(0.16).add(0.88), k)
+      .mul(mix(float(1.0), nz(p.mul(3.0)).mul(0.1).add(0.95), near(max(dx, dy).mul(5.0))));
     return mix(vec3(b.r, b.g, b.b).mul(0.55), vec3(b.r, b.g, b.b).mul(tone), g);
   })();
   return m;

@@ -257,15 +257,18 @@ export function buildTown(): Town {
   }
 
   // ---- ground: street paving, gutters, promenade, sea wall, steps, beach
-  const groundB = new THREE.PlaneGeometry(STREET.half * 2 + 6, STREET.zStart - SHORE.promenadeZ1 + 4, 1, 1).rotateX(-Math.PI / 2);
-  groundB.translate(0, 0, (STREET.zStart + SHORE.promenadeZ1) / 2 + 2);
+  // The paving stops exactly where the promenade strip starts (z = PROMO_Z0): both lie at y = 0,
+  // so any overlap z-fights and the two tile patterns flicker over each other as the camera moves.
+  const PROMO_Z0 = -94.6;
+  const groundB = new THREE.PlaneGeometry(STREET.half * 2 + 6, STREET.zStart + 4 - PROMO_Z0, 1, 1).rotateX(-Math.PI / 2);
+  groundB.translate(0, 0, (STREET.zStart + 4 + PROMO_Z0) / 2);
   const street = solid(groundB, pavingMaterial(), false);
   group.add(street);
   for (const side of [-1, 1]) {
     wood.box(0.28, 0.04, STREET.zStart - STREET.zEnd, "#4c4a4c", side * (STREET.half - 0.32), 0.012, (STREET.zStart + STREET.zEnd) / 2);
   }
   // Promenade (wide stone strip along the town front) and its sea wall.
-  const promo = new THREE.PlaneGeometry(90, 5.4).rotateX(-Math.PI / 2).translate(0, 0.0, -97.3);
+  const promo = new THREE.PlaneGeometry(90, 5.4).rotateX(-Math.PI / 2).translate(0, 0.0, PROMO_Z0 - 2.7);
   group.add(solid(promo, stoneMaterial("#a39a8e", 1.2), false));
   // Sea wall, coping and steps: dressed stone with rounded, worn edges (seawallMaterial carves
   // the blocks and weathering; the vertex colour tells wall, coping and steps apart).
