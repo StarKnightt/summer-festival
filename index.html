@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Summer Festival</title>
+    <meta name="description" content="Walk a little seaside town on the night of its summer festival: scoop a goldfish, win the ring toss, light a lantern, and watch the fireworks over the sea." />
+    <meta name="theme-color" content="#2c2440" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232c2a52'/%3E%3Cpath d='M32 10v6' stroke='%23e9d9b8' stroke-width='3'/%3E%3Cellipse cx='32' cy='34' rx='14' ry='17' fill='%23e2553c'/%3E%3Cpath d='M19 28h26M18 34h28M19 40h26' stroke='%23b8402c' stroke-width='1.6'/%3E%3Crect x='25' y='15' width='14' height='4' rx='1' fill='%23231a18'/%3E%3Crect x='25' y='49' width='14' height='4' rx='1' fill='%23231a18'/%3E%3C/svg%3E" />
+    <style>
+      :root {
+        --ink: #2b2230;
+        --cream: #fff7ea;
+        --glass: rgba(34, 26, 40, 0.42);
+        --lantern: #ffb36a;
+        --ui: "Hiragino Maru Gothic ProN", "Yu Gothic UI", "Segoe UI", system-ui, sans-serif;
+        --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+      }
+      html, body { margin: 0; height: 100%; overflow: hidden; background: #2c2440; font-family: var(--ui); }
+      canvas { display: block; touch-action: none; }
+      .hud { position: fixed; pointer-events: none; user-select: none; color: var(--cream); text-shadow: 0 1px 3px rgba(20, 12, 20, 0.55); }
+
+      /* Title card + loader */
+      #title { position: fixed; inset: 0; z-index: 20; display: flex; flex-direction: column; align-items: center; justify-content: center;
+        background: radial-gradient(ellipse at 50% 120%, #ffb070 0%, #d9837c 28%, #7a5d8e 62%, #2c2a52 100%); color: var(--cream);
+        transition: opacity 1.6s ease, background-color 1.6s ease; cursor: pointer; }
+      #title.scene { background: radial-gradient(ellipse at 50% 50%, rgba(30, 20, 40, 0.0), rgba(30, 20, 40, 0.38)); }
+      #title.gone { opacity: 0; pointer-events: none; }
+      #title .jp { font-family: var(--serif); font-size: clamp(14px, 1.3vw, 20px); letter-spacing: 0.6em; opacity: 0.85; margin-bottom: 1.2vh; }
+      #title h1 { margin: 0; font-family: var(--serif); font-weight: 400; font-style: italic; font-size: clamp(46px, 7.6vw, 112px); letter-spacing: 0.02em;
+        text-shadow: 0 2px 22px rgba(40, 20, 30, 0.45); }
+      #title .sub { margin-top: 1.4vh; font-size: clamp(11px, 0.9vw, 15px); letter-spacing: 0.38em; text-transform: uppercase; opacity: 0.85; }
+      #title .rule { width: 64px; height: 1px; background: rgba(255, 247, 234, 0.7); margin: 2.4vh 0; }
+      #title .go { font-family: var(--serif); font-style: italic; font-size: clamp(14px, 1.1vw, 19px); letter-spacing: 0.16em; opacity: 0; transition: opacity 1s ease; }
+      #title.ready .go { opacity: 1; animation: breathe 2.6s ease-in-out infinite; }
+      #title .bar { width: 140px; height: 1px; background: rgba(255, 247, 234, 0.2); margin-top: 3vh; overflow: hidden; transition: opacity 0.8s; }
+      #title .bar i { display: block; height: 100%; background: var(--cream); transform-origin: left; transform: scaleX(0); transition: transform 0.4s ease; }
+      #title.ready .bar { opacity: 0; }
+      #title .note { position: absolute; bottom: 5vh; font-size: 12px; letter-spacing: 0.12em; opacity: 0.6; }
+      @keyframes breathe { 50% { opacity: 0.45; } }
+
+      /* Controls hint */
+      #controls { left: 50%; bottom: 5vh; transform: translateX(-50%); display: flex; gap: 22px; padding: 10px 20px; border-radius: 999px;
+        background: var(--glass); backdrop-filter: blur(6px); font-size: 13px; opacity: 0; transition: opacity 1.2s ease; white-space: nowrap; }
+      #controls.on { opacity: 1; }
+      #controls b { display: inline-block; min-width: 18px; padding: 1px 6px; margin-right: 6px; border: 1px solid rgba(255, 247, 234, 0.55); border-radius: 5px; font-weight: 600; font-size: 11px; text-align: center; }
+
+      /* Checklist */
+      #tasks { left: 22px; top: 20px; padding: 12px 16px 12px 14px; border-radius: 12px; background: var(--glass); backdrop-filter: blur(6px);
+        font-size: 13px; line-height: 1.85; min-width: 176px; opacity: 0; transition: opacity 1.2s ease; }
+      #tasks.on { opacity: 1; }
+      #tasks h3 { margin: 0 0 2px; font: italic 400 14px var(--serif); letter-spacing: 0.08em; opacity: 0.9; }
+      #tasks li { list-style: none; display: flex; align-items: center; gap: 9px; transition: opacity 0.8s ease, color 0.8s ease; }
+      #tasks ul { margin: 0; padding: 0; }
+      #tasks .box { width: 11px; height: 11px; border-radius: 50%; border: 1.5px solid rgba(255, 247, 234, 0.75); flex: none; transition: all 0.6s ease; }
+      #tasks li.done { opacity: 0.6; }
+      #tasks li.done .box { background: var(--lantern); border-color: var(--lantern); box-shadow: 0 0 8px rgba(255, 170, 90, 0.9); }
+      #tasks li.done span { text-decoration: line-through; text-decoration-color: rgba(255, 247, 234, 0.5); }
+      #tasks .finale { margin-top: 6px; font: italic 12.5px var(--serif); color: #ffd9a8; display: none; }
+      #tasks.all .finale { display: block; }
+
+      /* Task toast */
+      #toast { left: 50%; top: 12vh; transform: translate(-50%, 6px); font: italic 400 clamp(17px, 1.5vw, 24px) var(--serif); letter-spacing: 0.12em;
+        opacity: 0; transition: opacity 0.9s ease, transform 0.9s ease; text-align: center; }
+      #toast small { display: block; margin-top: 4px; font: 12px var(--ui); letter-spacing: 0.2em; text-transform: uppercase; opacity: 0.8; }
+      #toast.on { opacity: 1; transform: translate(-50%, 0); }
+
+      /* Achievement pop */
+      #achpop { right: 22px; bottom: 22px; display: flex; align-items: center; gap: 11px; padding: 10px 16px 10px 12px; border-radius: 12px;
+        background: var(--glass); backdrop-filter: blur(6px); font-size: 12.5px; opacity: 0; transform: translateY(8px); transition: opacity 0.8s ease, transform 0.8s ease; }
+      #achpop.on { opacity: 1; transform: none; }
+      #achpop .ic { font-size: 22px; }
+      #achpop .t { font: italic 14px var(--serif); }
+      #achpop .k { font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; opacity: 0.7; }
+
+      /* Corner buttons */
+      #corner { right: 18px; top: 16px; display: flex; gap: 8px; pointer-events: auto; opacity: 0; transition: opacity 1.2s ease; }
+      #corner.on { opacity: 1; }
+      #corner button { width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(255, 247, 234, 0.25); background: var(--glass); backdrop-filter: blur(6px);
+        color: var(--cream); font-size: 15px; cursor: pointer; display: grid; place-items: center; transition: background 0.3s, border-color 0.3s, transform 0.2s; padding: 0; }
+      #corner button:hover { background: rgba(60, 44, 66, 0.6); transform: translateY(-1px); }
+      #corner button.sel { border-color: var(--lantern); box-shadow: 0 0 10px rgba(255, 170, 90, 0.45); }
+      #corner button:focus-visible { outline: 2px solid var(--lantern); outline-offset: 2px; }
+      #corner .sep { width: 1px; background: rgba(255, 247, 234, 0.2); margin: 6px 2px; }
+
+      /* Achievements list */
+      #achlist { right: 18px; top: 60px; width: 280px; padding: 14px 16px; border-radius: 14px; background: rgba(30, 22, 36, 0.72); backdrop-filter: blur(10px);
+        font-size: 12.5px; opacity: 0; transform: translateY(-6px); transition: opacity 0.4s ease, transform 0.4s ease; pointer-events: none; }
+      #achlist.on { opacity: 1; transform: none; pointer-events: auto; }
+      #achlist h3 { margin: 0 0 8px; font: italic 400 16px var(--serif); letter-spacing: 0.06em; }
+      #achlist .a { display: flex; gap: 10px; align-items: center; padding: 7px 0; border-top: 1px solid rgba(255, 247, 234, 0.1); }
+      #achlist .a .ic { font-size: 20px; width: 26px; text-align: center; filter: grayscale(1) opacity(0.35); transition: filter 0.6s; }
+      #achlist .a.got .ic { filter: none; }
+      #achlist .a .t { font: italic 13.5px var(--serif); }
+      #achlist .a .d { opacity: 0.65; font-size: 11.5px; }
+      #achlist .a.got .t::after { content: " ✓"; color: var(--lantern); font-style: normal; }
+      #achlist .reset { margin-top: 10px; font-size: 11px; opacity: 0.55; cursor: pointer; text-decoration: underline; background: none; border: 0; color: inherit; padding: 0; }
+      #achlist .reset:hover { opacity: 0.9; }
+
+      /* Interaction prompt */
+      #prompt { left: 50%; bottom: 13vh; transform: translateX(-50%); padding: 8px 16px; border-radius: 999px; background: var(--glass); backdrop-filter: blur(6px);
+        font-size: 13.5px; opacity: 0; transition: opacity 0.5s ease; white-space: nowrap; }
+      #prompt.on { opacity: 1; }
+      #prompt b { display: inline-block; padding: 0 7px; margin-right: 8px; border: 1px solid rgba(255, 247, 234, 0.6); border-radius: 5px; font-size: 11px; }
+
+      /* Mini-game guidance */
+      #mg { left: 50%; bottom: 6vh; transform: translateX(-50%); text-align: center; font-size: 13.5px; opacity: 0; transition: opacity 0.6s ease; }
+      #mg.on { opacity: 1; }
+      #mg .line { padding: 8px 18px; border-radius: 999px; background: var(--glass); backdrop-filter: blur(6px); display: inline-block; }
+      #mg .meter { width: 180px; height: 6px; margin: 10px auto 0; border-radius: 3px; background: rgba(255, 247, 234, 0.2); overflow: hidden; opacity: 0; transition: opacity 0.4s; }
+      #mg .meter.on { opacity: 1; }
+      #mg .meter i { display: block; height: 100%; width: 0%; background: linear-gradient(90deg, #ffd69a, #ff8a5a); border-radius: 3px; }
+      #mg .pips { margin-top: 8px; letter-spacing: 6px; font-size: 13px; min-height: 16px; }
+
+      /* Centre note (finale hint, checkpoint) */
+      #note { left: 50%; bottom: 20vh; transform: translateX(-50%); font: italic clamp(14px, 1.15vw, 18px) var(--serif); letter-spacing: 0.08em; opacity: 0; transition: opacity 1.2s ease; text-align: center; white-space: nowrap; }
+      #note.on { opacity: 0.95; }
+
+      /* Keeper call-outs */
+      .bubble { position: fixed; transform: translate(-50%, -100%); padding: 5px 11px; border-radius: 12px; background: rgba(255, 249, 238, 0.92); color: #43302a;
+        font-size: 12px; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity 0.6s ease; text-shadow: none; box-shadow: 0 2px 8px rgba(30, 15, 20, 0.25); }
+      .bubble::after { content: ""; position: absolute; left: 50%; bottom: -5px; margin-left: -5px; border: 5px solid transparent; border-bottom: 0; border-top-color: rgba(255, 249, 238, 0.92); }
+      .bubble.on { opacity: 1; }
+      #fade { position: fixed; inset: 0; background: #1a1424; opacity: 0; pointer-events: none; transition: opacity 0.8s ease; z-index: 15; }
+      #fade.on { opacity: 1; }
+      .fatal { position: fixed; inset: 0; display: grid; place-items: center; color: var(--cream); font: 15px var(--serif); background: #2c2440; text-align: center; padding: 20px; z-index: 30; }
+      @media (max-width: 640px) { #controls { font-size: 11px; gap: 12px; } #tasks { font-size: 12px; min-width: 150px; } }
+      @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+    </style>
+  </head>
+  <body>
+    <div id="title">
+      <div class="jp">夏 祭 り</div>
+      <h1>Summer Festival</h1>
+      <div class="rule"></div>
+      <div class="sub">a seaside town · one summer evening</div>
+      <div class="bar"><i></i></div>
+      <div class="go" style="margin-top: 3vh">click to begin</div>
+      <div class="note">sound on · best with headphones</div>
+    </div>
+    <div id="fade"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

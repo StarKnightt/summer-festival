@@ -1,0 +1,9 @@
+node_modules
+dist
+refs/
+shots/
+*.log
+tools/blender/**/previews/
+.DS_Store
+__pycache__/
+*.pyc

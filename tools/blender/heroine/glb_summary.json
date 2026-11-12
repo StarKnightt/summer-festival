@@ -1,0 +1,239 @@
+{
+ "attachments": {
+  "hand_R.palmCentre": {
+   "bone": "hand_R",
+   "local": [
+    -0.0,
+    0.048,
+    -0.013
+   ],
+   "gltfWorldRest": [
+    -0.3882,
+    0.8153,
+    0.0193
+   ]
+  },
+  "hand_R.gripCentre": {
+   "bone": "hand_R",
+   "local": [
+    -0.0,
+    0.06,
+    -0.022
+   ],
+   "gltfWorldRest": [
+    -0.3857,
+    0.8008,
+    0.0224
+   ]
+  },
+  "head.maskCentre": {
+   "bone": "head",
+   "local": [
+    -0.097,
+    0.122,
+    0.016
+   ],
+   "gltfWorldRest": [
+    -0.097,
+    1.487,
+    0.004
+   ]
+  },
+  "hand_R.palmNormal": {
+   "bone": "hand_R",
+   "localDir": [
+    -0.0,
+    0.0,
+    -1.0
+   ],
+   "gltfWorldRestDir": [
+    0.8843,
+    -0.427,
+    0.1886
+   ]
+  },
+  "hand_R.gripAxis": {
+   "bone": "hand_R",
+   "localDir": [
+    1.0,
+    0.0,
+    -0.0
+   ],
+   "gltfWorldRestDir": [
+    0.117,
+    -0.1884,
+    -0.9751
+   ]
+  },
+  "head.maskForward": {
+   "bone": "head",
+   "localDir": [
+    -0.9315,
+    0.2329,
+    0.2794
+   ],
+   "gltfWorldRestDir": [
+    -0.9315,
+    0.2329,
+    0.2794
+   ]
+  },
+  "head.maskUp": {
+   "bone": "head",
+   "localDir": [
+    0.1476,
+    0.9841,
+    -0.0984
+   ],
+   "gltfWorldRestDir": [
+    0.1476,
+    0.9841,
+    -0.0984
+   ]
+  }
+ },
+ "anim_channel_paths": {
+  "translation": 376,
+  "rotation": 376
+ },
+ "file": "heroine.glb",
+ "file_kib": 2285.5,
+ "meshes": {
+  "heroine_arms.001": 3728,
+  "heroine_geta.001": 1480,
+  "heroine_hair.001": 7016,
+  "heroine_head.001": 4828,
+  "heroine_kanzashi.001": 2148,
+  "heroine_legs.001": 2048,
+  "heroine_neck.001": 1520,
+  "heroine_obi.001": 3216,
+  "heroine_sleeve_L.001": 1992,
+  "heroine_sleeve_R.001": 1992,
+  "heroine_yukata.001": 7844
+ },
+ "triangles": 37812,
+ "bones": 47,
+ "bone_names": [
+  "root",
+  "hips",
+  "spine",
+  "spine1",
+  "spine2",
+  "neck",
+  "head",
+  "hairSideL1",
+  "hairSideL2",
+  "hairSideR1",
+  "hairSideR2",
+  "hairBack1",
+  "hairBack2",
+  "hairBack3",
+  "hairBun1",
+  "kanzashi1",
+  "kanzashi2",
+  "shoulder_L",
+  "upperarm_L",
+  "forearm_L",
+  "hand_L",
+  "thumb_L",
+  "fingers_L",
+  "sleeve_L1",
+  "sleeve_L2",
+  "shoulder_R",
+  "upperarm_R",
+  "forearm_R",
+  "hand_R",
+  "thumb_R",
+  "fingers_R",
+  "sleeve_R1",
+  "sleeve_R2",
+  "obiTailL1",
+  "obiTailL2",
+  "obiTailR1",
+  "obiTailR2",
+  "thigh_L",
+  "shin_L",
+  "foot_L",
+  "toe_L",
+  "thigh_R",
+  "shin_R",
+  "foot_R",
+  "toe_R",
+  "skirtF1",
+  "skirtB1"
+ ],
+ "clips": {
+  "crouch": 3,
+  "idle": 4,
+  "lookup": 4,
+  "reach": 3,
+  "run": 0.4667,
+  "throw": 1.2,
+  "walk": 0.7,
+  "wave": 1.5
+ },
+ "morph_targets": {
+  "heroine_head": [
+   "blink",
+   "smile"
+  ]
+ },
+ "materials": [
+  "cloth_collar",
+  "cloth_hanao",
+  "cloth_obi",
+  "cloth_obijime",
+  "cloth_yukata",
+  "eye",
+  "face_blush",
+  "face_brow",
+  "face_line",
+  "face_mouth",
+  "face_nose",
+  "hair",
+  "metal_kanzashi",
+  "plastic_bead",
+  "plastic_flower_pink",
+  "plastic_flower_white",
+  "plastic_obidome",
+  "skin",
+  "wood_geta"
+ ],
+ "images": [
+  [
+   "T_heroine_eye",
+   "image/png"
+  ],
+  [
+   "T_heroine_yukata",
+   "image/png"
+  ]
+ ],
+ "max_influences": 4,
+ "bounds_blender_zup": {
+  "min": [
+   -0.4315,
+   -0.1735,
+   0.0
+  ],
+  "max": [
+   0.4315,
+   0.1624,
+   1.5657
+  ]
+ },
+ "nodes": [
+  "heroine_arms",
+  "heroine_geta",
+  "heroine_hair",
+  "heroine_head",
+  "heroine_kanzashi",
+  "heroine_legs",
+  "heroine_neck",
+  "heroine_obi",
+  "heroine_sleeve_L",
+  "heroine_sleeve_R",
+  "heroine_yukata"
+ ],
+ "extensions_used": []
+}

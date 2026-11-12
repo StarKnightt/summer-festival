@@ -1,0 +1,74 @@
+{
+ "sole": 0.05,
+ "clips": {
+  "idle": {
+   "duration": 4.0,
+   "loop": true
+  },
+  "walk": {
+   "duration": 0.7,
+   "loop": true,
+   "speed": 1.1,
+   "stride": 0.77,
+   "step": 0.385,
+   "events": {
+    "footDownL": 0.0,
+    "footUpL": 0.42,
+    "footDownR": 0.35,
+    "footUpR": 0.07
+   }
+  },
+  "run": {
+   "duration": 0.4667,
+   "loop": true,
+   "speed": 2.7,
+   "stride": 1.26,
+   "step": 0.63,
+   "events": {
+    "footDownL": 0.0,
+    "footUpL": 0.187,
+    "footDownR": 0.233,
+    "footUpR": 0.42
+   }
+  },
+  "crouch": {
+   "duration": 3.0,
+   "loop": true,
+   "events": {
+    "strokeForward": [
+     0.375,
+     1.875
+    ]
+   }
+  },
+  "reach": {
+   "duration": 3.0,
+   "loop": true
+  },
+  "throw": {
+   "duration": 1.2,
+   "loop": false,
+   "events": {
+    "release": 0.62
+   },
+   "releasePoint": [
+    -0.157,
+    0.881,
+    0.364
+   ],
+   "releaseHandVelocity": [
+    0.32,
+    2.3,
+    3.24
+   ]
+  },
+  "lookup": {
+   "duration": 4.0,
+   "loop": true
+  },
+  "wave": {
+   "duration": 1.5,
+   "loop": false
+  }
+ }
+}

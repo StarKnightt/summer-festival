@@ -1,0 +1,973 @@
+{
+ "glb": {
+  "fileBytes": 1607000,
+  "meshes": [
+   {
+    "name": "npc_woman_body",
+    "tris": 6298,
+    "materials": [
+     "skin",
+     "face",
+     "hair",
+     "cloth_main",
+     "cloth_accent",
+     "cloth_dark",
+     "wood_geta"
+    ],
+    "attributes": [
+     "COLOR_0",
+     "JOINTS_0",
+     "NORMAL",
+     "POSITION",
+     "TEXCOORD_0",
+     "WEIGHTS_0"
+    ]
+   },
+   {
+    "name": "npc_man_body",
+    "tris": 5356,
+    "materials": [
+     "skin",
+     "face",
+     "hair",
+     "cloth_main",
+     "cloth_accent",
+     "cloth_dark",
+     "wood_geta"
+    ],
+    "attributes": [
+     "COLOR_0",
+     "JOINTS_0",
+     "NORMAL",
+     "POSITION",
+     "TEXCOORD_0",
+     "WEIGHTS_0"
+    ]
+   },
+   {
+    "name": "npc_kid_body",
+    "tris": 4696,
+    "materials": [
+     "skin",
+     "face",
+     "hair",
+     "cloth_main",
+     "cloth_accent",
+     "cloth_dark",
+     "wood_geta"
+    ],
+    "attributes": [
+     "COLOR_0",
+     "JOINTS_0",
+     "NORMAL",
+     "POSITION",
+     "TEXCOORD_0",
+     "WEIGHTS_0"
+    ]
+   },
+   {
+    "name": "npc_keeper_body",
+    "tris": 5204,
+    "materials": [
+     "skin",
+     "face",
+     "hair",
+     "cloth_main",
+     "cloth_accent",
+     "cloth_dark",
+     "cloth_shoe"
+    ],
+    "attributes": [
+     "COLOR_0",
+     "JOINTS_0",
+     "NORMAL",
+     "POSITION",
+     "TEXCOORD_0",
+     "WEIGHTS_0"
+    ]
+   },
+   {
+    "name": "npc_elder_body",
+    "tris": 5748,
+    "materials": [
+     "skin",
+     "face",
+     "hair",
+     "cloth_main",
+     "cloth_accent",
+     "cloth_dark",
+     "wood_geta"
+    ],
+    "attributes": [
+     "COLOR_0",
+     "JOINTS_0",
+     "NORMAL",
+     "POSITION",
+     "TEXCOORD_0",
+     "WEIGHTS_0"
+    ]
+   }
+  ],
+  "animations": [
+   {
+    "name": "call",
+    "duration": 3,
+    "channels": 23,
+    "paths": {
+     "translation": 1,
+     "rotation": 22
+    },
+    "keys": 91
+   },
+   {
+    "name": "fan",
+    "duration": 4,
+    "channels": 23,
+    "paths": {
+     "translation": 1,
+     "rotation": 22
+    },
+    "keys": 121
+   },
+   {
+    "name": "idle",
+    "duration": 4,
+    "channels": 23,
+    "paths": {
+     "translation": 1,
+     "rotation": 22
+    },
+    "keys": 121
+   },
+   {
+    "name": "lookup",
+    "duration": 4,
+    "channels": 23,
+    "paths": {
+     "translation": 1,
+     "rotation": 22
+    },
+    "keys": 121
+   },
+   {
+    "name": "run",
+    "duration": 0.4667,
+    "channels": 23,
+    "paths": {
+     "translation": 1,
+     "rotation": 22
+    },
+    "keys": 15
+   },
+   {
+    "name": "sparkler",
+    "duration": 1,
+    "channels": 23,
+    "paths": {
+     "translation": 1,
+     "rotation": 22
+    },
+    "keys": 31
+   },
+   {
+    "name": "talk",
+    "duration": 4,
+    "channels": 23,
+    "paths": {
+     "translation": 1,
+     "rotation": 22
+    },
+    "keys": 121
+   },
+   {
+    "name": "walk",
+    "duration": 1,
+    "channels": 23,
+    "paths": {
+     "translation": 1,
+     "rotation": 22
+    },
+    "keys": 31
+   },
+   {
+    "name": "wave",
+    "duration": 2,
+    "channels": 23,
+    "paths": {
+     "translation": 1,
+     "rotation": 22
+    },
+    "keys": 61
+   }
+  ],
+  "materials": [
+   "skin",
+   "face",
+   "hair",
+   "cloth_main",
+   "cloth_accent",
+   "cloth_dark",
+   "wood_geta",
+   "cloth_shoe"
+  ],
+  "images": [
+   [
+    "people_cloth_pattern",
+    "image/png"
+   ]
+  ],
+  "skins": [
+   {
+    "name": "npc_woman",
+    "joints": 22
+   },
+   {
+    "name": "npc_man",
+    "joints": 22
+   },
+   {
+    "name": "npc_kid",
+    "joints": 22
+   },
+   {
+    "name": "npc_keeper",
+    "joints": 22
+   },
+   {
+    "name": "npc_elder",
+    "joints": 22
+   }
+  ]
+ },
+ "variants": {
+  "woman": {
+   "node": "npc_woman",
+   "mesh": "npc_woman_body",
+   "height": 1.636,
+   "headTop": 1.6,
+   "hipHeight": 0.8,
+   "tris": 6298,
+   "walkSpeed": 0.9,
+   "runSpeed": 4.16,
+   "rootScale": {
+    "idle": 1.0,
+    "walk": 1.0,
+    "run": 1.6,
+    "sparkler": 1.0,
+    "wave": 1.0,
+    "call": 1.0,
+    "talk": 1.0,
+    "fan": 1.0,
+    "lookup": 1.0
+   },
+   "handR_palm": {
+    "bone": "hand_R",
+    "offset": [
+     0.0115,
+     0.0675,
+     -0.0033
+    ],
+    "gripAxis": [
+     -0.2756,
+     -0.0,
+     -0.9613
+    ],
+    "palmNormal": [
+     0.9613,
+     -0.0,
+     -0.2756
+    ]
+   },
+   "headTopOffset": {
+    "bone": "head",
+    "offset": [
+     0.0,
+     0.2378,
+     0.004
+    ]
+   },
+   "bbox": {
+    "min": [
+     -0.338,
+     0.0,
+     -0.151
+    ],
+    "max": [
+     0.338,
+     1.636,
+     0.18
+    ]
+   },
+   "tints": {
+    "skin": "#f6d5c2",
+    "hair": "#3a2620",
+    "cloth_main": "#f19aa6",
+    "cloth_accent": "#f3c74f",
+    "cloth_dark": "#3b3f6b",
+    "wood_geta": "#c99a66",
+    "face": "#ffffff"
+   }
+  },
+  "man": {
+   "node": "npc_man",
+   "mesh": "npc_man_body",
+   "height": 1.75,
+   "headTop": 1.74,
+   "hipHeight": 0.875,
+   "tris": 5356,
+   "walkSpeed": 0.984,
+   "runSpeed": 4.55,
+   "rootScale": {
+    "idle": 1.0938,
+    "walk": 1.0938,
+    "run": 1.75,
+    "sparkler": 1.0938,
+    "wave": 1.0938,
+    "call": 1.0938,
+    "talk": 1.0938,
+    "fan": 1.0938,
+    "lookup": 1.0938
+   },
+   "handR_palm": {
+    "bone": "hand_R",
+    "offset": [
+     0.0131,
+     0.0765,
+     -0.0037
+    ],
+    "gripAxis": [
+     -0.2756,
+     -0.0,
+     -0.9613
+    ],
+    "palmNormal": [
+     0.9613,
+     -0.0,
+     -0.2756
+    ]
+   },
+   "headTopOffset": {
+    "bone": "head",
+    "offset": [
+     0.0,
+     0.221,
+     0.004
+    ]
+   },
+   "bbox": {
+    "min": [
+     -0.386,
+     0.0,
+     -0.148
+    ],
+    "max": [
+     0.386,
+     1.75,
+     0.197
+    ]
+   },
+   "tints": {
+    "skin": "#e9c2a6",
+    "hair": "#1f1a1c",
+    "cloth_main": "#40507a",
+    "cloth_accent": "#c9b98f",
+    "cloth_dark": "#2a2a2e",
+    "wood_geta": "#b88a5a",
+    "face": "#ffffff"
+   }
+  },
+  "kid": {
+   "node": "npc_kid",
+   "mesh": "npc_kid_body",
+   "height": 1.206,
+   "headTop": 1.15,
+   "hipHeight": 0.5,
+   "tris": 4696,
+   "walkSpeed": 0.562,
+   "runSpeed": 2.6,
+   "rootScale": {
+    "idle": 0.625,
+    "walk": 0.625,
+    "run": 1.0,
+    "sparkler": 0.625,
+    "wave": 0.625,
+    "call": 0.625,
+    "talk": 0.625,
+    "fan": 0.625,
+    "lookup": 0.625
+   },
+   "handR_palm": {
+    "bone": "hand_R",
+    "offset": [
+     0.0083,
+     0.0486,
+     -0.0024
+    ],
+    "gripAxis": [
+     -0.2756,
+     -0.0,
+     -0.9613
+    ],
+    "palmNormal": [
+     0.9613,
+     -0.0,
+     -0.2756
+    ]
+   },
+   "headTopOffset": {
+    "bone": "head",
+    "offset": [
+     0.0,
+     0.2405,
+     0.004
+    ]
+   },
+   "bbox": {
+    "min": [
+     -0.232,
+     0.0,
+     -0.111
+    ],
+    "max": [
+     0.232,
+     1.206,
+     0.112
+    ]
+   },
+   "tints": {
+    "skin": "#f7d9c6",
+    "hair": "#4a3426",
+    "cloth_main": "#7cc3ea",
+    "cloth_accent": "#ffffff",
+    "cloth_dark": "#2d3b6b",
+    "wood_geta": "#d0a46e",
+    "face": "#ffffff"
+   }
+  },
+  "keeper": {
+   "node": "npc_keeper",
+   "mesh": "npc_keeper_body",
+   "height": 1.707,
+   "headTop": 1.7,
+   "hipHeight": 0.85,
+   "tris": 5204,
+   "walkSpeed": 0.956,
+   "runSpeed": 4.42,
+   "rootScale": {
+    "idle": 1.0625,
+    "walk": 1.0625,
+    "run": 1.7,
+    "sparkler": 1.0625,
+    "wave": 1.0625,
+    "call": 1.0625,
+    "talk": 1.0625,
+    "fan": 1.0625,
+    "lookup": 1.0625
+   },
+   "handR_palm": {
+    "bone": "hand_R",
+    "offset": [
+     0.0129,
+     0.0756,
+     -0.0037
+    ],
+    "gripAxis": [
+     -0.2756,
+     -0.0,
+     -0.9613
+    ],
+    "palmNormal": [
+     0.9613,
+     0.0,
+     -0.2756
+    ]
+   },
+   "headTopOffset": {
+    "bone": "head",
+    "offset": [
+     0.0,
+     0.2131,
+     0.004
+    ]
+   },
+   "bbox": {
+    "min": [
+     -0.372,
+     0.0,
+     -0.122
+    ],
+    "max": [
+     0.372,
+     1.707,
+     0.186
+    ]
+   },
+   "tints": {
+    "skin": "#e3b896",
+    "hair": "#24201f",
+    "cloth_main": "#d8423a",
+    "cloth_accent": "#f4efe4",
+    "cloth_dark": "#232a3a",
+    "cloth_shoe": "#2a2c33",
+    "face": "#ffffff"
+   }
+  },
+  "elder": {
+   "node": "npc_elder",
+   "mesh": "npc_elder_body",
+   "height": 1.529,
+   "headTop": 1.52,
+   "hipHeight": 0.76,
+   "tris": 5748,
+   "walkSpeed": 0.855,
+   "runSpeed": 3.952,
+   "rootScale": {
+    "idle": 0.95,
+    "walk": 0.95,
+    "run": 1.52,
+    "sparkler": 0.95,
+    "wave": 0.95,
+    "call": 0.95,
+    "talk": 0.95,
+    "fan": 0.95,
+    "lookup": 0.95
+   },
+   "handR_palm": {
+    "bone": "hand_R",
+    "offset": [
+     0.0109,
+     0.0639,
+     -0.0031
+    ],
+    "gripAxis": [
+     -0.2756,
+     0.0,
+     -0.9613
+    ],
+    "palmNormal": [
+     0.9613,
+     0.0,
+     -0.2756
+    ]
+   },
+   "headTopOffset": {
+    "bone": "head",
+    "offset": [
+     0.0,
+     0.2026,
+     0.004
+    ]
+   },
+   "bbox": {
+    "min": [
+     -0.341,
+     0.0,
+     -0.151
+    ],
+    "max": [
+     0.319,
+     1.529,
+     0.313
+    ]
+   },
+   "tints": {
+    "skin": "#efcfb8",
+    "hair": "#bdb8b4",
+    "cloth_main": "#cfc6e6",
+    "cloth_accent": "#6a4a7a",
+    "cloth_dark": "#3a3040",
+    "wood_geta": "#b08458",
+    "face": "#ffffff"
+   }
+  }
+ },
+ "clips": {
+  "idle": {
+   "frames": 120,
+   "duration": 4.0,
+   "loop": true,
+   "fps": 30,
+   "contacts": {
+    "L": [
+     0.0,
+     4.0
+    ],
+    "R": [
+     0.0,
+     4.0
+    ]
+   },
+   "rootZ": [
+    -0.0162,
+    -0.0162
+   ],
+   "rootX": [
+    -0.014,
+    0.014
+   ],
+   "refSkeleton": "woman",
+   "refHip": 0.8
+  },
+  "walk": {
+   "frames": 30,
+   "duration": 1.0,
+   "loop": true,
+   "fps": 30,
+   "speed": 0.9,
+   "stride": 0.9,
+   "contacts": {
+    "L": [
+     0.0,
+     0.56
+    ],
+    "R": [
+     0.5,
+     0.06
+    ]
+   },
+   "events": {
+    "strikeL": 0.0,
+    "toeOffL": 0.56,
+    "strikeR": 0.5,
+    "toeOffR": 0.06
+   },
+   "rootZ": [
+    -0.0445,
+    -0.0199
+   ],
+   "rootX": [
+    -0.011,
+    0.011
+   ],
+   "refSkeleton": "woman",
+   "refHip": 0.8
+  },
+  "run": {
+   "frames": 14,
+   "duration": 0.4667,
+   "loop": true,
+   "fps": 30,
+   "speed": 2.6,
+   "stride": 1.2133,
+   "contacts": {
+    "L": [
+     0.0,
+     0.1307
+    ],
+    "R": [
+     0.2333,
+     0.364
+    ]
+   },
+   "events": {
+    "strikeL": 0.0,
+    "toeOffL": 0.1307,
+    "strikeR": 0.2333,
+    "toeOffR": 0.364
+   },
+   "rootZ": [
+    -0.0518,
+    -0.0207
+   ],
+   "rootX": [
+    -0.008,
+    0.008
+   ],
+   "refSkeleton": "kid",
+   "refHip": 0.5
+  },
+  "sparkler": {
+   "frames": 30,
+   "duration": 1.0,
+   "loop": true,
+   "fps": 30,
+   "speed": 0.9,
+   "stride": 0.9,
+   "contacts": {
+    "L": [
+     0.0,
+     0.56
+    ],
+    "R": [
+     0.5,
+     0.06
+    ]
+   },
+   "events": {
+    "strikeL": 0.0,
+    "toeOffL": 0.56,
+    "strikeR": 0.5,
+    "toeOffR": 0.06
+   },
+   "rootZ": [
+    -0.0445,
+    -0.0199
+   ],
+   "rootX": [
+    -0.011,
+    0.011
+   ],
+   "refSkeleton": "woman",
+   "refHip": 0.8
+  },
+  "wave": {
+   "frames": 60,
+   "duration": 2.0,
+   "loop": true,
+   "fps": 30,
+   "contacts": {
+    "L": [
+     0.0,
+     2.0
+    ],
+    "R": [
+     0.0,
+     2.0
+    ]
+   },
+   "rootZ": [
+    -0.0161,
+    -0.0161
+   ],
+   "rootX": [
+    -0.0084,
+    0.0084
+   ],
+   "refSkeleton": "woman",
+   "refHip": 0.8
+  },
+  "call": {
+   "frames": 90,
+   "duration": 3.0,
+   "loop": true,
+   "fps": 30,
+   "contacts": {
+    "L": [
+     0.0,
+     3.0
+    ],
+    "R": [
+     0.0,
+     3.0
+    ]
+   },
+   "rootZ": [
+    -0.0161,
+    -0.0161
+   ],
+   "rootX": [
+    -0.007,
+    0.007
+   ],
+   "refSkeleton": "woman",
+   "refHip": 0.8
+  },
+  "talk": {
+   "frames": 120,
+   "duration": 4.0,
+   "loop": true,
+   "fps": 30,
+   "contacts": {
+    "L": [
+     0.0,
+     4.0
+    ],
+    "R": [
+     0.0,
+     4.0
+    ]
+   },
+   "rootZ": [
+    -0.0161,
+    -0.0161
+   ],
+   "rootX": [
+    -0.0098,
+    0.0098
+   ],
+   "refSkeleton": "woman",
+   "refHip": 0.8
+  },
+  "fan": {
+   "frames": 120,
+   "duration": 4.0,
+   "loop": true,
+   "fps": 30,
+   "contacts": {
+    "L": [
+     0.0,
+     4.0
+    ],
+    "R": [
+     0.0,
+     4.0
+    ]
+   },
+   "rootZ": [
+    -0.0162,
+    -0.0162
+   ],
+   "rootX": [
+    -0.014,
+    0.014
+   ],
+   "refSkeleton": "woman",
+   "refHip": 0.8
+  },
+  "lookup": {
+   "frames": 120,
+   "duration": 4.0,
+   "loop": true,
+   "fps": 30,
+   "contacts": {
+    "L": [
+     0.0,
+     4.0
+    ],
+    "R": [
+     0.0,
+     4.0
+    ]
+   },
+   "rootZ": [
+    -0.0161,
+    -0.0161
+   ],
+   "rootX": [
+    -0.0084,
+    0.0084
+   ],
+   "refSkeleton": "woman",
+   "refHip": 0.8
+  }
+ },
+ "reimport": {
+  "objects": 15,
+  "meshes": [
+   {
+    "name": "Icosphere",
+    "tris": 80,
+    "materials": []
+   },
+   {
+    "name": "Icosphere.001",
+    "tris": 80,
+    "materials": []
+   },
+   {
+    "name": "Icosphere.002",
+    "tris": 80,
+    "materials": []
+   },
+   {
+    "name": "Icosphere.003",
+    "tris": 80,
+    "materials": []
+   },
+   {
+    "name": "Icosphere.004",
+    "tris": 80,
+    "materials": []
+   },
+   {
+    "name": "npc_elder_body.001",
+    "tris": 5748,
+    "materials": [
+     "skin.001",
+     "face.001",
+     "hair.001",
+     "cloth_main.001",
+     "cloth_accent.001",
+     "cloth_dark.001",
+     "wood_geta.001"
+    ]
+   },
+   {
+    "name": "npc_keeper_body.001",
+    "tris": 5204,
+    "materials": [
+     "skin.001",
+     "face.001",
+     "hair.001",
+     "cloth_main.001",
+     "cloth_accent.001",
+     "cloth_dark.001",
+     "cloth_shoe.001"
+    ]
+   },
+   {
+    "name": "npc_kid_body.001",
+    "tris": 4696,
+    "materials": [
+     "skin.001",
+     "face.001",
+     "hair.001",
+     "cloth_main.001",
+     "cloth_accent.001",
+     "cloth_dark.001",
+     "wood_geta.001"
+    ]
+   },
+   {
+    "name": "npc_man_body.001",
+    "tris": 5356,
+    "materials": [
+     "skin.001",
+     "face.001",
+     "hair.001",
+     "cloth_main.001",
+     "cloth_accent.001",
+     "cloth_dark.001",
+     "wood_geta.001"
+    ]
+   },
+   {
+    "name": "npc_woman_body.001",
+    "tris": 6298,
+    "materials": [
+     "skin.001",
+     "face.001",
+     "hair.001",
+     "cloth_main.001",
+     "cloth_accent.001",
+     "cloth_dark.001",
+     "wood_geta.001"
+    ]
+   }
+  ],
+  "armatures": [
+   {
+    "name": "npc_elder.001",
+    "bones": 22
+   },
+   {
+    "name": "npc_keeper.001",
+    "bones": 22
+   },
+   {
+    "name": "npc_kid.001",
+    "bones": 22
+   },
+   {
+    "name": "npc_man.001",
+    "bones": 22
+   },
+   {
+    "name": "npc_woman.001",
+    "bones": 22
+   }
+  ],
+  "actions": [
+   "call.001",
+   "fan.001",
+   "idle.001",
+   "lookup.001",
+   "run.001",
+   "sparkler.001",
+   "talk.001",
+   "walk.001",
+   "wave.001"
+  ]
+ },
+ "buildSeconds": 5.1
+}
