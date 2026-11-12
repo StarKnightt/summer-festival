@@ -155,12 +155,15 @@ function toonColor(o: ToonOpts, shadowNode: any) {
   // Whites shade to a light blue-grey, never holes.
   const whiteK = smoothstep(0.35, 0.75, al).mul(float(1).sub(smoothstep(0.12, 0.3, chroma)));
   let cSh: any = base.mul(mix(U.shadowTint, mix(vec3(0.37, 0.4, 0.52), U.shadowTint.mul(1.3), U.night), whiteK));
+  // Skin never goes grey in shade: its shadow is a warm rose-peach (as in cel animation), a
+  // little cooler at night.
+  if (o.skin) cSh = base.mul(mix(U.shadowTint, vec3(0.9, 0.68, 0.66), float(0.68).sub(U.night.mul(0.28))));
   // Painted key: lit faces take the light's hue, shade goes cool.
   const kh = U.keyHue.mul(o.skin ? 0.0 : 1.0).mul(float(1).sub(bright.mul(0.8)));
   const keyCol = mix(U.shadowTint.mul(al.mul(1.8).add(0.07)), U.sunColor.mul(al.mul(1.9).add(0.05)), smoothstep(0.04, 0.42, t));
   cLit = mix(cLit, keyCol, kh);
   cSh = mix(cSh, U.shadowTint.mul(al.mul(1.6).add(0.07)), kh.mul(0.5));
-  const cDk = cSh.mul(vec3(0.7, 0.72, 0.84));
+  const cDk = cSh.mul(o.skin ? vec3(0.88, 0.8, 0.82) : vec3(0.7, 0.72, 0.84));
   let col: any = mix(cDk, cSh, max(midS, float(1).sub(sv)));
   col = mix(col, cLit, lit);
   col = col.add(base.mul(U.mid).mul(0.1).mul(N.y.mul(0.5).add(0.5)));

@@ -1,0 +1,139 @@
+{
+ "note": "Heroine rig (tools/blender/heroine): three spine bones, toe bones, two-bone fingers. Keys of `bones` are Mixamo bone names without the mixamorig prefix; values are this rig's bones. `blend`: target bone -> [second Mixamo bone, weight] mixed into its rotation. `hand_side`: hand -> [index knuckle bone, pinky knuckle bone] (gives the palm direction). `legs`/`arms`: the chains the foot-contact and arm-clearance passes rebuild. Add `sole` at run time with retarget.sole_from_mesh().",
+ "bones": {
+  "Hips": "hips",
+  "Spine": "spine",
+  "Neck": "neck",
+  "Head": "head",
+  "Spine1": "spine1",
+  "Spine2": "spine2",
+  "LeftShoulder": "shoulder_L",
+  "LeftArm": "upperarm_L",
+  "LeftForeArm": "forearm_L",
+  "LeftHand": "hand_L",
+  "LeftUpLeg": "thigh_L",
+  "LeftLeg": "shin_L",
+  "LeftFoot": "foot_L",
+  "LeftToeBase": "toe_L",
+  "LeftHandThumb1": "finger_thumb_1_L",
+  "LeftHandThumb2": "finger_thumb_2_L",
+  "LeftHandIndex1": "finger_index_1_L",
+  "LeftHandIndex2": "finger_index_2_L",
+  "LeftHandMiddle1": "finger_middle_1_L",
+  "LeftHandMiddle2": "finger_middle_2_L",
+  "LeftHandRing1": "finger_ring_1_L",
+  "LeftHandRing2": "finger_ring_2_L",
+  "LeftHandPinky1": "finger_pinky_1_L",
+  "LeftHandPinky2": "finger_pinky_2_L",
+  "RightShoulder": "shoulder_R",
+  "RightArm": "upperarm_R",
+  "RightForeArm": "forearm_R",
+  "RightHand": "hand_R",
+  "RightUpLeg": "thigh_R",
+  "RightLeg": "shin_R",
+  "RightFoot": "foot_R",
+  "RightToeBase": "toe_R",
+  "RightHandThumb1": "finger_thumb_1_R",
+  "RightHandThumb2": "finger_thumb_2_R",
+  "RightHandIndex1": "finger_index_1_R",
+  "RightHandIndex2": "finger_index_2_R",
+  "RightHandMiddle1": "finger_middle_1_R",
+  "RightHandMiddle2": "finger_middle_2_R",
+  "RightHandRing1": "finger_ring_1_R",
+  "RightHandRing2": "finger_ring_2_R",
+  "RightHandPinky1": "finger_pinky_1_R",
+  "RightHandPinky2": "finger_pinky_2_R"
+ },
+ "blend": {
+  "finger_thumb_2_L": [
+   "LeftHandThumb3",
+   0.5
+  ],
+  "finger_index_2_L": [
+   "LeftHandIndex3",
+   0.5
+  ],
+  "finger_middle_2_L": [
+   "LeftHandMiddle3",
+   0.5
+  ],
+  "finger_ring_2_L": [
+   "LeftHandRing3",
+   0.5
+  ],
+  "finger_pinky_2_L": [
+   "LeftHandPinky3",
+   0.5
+  ],
+  "finger_thumb_2_R": [
+   "RightHandThumb3",
+   0.5
+  ],
+  "finger_index_2_R": [
+   "RightHandIndex3",
+   0.5
+  ],
+  "finger_middle_2_R": [
+   "RightHandMiddle3",
+   0.5
+  ],
+  "finger_ring_2_R": [
+   "RightHandRing3",
+   0.5
+  ],
+  "finger_pinky_2_R": [
+   "RightHandPinky3",
+   0.5
+  ]
+ },
+ "hand_side": {
+  "hand_L": [
+   "finger_index_1_L",
+   "finger_pinky_1_L"
+  ],
+  "hand_R": [
+   "finger_index_1_R",
+   "finger_pinky_1_R"
+  ]
+ },
+ "legs": {
+  "L": {
+   "thigh": "thigh_L",
+   "shin": "shin_L",
+   "foot": "foot_L",
+   "toe": "toe_L",
+   "src": [
+    "LeftUpLeg",
+    "LeftLeg",
+    "LeftFoot",
+    "LeftToeBase"
+   ]
+  },
+  "R": {
+   "thigh": "thigh_R",
+   "shin": "shin_R",
+   "foot": "foot_R",
+   "toe": "toe_R",
+   "src": [
+    "RightUpLeg",
+    "RightLeg",
+    "RightFoot",
+    "RightToeBase"
+   ]
+  }
+ },
+ "arms": {
+  "L": {
+   "upper": "upperarm_L",
+   "fore": "forearm_L",
+   "hand": "hand_L"
+  },
+  "R": {
+   "upper": "upperarm_R",
+   "fore": "forearm_R",
+   "hand": "hand_R"
+  }
+ },
+ "hips": "hips",
+ "ground": 0.0
+}

@@ -19,6 +19,8 @@ const pickCol = (not?: RGB): RGB => {
   do c = PALETTE[Math.floor(Math.random() * PALETTE.length)]; while (c === not);
   return c;
 };
+/** Festival paper scraps: white, cream, faded red and blue, lottery-slip yellow. */
+const SCRAP: RGB[] = [[0.96, 0.94, 0.9], [0.95, 0.88, 0.74], [0.9, 0.45, 0.42], [0.55, 0.7, 0.9], [0.97, 0.85, 0.45]];
 const PALETTE: RGB[] = [
   [1.0, 0.24, 0.1], // vermilion
   [1.0, 0.66, 0.16], // gold
@@ -37,7 +39,7 @@ const PALETTE: RGB[] = [
 export class Fx {
   readonly group = new THREE.Group();
   readonly glow = new Particles(32000, "glow", true, 4);
-  readonly petals = new Particles(220, "petal", false);
+  readonly petals = new Particles(360, "petal", false);
   readonly puffs = new Particles(260, "puff", false);
   private flash = new THREE.Color(0, 0, 0);
   private flashK = 0;
@@ -236,13 +238,23 @@ export class Fx {
   private updateSteam(dt: number) {
     this.steamT -= dt;
     if (this.steamT > 0) return;
-    this.steamT = 0.12;
+    this.steamT = 0.16;
     for (const s of this.steamPoints) {
-      this.puffs.spawn({ x: s.x + rand(-0.15, 0.15), y: s.y + 0.05, z: s.z + rand(-0.15, 0.15), vx: rand(-0.05, 0.05), vy: rand(0.35, 0.55), vz: rand(-0.05, 0.05), r: 1, g: 0.98, b: 0.95, a: 0.22, size: 0.18, grow: 0.35, life: rand(1.8, 2.6), drag: 0.6, fade: 2 });
+      this.puffs.spawn({ x: s.x + rand(-0.15, 0.15), y: s.y + 0.05, z: s.z + rand(-0.15, 0.15), vx: rand(-0.06, 0.06), vy: rand(0.28, 0.42), vz: rand(-0.06, 0.06), r: 1, g: 0.98, b: 0.95, a: 0.07, size: 0.07, grow: 0.11, life: rand(0.9, 1.4), drag: 0.9, fade: 2 });
     }
   }
 
+  private scrapT = 0;
   private updatePetals(dt: number, near: THREE.Vector3, wind: THREE.Vector2, windK: number) {
+    // In a gust, scraps of festival paper (wrappers, a lottery slip, a torn flyer) skitter down
+    // the street low over the paving, tumbling.
+    this.scrapT -= dt * Math.max(0, windK - 0.42) * 9;
+    if (this.scrapT <= 0 && near.z > -100) {
+      this.scrapT = 1;
+      const c = SCRAP[Math.floor(Math.random() * SCRAP.length)];
+      const x = near.x + rand(-3.5, 3.5) - wind.x * 5, z = near.z + rand(-6, 6) - wind.y * 5;
+      this.petals.spawn({ x: THREE.MathUtils.clamp(x, -4.2, 4.2), y: rand(0.15, 1.2), z, vx: wind.x * 2.2, vy: rand(0.1, 0.5), vz: wind.y * 2.2, r: c[0], g: c[1], b: c[2], size: rand(0.06, 0.1), life: rand(3.5, 6), drag: 0.7, grav: 0.35, spin: rand(-7, 7), fade: 2 });
+    }
     this.petalT -= dt * (0.6 + windK * 2.2);
     if (this.petalT > 0 || near.z < -100) return;
     this.petalT = 0.09;

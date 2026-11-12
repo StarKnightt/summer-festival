@@ -1,3 +1,4 @@
+import { Locomotion, Layers, LookIK, ccd, type ClipInfo } from "./animsys";
 import * as THREE from "three/webgpu";
 import { loadGLB } from "../world/stalls";
 import { toonify } from "../render/toonify";
@@ -14,7 +15,12 @@ import { Springs } from "./springs";
  */
 export type Pose = "none" | "crouch" | "reach" | "lookup";
 
-const CLIP_SPEED: Record<string, number> = { walk: 1.1, run: 2.8 };
+/** Natural head range on top of the clip: ~70° either side, less up and down. */
+const HEAD_YAW = 1.22;
+const HEAD_UP = 0.45;
+const HEAD_DOWN = 0.4;
+/** Poses held by weight over the locomotion layer. */
+const POSES = ["crouch", "reach", "lookup"] as const;
 const damp = (a: number, b: number, k: number, dt: number) => b + (a - b) * Math.exp(-k * dt);
 
 export class Heroine {
@@ -26,6 +32,16 @@ export class Heroine {
   private blinkMeshes: { mesh: THREE.Mesh; idx: number }[] = [];
   private smileMeshes: { mesh: THREE.Mesh; idx: number }[] = [];
   private bones = new Map<string, THREE.Bone>();
+  /**
+   * Bones that get procedural offsets on top of the clips (head and neck look, spring chains),
+   * with their pure animated pose from the last frame. The mixer skips writing a bone whose
+   * blended value hasn't changed (static poses, or bones with no track), so without restoring
+   * this first the offsets would stack up frame after frame: the head spun round or sank into
+   * the body after a held pose.
+   */
+  /** Head bone's rest (bind) transform in her root frame: head-worn items are placed against it. */
+  private headRest: THREE.Matrix4 | null = null;
+  private procBones: { bone: THREE.Bone; q: THREE.Quaternion; p: THREE.Vector3; s: THREE.Vector3 }[] = [];
   private placeholder: THREE.Group | null = null;
 
   position = new THREE.Vector3();
@@ -33,6 +49,15 @@ export class Heroine {
   speed = 0;
   pose: Pose = "none";
   private poseW = 0;
+  private loco: Locomotion | null = null;
+  private layers: Layers | null = null;
+  private lookIK: LookIK | null = null;
+  private lookW = 0;
+  private glanceT = 2;
+  private glance = 0;
+  /** A point her right hand reaches for (IK over the reach pose); null lets the arm be. */
+  reachTarget: THREE.Vector3 | null = null;
+  private reachW = 0;
   private oneShot: THREE.AnimationAction | null = null;
   private blinkT = 2;
   private blinkK = 0;
@@ -45,6 +70,8 @@ export class Heroine {
   private lookPitch = 0;
   private idleLookT = 0;
   private idleLookYaw = 0;
+  /** Body turn (rad) she wants this frame to look at something beyond her neck's range; the player applies it. */
+  bodyTurn = 0;
   meta: any = {};
 
   async load(url: string): Promise<void> {
@@ -68,21 +95,17 @@ export class Heroine {
     // glTF faces +Z; our heading 0 = +Z too.
     this.model = scene;
     this.root.add(scene);
+    this.root.updateMatrixWorld(true);
+    const hb = this.bones.get("head");
+    if (hb) this.headRest = this.root.matrixWorld.clone().invert().multiply(hb.matrixWorld);
     const clips: THREE.AnimationClip[] = (scene as any).userData.animations ?? [];
     this.mixer = new THREE.AnimationMixer(scene);
-    for (const c of clips) {
-      const a = this.mixer.clipAction(c);
-      if (["throw", "wave"].includes(c.name)) {
-        a.setLoop(THREE.LoopOnce, 1);
-        a.clampWhenFinished = true;
-      }
-      this.actions.set(c.name, a);
-    }
-    for (const n of ["idle", "walk", "run"]) {
-      const a = this.actions.get(n);
-      if (a) { a.play(); a.setEffectiveWeight(n === "idle" ? 1 : 0); }
-    }
-    for (const n of ["crouch", "reach", "lookup"]) {
+    // Base clips; the additive ones (add_*) become layers below.
+    for (const c of clips) if (!c.name.startsWith("add_")) this.actions.set(c.name, this.mixer.clipAction(c));
+    const info: Record<string, ClipInfo> = (scene.userData?.clips as any) ?? {};
+    this.loco = new Locomotion(this.actions, info);
+    this.layers = new Layers(this.mixer, clips, (scene.userData?.additiveReference as string) ?? "add_ref");
+    for (const n of POSES) {
       const a = this.actions.get(n);
       if (a) { a.play(); a.setEffectiveWeight(0); }
     }
@@ -101,6 +124,12 @@ export class Heroine {
       { prefix: "skirtF", stiff: 80, gain: 0.4, wind: 0.4, limit: 0.25 },
       { prefix: "skirtB", stiff: 80, gain: 0.4, wind: 0.4, limit: 0.25 },
     ]);
+    const proc = new Set<THREE.Bone>();
+    for (const n of ["head", "neck"]) { const b = this.bones.get(n); if (b) proc.add(b); }
+    for (const b of this.springs.bones) proc.add(b);
+    for (const n of ["spine2", "upperarm_R", "forearm_R"]) { const b = this.bones.get(n); if (b) proc.add(b); }
+    this.lookIK = new LookIK(this.bones, this.headRest);
+    this.procBones = [...proc].map((bone) => ({ bone, q: bone.quaternion.clone(), p: bone.position.clone(), s: bone.scale.clone() }));
     console.log(`[game] heroine: ${clips.length} clips (${clips.map((c) => c.name).join(", ")}), ${this.springs.count} spring bones, blink=${this.blinkMeshes.length > 0}`);
   }
 
@@ -143,6 +172,16 @@ export class Heroine {
   hold(part: "head" | "hand_R" | "hand_L", obj: THREE.Object3D, offset: THREE.Vector3, rot = new THREE.Euler()): void {
     const re = part === "head" ? /^(head|DEF[-_.]?head|mixamorig:?Head)$/i : part === "hand_R" ? /^(hand[._]?R|RightHand|mixamorig:?RightHand|DEF[-_.]?hand[._]R)$/i : /^(hand[._]?L|LeftHand|mixamorig:?LeftHand|DEF[-_.]?hand[._]L)$/i;
     const b = this.findBone(re);
+    if (part === "head" && b && this.headRest) {
+      // Against the rest pose, not wherever the head happens to be turned right now: a mask put on
+      // while she glanced sideways used to end up over her face.
+      const restPos = new THREE.Vector3().setFromMatrixPosition(this.headRest);
+      const m = new THREE.Matrix4().compose(restPos.add(offset), new THREE.Quaternion().setFromEuler(rot), new THREE.Vector3(1, 1, 1));
+      m.premultiply(this.headRest.clone().invert());
+      m.decompose(obj.position, obj.quaternion, obj.scale);
+      b.add(obj);
+      return;
+    }
     this.root.position.copy(this.position);
     this.root.rotation.y = this.heading;
     this.root.updateMatrixWorld(true);
@@ -156,9 +195,14 @@ export class Heroine {
 
   setPose(p: Pose): void { this.pose = p; }
 
-  play(name: "throw" | "wave"): number {
+  has(name: string): boolean { return this.actions.has(name); }
+
+  /** Plays a clip once over the base pose (throw, wave, bow, eat, cheer, ...); returns its length. */
+  play(name: string): number {
     const a = this.actions.get(name);
     if (!a) return 0.8;
+    a.setLoop(THREE.LoopOnce, 1);
+    a.clampWhenFinished = true;
     this.oneShot?.fadeOut(0.2);
     a.reset();
     a.setEffectiveWeight(1);
@@ -176,27 +220,28 @@ export class Heroine {
       if (this.placeholder) this.placeholder.position.y = Math.sin(performance.now() * 0.004) * 0.01 * (1 + this.speed);
       return;
     }
-    // Locomotion weights.
+    // Layers by weight: a held pose and a one-shot both take from the locomotion layer.
     const s = this.speed;
-    const wWalk = THREE.MathUtils.clamp(s / CLIP_SPEED.walk, 0, 1) * (1 - THREE.MathUtils.clamp((s - CLIP_SPEED.walk) / (CLIP_SPEED.run - CLIP_SPEED.walk), 0, 1));
-    const wRun = THREE.MathUtils.clamp((s - CLIP_SPEED.walk) / (CLIP_SPEED.run - CLIP_SPEED.walk), 0, 1);
-    const wIdle = 1 - THREE.MathUtils.clamp(s / 0.5, 0, 1);
     this.poseW = damp(this.poseW, this.pose === "none" ? 0 : 1, 5, dt);
     const shot = this.oneShot && this.oneShot.isRunning() ? Math.min(1, this.oneShot.getEffectiveWeight()) : 0;
     if (this.oneShot && !this.oneShot.isRunning()) { this.oneShot.fadeOut(0.3); this.oneShot = null; }
-    const loco = (1 - this.poseW) * (1 - shot);
-    const walk = this.actions.get("walk"), run = this.actions.get("run"), idle = this.actions.get("idle");
-    const sum = Math.max(1e-3, wWalk + wRun + wIdle);
-    idle?.setEffectiveWeight((wIdle / sum) * loco);
-    walk?.setEffectiveWeight((wWalk / sum) * loco);
-    run?.setEffectiveWeight((wRun / sum) * loco);
-    // Match the stride to the ground speed (walk and run phase-locked).
-    if (walk && run) {
-      walk.timeScale = s > 0.05 ? THREE.MathUtils.clamp(s / CLIP_SPEED.walk, 0.6, 1.6) : 1;
-      run.timeScale = s > 0.05 ? THREE.MathUtils.clamp(s / CLIP_SPEED.run, 0.6, 1.4) : 1;
-    }
-    for (const p of ["crouch", "reach", "lookup"] as const) this.actions.get(p)?.setEffectiveWeight(this.pose === p ? this.poseW * (1 - shot) : 0);
+    this.loco?.update(dt, s, (1 - this.poseW) * (1 - shot));
+    for (const p of POSES) this.actions.get(p)?.setEffectiveWeight(this.pose === p ? this.poseW * (1 - shot) : 0);
+    // Additive glances to either side while she strolls or stands (not while looking at
+    // something, running, or busy).
+    let side = 0;
+    if (!this.lookTarget && this.pose === "none" && shot < 0.1 && s < (this.loco?.vWalk ?? 1) * 1.3) {
+      this.glanceT -= dt;
+      if (this.glanceT <= 0) {
+        this.glanceT = 2.2 + Math.random() * 3.6;
+        this.glance = Math.random() < 0.4 ? 0 : (Math.random() < 0.5 ? -1 : 1) * (0.35 + Math.random() * 0.4);
+      }
+      side = this.glance;
+    } else this.glanceT = 0.8;
+    this.layers?.look(dt, side);
+    for (const b of this.procBones) { b.bone.quaternion.copy(b.q); b.bone.position.copy(b.p); b.bone.scale.copy(b.s); }
     this.mixer.update(dt);
+    for (const b of this.procBones) { b.q.copy(b.bone.quaternion); b.p.copy(b.bone.position); b.s.copy(b.bone.scale); }
     this.root.updateMatrixWorld(true);
 
     this.updateLook(dt);
@@ -204,43 +249,49 @@ export class Heroine {
     this.springs?.update(dt, wind, windK);
   }
 
+  /** A small nod or head shake on top of whatever she's doing. */
+  nod(): void { this.layers?.once("nod"); }
+  shake(): void { this.layers?.once("shake"); }
+
+  /** Where her face points right now, in world space. */
+  faceDir(): THREE.Vector3 { return this.lookIK?.forward() ?? new THREE.Vector3(Math.sin(this.heading), 0, Math.cos(this.heading)); }
+
+  /** The head's facing relative to her body right now (radians; for tests). */
+  get headYaw(): number { return this.lookIK?.yawNow(this.heading) ?? 0; }
+
   private updateLook(dt: number) {
-    const head = this.bones.get("head"), neck = this.bones.get("neck");
+    const head = this.bones.get("head");
     if (!head) return;
-    let yaw = 0, pitch = 0;
+    let yaw = 0, pitch = 0, want = 0;
+    this.bodyTurn = 0;
     if (this.lookTarget) {
       const hp = head.getWorldPosition(new THREE.Vector3());
       const d = this.lookTarget.clone().sub(hp);
       const local = Math.atan2(d.x, d.z) - this.heading;
       yaw = Math.atan2(Math.sin(local), Math.cos(local));
       pitch = Math.atan2(d.y, Math.hypot(d.x, d.z));
-      if (Math.abs(yaw) > 1.7) { yaw = 0; pitch = 0; }
-    } else if (this.speed < 0.2 && this.pose === "none") {
-      // Standing still: now and then she glances around.
-      this.idleLookT -= dt;
-      if (this.idleLookT <= 0) {
-        this.idleLookT = 2.5 + Math.random() * 3.5;
-        this.idleLookYaw = Math.random() < 0.35 ? 0 : (Math.random() * 2 - 1) * 0.5;
+      want = 1;
+      // Further round than a neck turns: she turns her body (when standing), never her head past it.
+      if (Math.abs(yaw) > HEAD_YAW && this.speed < 0.2 && this.pose === "none") {
+        this.bodyTurn = yaw - Math.sign(yaw) * HEAD_YAW * 0.8;
       }
-      yaw = this.idleLookYaw;
+      // Behind her: she doesn't try.
+      if (Math.abs(yaw) > 2.4) { yaw = 0; pitch = 0; want = 0; }
     }
-    yaw = THREE.MathUtils.clamp(yaw, -0.9, 0.9);
-    pitch = THREE.MathUtils.clamp(pitch, -0.35, 0.5);
+    yaw = THREE.MathUtils.clamp(yaw, -HEAD_YAW, HEAD_YAW);
+    pitch = THREE.MathUtils.clamp(pitch, -HEAD_DOWN, HEAD_UP);
     this.lookYaw = damp(this.lookYaw, yaw, 3.2, dt);
     this.lookPitch = damp(this.lookPitch, pitch, 3.2, dt);
-    // World-space turn about up, and a nod about her right axis, split over neck and head.
-    const up = new THREE.Vector3(0, 1, 0);
-    const right = new THREE.Vector3(Math.cos(this.heading), 0, -Math.sin(this.heading));
-    for (const [b, k] of [[neck, 0.4], [head, 0.6]] as const) {
-      if (!b) continue;
-      const qw = b.getWorldQuaternion(new THREE.Quaternion());
-      const q = new THREE.Quaternion().setFromAxisAngle(up, this.lookYaw * k).multiply(new THREE.Quaternion().setFromAxisAngle(right, -this.lookPitch * k));
-      qw.premultiply(q);
-      const qp = b.parent!.getWorldQuaternion(new THREE.Quaternion()).invert();
-      b.quaternion.copy(qp.multiply(qw));
-      b.updateMatrixWorld(true);
-    }
+    this.lookW = damp(this.lookW, want, 3, dt);
+    // IK down the upper spine, neck and head, each held to its own limit from the clip's pose.
+    this.lookIK?.solve(this.heading, this.lookYaw, this.lookPitch, this.lookW);
+    // Right hand to a point (CCD over upper arm and forearm), on top of the reach pose.
+    this.reachW = damp(this.reachW, this.reachTarget ? 1 : 0, 5, dt);
+    const ua = this.bones.get("upperarm_R"), fa = this.bones.get("forearm_R"), hand = this.bones.get("hand_R");
+    if (this.reachTarget && ua && fa && hand) this.reachGoal.copy(this.reachTarget);
+    if (this.reachW > 0.01 && ua && fa && hand) ccd([fa, ua], hand, this.reachGoal, [1.9, 1.5], this.reachW, 8);
   }
+  private reachGoal = new THREE.Vector3();
 
   private updateFace(dt: number) {
     this.blinkT -= dt;
@@ -257,4 +308,19 @@ export class Heroine {
   }
 
   resetSprings(): void { this.springs?.reset(); }
+
+  /** Back to plain idle/walk after a task: no held pose, one-shots faded out, head looking ahead. */
+  resetPose(): void {
+    this.pose = "none";
+    this.lookTarget = null;
+    this.reachTarget = null;
+    this.bodyTurn = 0;
+    this.smile = 0;
+    this.root.visible = true;
+    if (this.oneShot) { this.oneShot.fadeOut(0.3); this.oneShot = null; }
+    for (const [n, a] of this.actions) {
+      if (n === "idle" || n === "walk" || n === "run" || (POSES as readonly string[]).includes(n)) continue;
+      if (!a.isRunning()) { a.stop(); a.setEffectiveWeight(0); }
+    }
+  }
 }

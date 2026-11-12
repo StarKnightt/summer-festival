@@ -234,13 +234,21 @@ export class Goldfish extends MiniGame {
   end(): void {
     this.poi.removeFromParent();
     this.c.game.her.root.visible = true;
-    if (this.caught && this.tub.fish.includes(this.caught)) this.caught.g.rotation.z = 0;
+    if (this.caught && this.tub.fish.includes(this.caught)) {
+      // Stepped away with a fish on the paper: it slips back into the water.
+      const f = this.caught;
+      f.g.rotation.z = 0;
+      f.g.position.y = this.waterY - (this.tub.mesh.getWorldPosition(new THREE.Vector3()).y) - 0.01;
+      this.caught = null;
+    }
     this.c.game.input.captureMouse = false;
   }
 }
 
 /** The keeper bags the fish: she carries it in a little water bag from here on. */
 export function goldfishBag(game: { her: any; carry: THREE.Object3D[] }): void {
+  // One bag is enough to carry, however many she scoops.
+  if (game.carry.some((o) => o.name === "goldfish_bag")) return;
   const bag = new THREE.Group();
   bag.name = "goldfish_bag";
   const water = new THREE.Mesh(new THREE.SphereGeometry(0.055, 16, 12), new THREE.MeshBasicNodeMaterial({ color: "#bfe6f2", transparent: true, opacity: 0.35, depthWrite: false }));

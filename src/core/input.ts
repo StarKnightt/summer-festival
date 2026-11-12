@@ -1,4 +1,8 @@
-/** Keyboard + mouse state. Drag (any button) orbits the camera; the wheel zooms a little. */
+/**
+ * Keyboard + mouse state. A click on the canvas locks the pointer, and the mouse then looks
+ * around freely until Esc releases it; dragging still orbits when unlocked. Mini-games take
+ * the cursor back (captureMouse), which releases the lock. The wheel zooms a little.
+ */
 export class Input {
   readonly keys = new Set<string>();
   private pressed = new Set<string>();
@@ -14,8 +18,16 @@ export class Input {
   clicked = false;
   released = false;
   private dragging = false;
-  /** True while a mini-game owns the mouse (no camera drag). */
-  captureMouse = false;
+  private capture = false;
+  /** True while a mini-game owns the mouse (no camera look; the pointer lock is released). */
+  get captureMouse(): boolean { return this.capture; }
+  set captureMouse(v: boolean) {
+    this.capture = v;
+    if (v && this.locked) document.exitPointerLock();
+  }
+  /** Off until play begins (the title card needs its cursor). */
+  lockEnabled = false;
+  get locked(): boolean { return document.pointerLockElement === this.el; }
 
   constructor(private el: HTMLElement) {
     addEventListener("keydown", (e) => {
@@ -30,11 +42,20 @@ export class Input {
     el.addEventListener("pointerdown", (e) => {
       this.down = true;
       this.clicked = true;
+      if (this.locked) return;
       this.dragging = !this.captureMouse;
       this.move(e);
       el.setPointerCapture(e.pointerId);
+      if (!this.captureMouse && this.lockEnabled && e.button === 0) {
+        try { (el.requestPointerLock() as any)?.catch?.(() => {}); } catch {}
+      }
     });
     el.addEventListener("pointermove", (e) => {
+      if (this.locked) {
+        this.dragX += e.movementX;
+        this.dragY += e.movementY;
+        return;
+      }
       if (this.dragging) {
         this.dragX += e.movementX;
         this.dragY += e.movementY;

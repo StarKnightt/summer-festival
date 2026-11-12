@@ -128,10 +128,10 @@ def yukata_tile(N=1024, seed=7):
 # ---------------------------------------------------------------- eyes
 # The eye texture covers the rectangle EYE_U (x, metres, inner -> outer) x EYE_V (z, metres) of
 # her left eye; the right eye uses it mirrored (same UVs on the mirrored geometry).
-EYE_X = (0.0150, 0.0530)
-EYE_Z = (1.3440, 1.3960)
-IRIS_C = (0.0340, 1.3700)
-IRIS_R = (0.0118, 0.0158)
+EYE_X = (0.0130, 0.0460)
+EYE_Z = (1.3680, 1.4030)
+IRIS_C = (0.0298, 1.3858)
+IRIS_R = (0.0094, 0.0124)
 
 
 def eye_texture(N=256):
@@ -149,7 +149,7 @@ def eye_texture(N=256):
     iris = 1 - _ss(1 - aa, 1, e)
     # Amber-brown iris: dark at the top (under the lashes), warm amber glowing at the bottom.
     k = np.clip((z - (cz - rz)) / (2 * rz), 0, 1)
-    top, low = _hex("#5a2f1a"), _hex("#e0a456")
+    top, low = _hex("#4a2414"), _hex("#d4974e")
     icol = low[None, None] * (1 - k[..., None]) ** 1.0 + top[None, None] * k[..., None]
     icol = icol * (1 - 0.35 * _ss(0.55, 1.0, e))[..., None] + _hex("#4a2414") * 0.35 * _ss(0.55, 1.0, e)[..., None]
     img[:] = img * (1 - iris[..., None]) + icol * iris[..., None]
@@ -163,8 +163,8 @@ def eye_texture(N=256):
     ep = np.hypot((x - cx) / (rx * 0.42), (z - (cz + 0.0005)) / (rz * 0.45))
     _blend(img, _hex("#331a10"), 1 - _ss(0.92, 1.0, ep))
     # Highlights: a big soft one upper-outer, a small one lower-inner, a sparkle.
-    for (hx, hz, hr, a) in ((cx + 0.0042, cz + 0.0072, 0.0040, 1.0), (cx - 0.0050, cz - 0.0078, 0.0019, 0.9),
-                            (cx + 0.0058, cz - 0.0035, 0.0011, 0.8)):
+    for (hx, hz, hr, a) in ((cx + 0.36 * rx, cz + 0.44 * rz, 0.36 * rx, 1.0), (cx - 0.40 * rx, cz - 0.50 * rz, 0.17 * rx, 0.9),
+                            (cx + 0.50 * rx, cz - 0.20 * rz, 0.10 * rx, 0.8)):
         d = np.hypot(x - hx, (z - hz) * 0.9)
         _blend(img, _hex("#fbf6ef"), a * (1 - _ss(hr * 0.75, hr, d)))
     return np.clip(img, 0, 1)

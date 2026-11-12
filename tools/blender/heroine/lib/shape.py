@@ -12,7 +12,7 @@ from .common import catmull, norm, smin, smooth
 
 SOLE = 0.050          # geta: 16 mm plate + 34 mm teeth
 HEAD_C = np.array([0.0, 0.005, 1.400])
-CROWN_Z, CHIN_Z = 1.505, 1.284
+CROWN_Z, CHIN_Z = 1.505, 1.291
 
 J = {
     "root": (0.0, 0.0, 0.0),
@@ -115,12 +115,14 @@ def head_sdf(P):
     chin, a hint of a nose."""
     P = np.asarray(P, float)
     cran = _ell(P, (0.0, 0.010, 1.412), (0.079, 0.089, 0.093))
-    jaw = _ell(P, (0.0, -0.010, 1.352), (0.064, 0.066, 0.066))
-    d = smin(cran, jaw, 0.030)
-    chin = _ell(P, (0.0, -0.046, 1.300), (0.020, 0.022, 0.016))
-    d = smin(d, chin, 0.018)
-    nose = _ell(P, (0.0, -0.078, 1.350), (0.0055, 0.010, 0.011))
-    d = smin(d, nose, 0.008)
+    # One broad, softly blended lower-face volume (no separate cheek blobs, which left a crease
+    # beside the nose): a smooth oval from the cheekbones to a small, round chin at 1.291.
+    jaw = _ell(P, (0.0, -0.011, 1.360), (0.0675, 0.068, 0.066))
+    d = smin(cran, jaw, 0.036)
+    chin = _ell(P, (0.0, -0.041, 1.309), (0.023, 0.023, 0.018))
+    d = smin(d, chin, 0.024)
+    nose = _ell(P, (0.0, -0.0768, 1.345), (0.0034, 0.0058, 0.0062))   # just a tiny tip
+    d = smin(d, nose, 0.004)
     return d
 
 

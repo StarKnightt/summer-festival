@@ -1,5 +1,6 @@
 """Pure-Python GLB read / prune / compact / inspect (no Blender needed)."""
 import json
+import math
 import struct
 
 import numpy as np
@@ -55,9 +56,10 @@ def accessor(js, binc, i):
     return arr
 
 
-def prune_animations(js, keep_nodes, root_names=("root",)):
-    """Keep one animation per name; only rotation channels (and translation on the root bone) on
-    keep_nodes; drop scale and every other translation."""
+def prune_animations(js, keep_nodes, root_names=("root",), skip_prefix=("finger_",), drop=()):
+    """Keep one animation per name; only rotation channels (and translation on the bones named in
+    root_names) on keep_nodes; drop scale and every other translation, every channel of the bones
+    named in `drop`, and bones whose name starts with one of skip_prefix."""
     names = {i: n.get("name", "") for i, n in enumerate(js["nodes"])}
     out, seen = [], set()
     removed = 0
@@ -70,6 +72,9 @@ def prune_animations(js, keep_nodes, root_names=("root",)):
             node = ch["target"].get("node")
             path = ch["target"]["path"]
             ok = node in keep_nodes and (path == "rotation" or (path == "translation" and names[node] in root_names))
+            if skip_prefix:
+                ok = ok and not names[node].startswith(tuple(skip_prefix))
+            ok = ok and names[node] not in drop
             if not ok:
                 removed += 1
                 continue
@@ -112,6 +117,10 @@ def compact(js, binc):
             acc_map[i] = len(new_acc)
             new_acc.append(a)
     used_bv = {a["bufferView"] for a in new_acc if "bufferView" in a}
+    for a in new_acc:                      # sparse accessors (the exporter writes morph targets sparse)
+        if "sparse" in a:
+            used_bv.add(a["sparse"]["indices"]["bufferView"])
+            used_bv.add(a["sparse"]["values"]["bufferView"])
     for im in js.get("images", []):
         if "bufferView" in im:
             used_bv.add(im["bufferView"])
@@ -134,6 +143,9 @@ def compact(js, binc):
     for a in new_acc:
         if "bufferView" in a:
             a["bufferView"] = bv_map[a["bufferView"]]
+        if "sparse" in a:
+            for k in ("indices", "values"):
+                a["sparse"][k]["bufferView"] = bv_map[a["sparse"][k]["bufferView"]]
     for im in js.get("images", []):
         if "bufferView" in im:
             im["bufferView"] = bv_map[im["bufferView"]]
@@ -294,3 +306,132 @@ def summarize(js, binc, size):
         s["animations"].append({"name": an["name"], "duration": round(dur, 4), "channels": len(an["channels"]),
                                 "paths": paths, "keys": keys})
     return s
+
+
+# ---------------------------------------------------------------- clip keys: retime, thin
+
+def _append(js, out, arr, typ, minmax=False):
+    arr = np.ascontiguousarray(arr, dtype="<f4").reshape(len(arr), NC[typ])
+    out.extend(b"\0" * ((4 - len(out) % 4) % 4))
+    js["bufferViews"].append({"buffer": 0, "byteOffset": len(out), "byteLength": arr.nbytes})
+    out.extend(arr.tobytes())
+    acc = {"bufferView": len(js["bufferViews"]) - 1, "componentType": 5126, "count": int(len(arr)), "type": typ}
+    if minmax:
+        acc["min"], acc["max"] = [float(arr.min())], [float(arr.max())]
+    js["accessors"].append(acc)
+    return len(js["accessors"]) - 1
+
+
+def _reduce(t, v, quat, tol):
+    """Indices of the keys to keep so that linear interpolation (slerp for rotations, as three.js
+    does) between kept keys stays within tol of every dropped key."""
+    n = len(t)
+    if n <= 2:
+        return list(range(n))
+
+    def ok(a, b):
+        k = np.arange(a + 1, b)
+        u = ((t[k] - t[a]) / (t[b] - t[a]))[:, None]
+        if quat:
+            q0, q1 = v[a], v[b] if v[a] @ v[b] >= 0 else -v[b]
+            th = np.arccos(float(np.clip(q0 @ q1, -1, 1)))
+            if th < 1e-5:
+                q = q0 + (q1 - q0) * u
+            else:
+                q = (np.sin((1 - u) * th) * q0 + np.sin(u * th) * q1) / np.sin(th)
+            q /= np.linalg.norm(q, axis=1, keepdims=True)
+            err = 2 * np.arccos(np.clip(np.abs((q * v[k]).sum(axis=1)), -1, 1))
+        else:
+            err = np.linalg.norm(v[a] + (v[b] - v[a]) * u - v[k], axis=1)
+        return bool((err <= tol).all())
+
+    keep, a = [0], 0
+    while a < n - 1:
+        b = a + 1
+        while b + 1 < n and ok(a, b + 1):
+            b += 1
+        keep.append(b)
+        a = b
+    return keep
+
+
+def retime_and_thin(js, binc, time_scale=None, keep_all=(), tol_rot_deg=0.1, tol_pos=0.0002):
+    """time_scale: {clip: factor} for clips keyed denser than 30 Hz in Blender (their key times
+    are scaled back to seconds). Every other clip not named in keep_all loses the keys that linear
+    interpolation between their neighbours reproduces within the tolerance (0.1 deg, 0.2 mm); a
+    constant track keeps its first and last key. Returns (binary, stats); run compact() after."""
+    out = bytearray(binc)
+    time_scale = time_scale or {}
+    stats = {}
+    for an in js.get("animations", []):
+        name = an["name"]
+        ts = time_scale.get(name, 1.0)
+        thin = name not in keep_all
+        before = after = 0
+        cache = {}
+        for smp in an["samplers"]:
+            t = accessor(js, binc, smp["input"]).astype(np.float64)[:, 0] * ts
+            v = accessor(js, binc, smp["output"]).astype(np.float64)
+            before += len(t)
+            typ = js["accessors"][smp["output"]]["type"]
+            keep = _reduce(t, v, typ == "VEC4", math.radians(tol_rot_deg) if typ == "VEC4" else tol_pos) if thin else None
+            if keep is not None and len(keep) < len(t):
+                t, v = t[keep], v[keep]
+                smp["output"] = _append(js, out, v, typ)
+            elif ts == 1.0:
+                after += len(t)
+                continue
+            key = t.tobytes()
+            if key not in cache:
+                cache[key] = _append(js, out, t[:, None], "SCALAR", True)
+            smp["input"] = cache[key]
+            after += len(t)
+        stats[name] = (before, after)
+    js["buffers"][0]["byteLength"] = len(out)
+    return bytes(out), stats
+
+
+# ---------------------------------------------------------------- hips travel in leg units
+
+def leg_units(js, binc, scales):
+    """scales: {armature node name: lk}. Gives each variant's `root` bone the rest scale lk and
+    its `hips` bone 1 / lk (and the hips rest offset in root units, the same number on every
+    variant), so the hips translation track of a shared clip, written in the carrier's metres,
+    moves each variant's hips by lk times as much: what its legs need. World rest transforms of
+    hips and everything below are unchanged; the root joint's inverse bind matrix is rescaled.
+    Returns the binary (new IBM accessors appended; run compact() after)."""
+    out = bytearray(binc)
+    idx = {n.get("name"): i for i, n in enumerate(js["nodes"])}
+    done = {}
+    for arm, lk in scales.items():
+        if abs(lk - 1.0) < 1e-9:
+            continue
+        sub = subtree(js, idx[arm])
+        byname = {js["nodes"][i]["name"]: i for i in sub}
+        root, hips = byname["root"], byname["hips"]
+        assert hips in js["nodes"][root].get("children", []), arm
+        for nd in (js["nodes"][root], js["nodes"][hips]):
+            assert "scale" not in nd and "matrix" not in nd, (arm, nd.get("name"))
+        js["nodes"][root]["scale"] = [lk, lk, lk]
+        js["nodes"][hips]["scale"] = [1.0 / lk] * 3
+        js["nodes"][hips]["translation"] = [x / lk for x in js["nodes"][hips].get("translation", [0, 0, 0])]
+        for sk in js.get("skins", []):
+            if root not in sk["joints"]:
+                continue
+            key = (sk["inverseBindMatrices"], root)
+            if key not in done:
+                ibm = accessor(js, binc, sk["inverseBindMatrices"]).astype(np.float64).copy()
+                j = sk["joints"].index(root)
+                M = ibm[j].reshape(4, 4).T
+                M = np.diag([1.0 / lk, 1.0 / lk, 1.0 / lk, 1.0]) @ M
+                ibm[j] = M.T.ravel()
+                arr = np.ascontiguousarray(ibm, dtype="<f4")
+                out.extend(b"\0" * ((4 - len(out) % 4) % 4))
+                js["bufferViews"].append({"buffer": 0, "byteOffset": len(out), "byteLength": arr.nbytes})
+                out.extend(arr.tobytes())
+                js["accessors"].append({"bufferView": len(js["bufferViews"]) - 1, "componentType": 5126,
+                                        "count": int(len(arr)), "type": "MAT4"})
+                done[key] = len(js["accessors"]) - 1
+            sk["inverseBindMatrices"] = done[key]
+    js["buffers"][0]["byteLength"] = len(out)
+    return bytes(out)

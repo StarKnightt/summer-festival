@@ -93,16 +93,16 @@
   }
  },
  "anim_channel_paths": {
-  "translation": 376,
-  "rotation": 376
+  "rotation": 963,
+  "translation": 42
  },
  "file": "heroine.glb",
- "file_kib": 2285.5,
+ "file_kib": 2874.3,
  "meshes": {
-  "heroine_arms.001": 3728,
+  "heroine_arms.001": 3888,
   "heroine_geta.001": 1480,
-  "heroine_hair.001": 7016,
-  "heroine_head.001": 4828,
+  "heroine_hair.001": 8168,
+  "heroine_head.001": 4840,
   "heroine_kanzashi.001": 2148,
   "heroine_legs.001": 2048,
   "heroine_neck.001": 1520,
@@ -111,8 +111,8 @@
   "heroine_sleeve_R.001": 1992,
   "heroine_yukata.001": 7844
  },
- "triangles": 37812,
- "bones": 47,
+ "triangles": 39136,
+ "bones": 67,
  "bone_names": [
   "root",
   "hips",
@@ -137,6 +137,16 @@
   "hand_L",
   "thumb_L",
   "fingers_L",
+  "finger_thumb_1_L",
+  "finger_thumb_2_L",
+  "finger_index_1_L",
+  "finger_index_2_L",
+  "finger_middle_1_L",
+  "finger_middle_2_L",
+  "finger_ring_1_L",
+  "finger_ring_2_L",
+  "finger_pinky_1_L",
+  "finger_pinky_2_L",
   "sleeve_L1",
   "sleeve_L2",
   "shoulder_R",
@@ -145,6 +155,16 @@
   "hand_R",
   "thumb_R",
   "fingers_R",
+  "finger_thumb_1_R",
+  "finger_thumb_2_R",
+  "finger_index_1_R",
+  "finger_index_2_R",
+  "finger_middle_1_R",
+  "finger_middle_2_R",
+  "finger_ring_1_R",
+  "finger_ring_2_R",
+  "finger_pinky_1_R",
+  "finger_pinky_2_R",
   "sleeve_R1",
   "sleeve_R2",
   "obiTailL1",
@@ -163,14 +183,25 @@
   "skirtB1"
  ],
  "clips": {
+  "add_look_l": 0.4,
+  "add_look_r": 0.4,
+  "add_nod": 0.6,
+  "add_ref": 0.0,
+  "add_shake": 0.8,
+  "bow": 2.2667,
+  "cheer": 2.9,
   "crouch": 3,
-  "idle": 4,
+  "eat": 3.9333,
+  "idle": 10,
+  "look": 6.3333,
   "lookup": 4,
+  "point": 2.2667,
   "reach": 3,
-  "run": 0.4667,
+  "run": 0.4,
+  "talk": 6.8333,
   "throw": 1.2,
-  "walk": 0.7,
-  "wave": 1.5
+  "walk": 0.8667,
+  "wave": 1.8667
  },
  "morph_targets": {
   "heroine_head": [
@@ -212,14 +243,14 @@
  "max_influences": 4,
  "bounds_blender_zup": {
   "min": [
-   -0.4315,
+   -0.4266,
    -0.1735,
    0.0
   ],
   "max": [
-   0.4315,
+   0.4266,
    0.1624,
-   1.5657
+   1.5654
   ]
  },
  "nodes": [

@@ -1,0 +1,357 @@
+{
+ "clipSpeed": {
+  "walk": 0.956,
+  "run": 2.295
+ },
+ "walk": {
+  "source": "walk_f.fbx",
+  "cycle_s": 0.8667,
+  "keys": 26,
+  "key_rate": 30,
+  "steps_per_s": 2.31,
+  "step_m": 0.414,
+  "speed": 0.956,
+  "stance_samples": 106,
+  "max_stance_slip_cm_s": 1.13,
+  "p95_stance_slip_cm_s": 1.06,
+  "worst_at": "L frame 6.75",
+  "stance_contact_z_mm": [
+   -0.4,
+   2.2
+  ],
+  "over_3cm_s": [],
+  "head_bob_cm": 3.26,
+  "head_yaw_range_deg": 7.74,
+  "head_yaw_mean_deg": -0.99,
+  "upperarm_L_swing_deg": [
+   -5.1,
+   18.4
+  ],
+  "hips_travel_cm_xyz": [
+   1.95,
+   2.34,
+   3.16
+  ],
+  "loop_seam_max_abs": 0.0
+ },
+ "run": {
+  "source": "run_f.fbx",
+  "cycle_s": 0.4,
+  "keys": 24,
+  "key_rate": 60,
+  "steps_per_s": 5.0,
+  "step_m": 0.459,
+  "speed": 2.295,
+  "stance_samples": 60,
+  "max_stance_slip_cm_s": 11.07,
+  "p95_stance_slip_cm_s": 1.37,
+  "worst_at": "R frame 4.00",
+  "stance_contact_z_mm": [
+   -0.6,
+   2.3
+  ],
+  "over_3cm_s": [
+   [
+    "R",
+    4.0,
+    -0.0,
+    11.1
+   ]
+  ],
+  "head_bob_cm": 1.37,
+  "head_yaw_range_deg": 4.17,
+  "head_yaw_mean_deg": -1.7,
+  "upperarm_L_swing_deg": [
+   -58.4,
+   -1.2
+  ],
+  "hips_travel_cm_xyz": [
+   0.6,
+   2.78,
+   1.3
+  ],
+  "loop_seam_max_abs": 0.0
+ },
+ "clips": {
+  "idle": {
+   "hips_xy_range_cm": [
+    0.22,
+    0.7
+   ],
+   "hips_xy_end_minus_start_cm": [
+    0.0,
+    0.0
+   ],
+   "root_travel_cm": 0.0,
+   "head_yaw_start_end_deg": [
+    -1.67,
+    -1.67
+   ],
+   "head_yaw_range_deg": [
+    -3.1,
+    -0.9
+   ],
+   "first_last_key_diff": 0.0
+  },
+  "walk": {
+   "hips_xy_range_cm": [
+    1.95,
+    2.34
+   ],
+   "hips_xy_end_minus_start_cm": [
+    0.0,
+    0.0
+   ],
+   "root_travel_cm": 0.0,
+   "head_yaw_start_end_deg": [
+    1.88,
+    1.88
+   ],
+   "head_yaw_range_deg": [
+    -4.9,
+    2.9
+   ],
+   "first_last_key_diff": 0.0
+  },
+  "run": {
+   "hips_xy_range_cm": [
+    0.6,
+    2.78
+   ],
+   "hips_xy_end_minus_start_cm": [
+    0.0,
+    0.0
+   ],
+   "root_travel_cm": 0.0,
+   "head_yaw_start_end_deg": [
+    -0.72,
+    -0.72
+   ],
+   "head_yaw_range_deg": [
+    -4.3,
+    -0.1
+   ],
+   "first_last_key_diff": 0.0
+  },
+  "talk": {
+   "hips_xy_range_cm": [
+    0.71,
+    3.25
+   ],
+   "hips_xy_end_minus_start_cm": [
+    0.0,
+    0.0
+   ],
+   "root_travel_cm": 0.0,
+   "head_yaw_start_end_deg": [
+    -10.85,
+    -10.85
+   ],
+   "head_yaw_range_deg": [
+    -28.7,
+    -5.5
+   ],
+   "first_last_key_diff": 0.0
+  },
+  "look": {
+   "hips_xy_range_cm": [
+    1.52,
+    2.14
+   ],
+   "hips_xy_end_minus_start_cm": [
+    0.0,
+    0.0
+   ],
+   "root_travel_cm": 0.0,
+   "head_yaw_start_end_deg": [
+    -8.66,
+    -8.66
+   ],
+   "head_yaw_range_deg": [
+    -69.8,
+    36.6
+   ],
+   "first_last_key_diff": 0.0
+  },
+  "wave": {
+   "hips_xy_range_cm": [
+    0.56,
+    0.58
+   ],
+   "hips_xy_end_minus_start_cm": [
+    0.0,
+    0.0
+   ],
+   "root_travel_cm": 0.0,
+   "head_yaw_start_end_deg": [
+    -1.67,
+    -1.67
+   ],
+   "head_yaw_range_deg": [
+    -1.7,
+    12.2
+   ],
+   "first_last_key_diff": 1.998193
+  },
+  "bow": {
+   "hips_xy_range_cm": [
+    1.54,
+    4.88
+   ],
+   "hips_xy_end_minus_start_cm": [
+    0.0,
+    0.0
+   ],
+   "root_travel_cm": 0.0,
+   "head_yaw_start_end_deg": [
+    -1.67,
+    -1.67
+   ],
+   "head_yaw_range_deg": [
+    -20.6,
+    0.0
+   ],
+   "first_last_key_diff": 0.00095
+  },
+  "eat": {
+   "hips_xy_range_cm": [
+    0.29,
+    0.61
+   ],
+   "hips_xy_end_minus_start_cm": [
+    0.0,
+    0.0
+   ],
+   "root_travel_cm": 0.0,
+   "head_yaw_start_end_deg": [
+    -1.67,
+    -1.67
+   ],
+   "head_yaw_range_deg": [
+    -1.7,
+    5.8
+   ],
+   "first_last_key_diff": 0.0
+  },
+  "cheer": {
+   "hips_xy_range_cm": [
+    2.83,
+    1.77
+   ],
+   "hips_xy_end_minus_start_cm": [
+    0.0,
+    0.0
+   ],
+   "root_travel_cm": 0.0,
+   "head_yaw_start_end_deg": [
+    -1.67,
+    -1.67
+   ],
+   "head_yaw_range_deg": [
+    -22.1,
+    1.6
+   ],
+   "first_last_key_diff": 1.992772
+  },
+  "point": {
+   "hips_xy_range_cm": [
+    0.67,
+    1.17
+   ],
+   "hips_xy_end_minus_start_cm": [
+    0.0,
+    0.0
+   ],
+   "root_travel_cm": 0.0,
+   "head_yaw_start_end_deg": [
+    -1.67,
+    -1.67
+   ],
+   "head_yaw_range_deg": [
+    -1.7,
+    4.1
+   ],
+   "first_last_key_diff": 0.001743
+  },
+  "crouch": {
+   "hips_xy_range_cm": [
+    0.0,
+    0.0
+   ],
+   "hips_xy_end_minus_start_cm": [
+    0.0,
+    0.0
+   ],
+   "root_travel_cm": 0.0,
+   "head_yaw_start_end_deg": [
+    -30.91,
+    -30.91
+   ],
+   "head_yaw_range_deg": [
+    -33.9,
+    -28.4
+   ],
+   "first_last_key_diff": 0.0
+  },
+  "reach": {
+   "hips_xy_range_cm": [
+    0.0,
+    0.0
+   ],
+   "hips_xy_end_minus_start_cm": [
+    0.0,
+    0.0
+   ],
+   "root_travel_cm": 0.0,
+   "head_yaw_start_end_deg": [
+    -15.37,
+    -15.37
+   ],
+   "head_yaw_range_deg": [
+    -19.8,
+    -10.9
+   ],
+   "first_last_key_diff": 0.0
+  },
+  "throw": {
+   "hips_xy_range_cm": [
+    0.07,
+    0.16
+   ],
+   "hips_xy_end_minus_start_cm": [
+    0.0,
+    0.0
+   ],
+   "root_travel_cm": 0.0,
+   "head_yaw_start_end_deg": [
+    -1.67,
+    -1.67
+   ],
+   "head_yaw_range_deg": [
+    -2.9,
+    4.0
+   ],
+   "first_last_key_diff": 0.0
+  },
+  "lookup": {
+   "hips_xy_range_cm": [
+    2.0,
+    0.0
+   ],
+   "hips_xy_end_minus_start_cm": [
+    -0.0,
+    0.0
+   ],
+   "root_travel_cm": 0.0,
+   "head_yaw_start_end_deg": [
+    2.53,
+    2.53
+   ],
+   "head_yaw_range_deg": [
+    -6.8,
+    6.8
+   ],
+   "first_last_key_diff": 0.0
+  }
+ }
+}

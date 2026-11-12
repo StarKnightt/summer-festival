@@ -1,18 +1,97 @@
 {
  "glb": {
-  "fileBytes": 3167868,
+  "fileBytes": 4495076,
   "meshes": [
    {
     "name": "npc_woman_body",
-    "tris": 6298,
+    "tris": 4586,
     "materials": [
      "skin",
      "face",
-     "hair",
      "cloth_main",
      "cloth_accent",
      "cloth_dark",
      "wood_geta"
+    ],
+    "attributes": [
+     "COLOR_0",
+     "JOINTS_0",
+     "NORMAL",
+     "POSITION",
+     "TEXCOORD_0",
+     "WEIGHTS_0"
+    ]
+   },
+   {
+    "name": "npc_woman_geta_R",
+    "tris": 284,
+    "materials": [
+     "cloth_accent",
+     "wood_geta"
+    ],
+    "attributes": [
+     "COLOR_0",
+     "JOINTS_0",
+     "NORMAL",
+     "POSITION",
+     "TEXCOORD_0",
+     "WEIGHTS_0"
+    ]
+   },
+   {
+    "name": "npc_woman_glasses",
+    "tris": 862,
+    "materials": [
+     "glasses_frame",
+     "glasses_lens"
+    ],
+    "attributes": [
+     "COLOR_0",
+     "JOINTS_0",
+     "NORMAL",
+     "POSITION",
+     "TEXCOORD_0",
+     "WEIGHTS_0"
+    ]
+   },
+   {
+    "name": "npc_woman_hair_bob",
+    "tris": 1332,
+    "materials": [
+     "hair"
+    ],
+    "attributes": [
+     "COLOR_0",
+     "JOINTS_0",
+     "NORMAL",
+     "POSITION",
+     "TEXCOORD_0",
+     "WEIGHTS_0"
+    ]
+   },
+   {
+    "name": "npc_woman_hair_bun",
+    "tris": 1490,
+    "materials": [
+     "hair",
+     "cloth_accent",
+     "wood_geta"
+    ],
+    "attributes": [
+     "COLOR_0",
+     "JOINTS_0",
+     "NORMAL",
+     "POSITION",
+     "TEXCOORD_0",
+     "WEIGHTS_0"
+    ]
+   },
+   {
+    "name": "npc_woman_hair_ponytail",
+    "tris": 952,
+    "materials": [
+     "hair",
+     "cloth_accent"
     ],
     "attributes": [
      "COLOR_0",
@@ -25,15 +104,30 @@
    },
    {
     "name": "npc_woman_near",
-    "tris": 11938,
+    "tris": 11094,
     "materials": [
      "skin",
      "face",
-     "hair",
      "cloth_main",
      "cloth_accent",
      "cloth_dark",
      "wood_geta"
+    ],
+    "attributes": [
+     "COLOR_0",
+     "JOINTS_0",
+     "NORMAL",
+     "POSITION",
+     "TEXCOORD_0",
+     "WEIGHTS_0"
+    ]
+   },
+   {
+    "name": "npc_woman_sunglasses",
+    "tris": 822,
+    "materials": [
+     "glasses_frame",
+     "glasses_lens"
     ],
     "attributes": [
      "COLOR_0",
@@ -46,15 +140,91 @@
    },
    {
     "name": "npc_man_body",
-    "tris": 5356,
+    "tris": 4196,
     "materials": [
      "skin",
      "face",
-     "hair",
      "cloth_main",
      "cloth_accent",
      "cloth_dark",
      "wood_geta"
+    ],
+    "attributes": [
+     "COLOR_0",
+     "JOINTS_0",
+     "NORMAL",
+     "POSITION",
+     "TEXCOORD_0",
+     "WEIGHTS_0"
+    ]
+   },
+   {
+    "name": "npc_man_geta_R",
+    "tris": 284,
+    "materials": [
+     "cloth_dark",
+     "wood_geta"
+    ],
+    "attributes": [
+     "COLOR_0",
+     "JOINTS_0",
+     "NORMAL",
+     "POSITION",
+     "TEXCOORD_0",
+     "WEIGHTS_0"
+    ]
+   },
+   {
+    "name": "npc_man_glasses",
+    "tris": 822,
+    "materials": [
+     "glasses_frame",
+     "glasses_lens"
+    ],
+    "attributes": [
+     "COLOR_0",
+     "JOINTS_0",
+     "NORMAL",
+     "POSITION",
+     "TEXCOORD_0",
+     "WEIGHTS_0"
+    ]
+   },
+   {
+    "name": "npc_man_hair_crop",
+    "tris": 540,
+    "materials": [
+     "hair"
+    ],
+    "attributes": [
+     "COLOR_0",
+     "JOINTS_0",
+     "NORMAL",
+     "POSITION",
+     "TEXCOORD_0",
+     "WEIGHTS_0"
+    ]
+   },
+   {
+    "name": "npc_man_hair_short",
+    "tris": 858,
+    "materials": [
+     "hair"
+    ],
+    "attributes": [
+     "COLOR_0",
+     "JOINTS_0",
+     "NORMAL",
+     "POSITION",
+     "TEXCOORD_0",
+     "WEIGHTS_0"
+    ]
+   },
+   {
+    "name": "npc_man_hair_slick",
+    "tris": 600,
+    "materials": [
+     "hair"
     ],
     "attributes": [
      "COLOR_0",
@@ -67,15 +237,30 @@
    },
    {
     "name": "npc_man_near",
-    "tris": 10610,
+    "tris": 10590,
     "materials": [
      "skin",
      "face",
-     "hair",
      "cloth_main",
      "cloth_accent",
      "cloth_dark",
      "wood_geta"
+    ],
+    "attributes": [
+     "COLOR_0",
+     "JOINTS_0",
+     "NORMAL",
+     "POSITION",
+     "TEXCOORD_0",
+     "WEIGHTS_0"
+    ]
+   },
+   {
+    "name": "npc_man_sunglasses",
+    "tris": 822,
+    "materials": [
+     "glasses_frame",
+     "glasses_lens"
     ],
     "attributes": [
      "COLOR_0",
@@ -88,15 +273,76 @@
    },
    {
     "name": "npc_kid_body",
-    "tris": 4696,
+    "tris": 3498,
     "materials": [
      "skin",
      "face",
-     "hair",
      "cloth_main",
      "cloth_accent",
      "cloth_dark",
      "wood_geta"
+    ],
+    "attributes": [
+     "COLOR_0",
+     "JOINTS_0",
+     "NORMAL",
+     "POSITION",
+     "TEXCOORD_0",
+     "WEIGHTS_0"
+    ]
+   },
+   {
+    "name": "npc_kid_geta_R",
+    "tris": 284,
+    "materials": [
+     "cloth_accent",
+     "wood_geta"
+    ],
+    "attributes": [
+     "COLOR_0",
+     "JOINTS_0",
+     "NORMAL",
+     "POSITION",
+     "TEXCOORD_0",
+     "WEIGHTS_0"
+    ]
+   },
+   {
+    "name": "npc_kid_hair_bowl",
+    "tris": 814,
+    "materials": [
+     "hair"
+    ],
+    "attributes": [
+     "COLOR_0",
+     "JOINTS_0",
+     "NORMAL",
+     "POSITION",
+     "TEXCOORD_0",
+     "WEIGHTS_0"
+    ]
+   },
+   {
+    "name": "npc_kid_hair_pigtails",
+    "tris": 958,
+    "materials": [
+     "hair",
+     "cloth_accent"
+    ],
+    "attributes": [
+     "COLOR_0",
+     "JOINTS_0",
+     "NORMAL",
+     "POSITION",
+     "TEXCOORD_0",
+     "WEIGHTS_0"
+    ]
+   },
+   {
+    "name": "npc_kid_hair_short",
+    "tris": 840,
+    "materials": [
+     "hair"
     ],
     "attributes": [
      "COLOR_0",
@@ -109,15 +355,30 @@
    },
    {
     "name": "npc_kid_near",
-    "tris": 10456,
+    "tris": 10362,
     "materials": [
      "skin",
      "face",
-     "hair",
      "cloth_main",
      "cloth_accent",
      "cloth_dark",
      "wood_geta"
+    ],
+    "attributes": [
+     "COLOR_0",
+     "JOINTS_0",
+     "NORMAL",
+     "POSITION",
+     "TEXCOORD_0",
+     "WEIGHTS_0"
+    ]
+   },
+   {
+    "name": "npc_kid_sunglasses",
+    "tris": 822,
+    "materials": [
+     "glasses_frame",
+     "glasses_lens"
     ],
     "attributes": [
      "COLOR_0",
@@ -130,15 +391,91 @@
    },
    {
     "name": "npc_keeper_body",
-    "tris": 5204,
+    "tris": 4218,
     "materials": [
      "skin",
      "face",
-     "hair",
      "cloth_main",
      "cloth_accent",
      "cloth_dark",
      "cloth_shoe"
+    ],
+    "attributes": [
+     "COLOR_0",
+     "JOINTS_0",
+     "NORMAL",
+     "POSITION",
+     "TEXCOORD_0",
+     "WEIGHTS_0"
+    ]
+   },
+   {
+    "name": "npc_keeper_geta_R",
+    "tris": 264,
+    "materials": [
+     "cloth_shoe"
+    ],
+    "attributes": [
+     "COLOR_0",
+     "JOINTS_0",
+     "NORMAL",
+     "POSITION",
+     "TEXCOORD_0",
+     "WEIGHTS_0"
+    ]
+   },
+   {
+    "name": "npc_keeper_glasses",
+    "tris": 822,
+    "materials": [
+     "glasses_frame",
+     "glasses_lens"
+    ],
+    "attributes": [
+     "COLOR_0",
+     "JOINTS_0",
+     "NORMAL",
+     "POSITION",
+     "TEXCOORD_0",
+     "WEIGHTS_0"
+    ]
+   },
+   {
+    "name": "npc_keeper_hair_crop",
+    "tris": 540,
+    "materials": [
+     "hair"
+    ],
+    "attributes": [
+     "COLOR_0",
+     "JOINTS_0",
+     "NORMAL",
+     "POSITION",
+     "TEXCOORD_0",
+     "WEIGHTS_0"
+    ]
+   },
+   {
+    "name": "npc_keeper_hair_short",
+    "tris": 968,
+    "materials": [
+     "hair"
+    ],
+    "attributes": [
+     "COLOR_0",
+     "JOINTS_0",
+     "NORMAL",
+     "POSITION",
+     "TEXCOORD_0",
+     "WEIGHTS_0"
+    ]
+   },
+   {
+    "name": "npc_keeper_hair_tied",
+    "tris": 952,
+    "materials": [
+     "hair",
+     "cloth_dark"
     ],
     "attributes": [
      "COLOR_0",
@@ -151,11 +488,10 @@
    },
    {
     "name": "npc_keeper_near",
-    "tris": 11360,
+    "tris": 11490,
     "materials": [
      "skin",
      "face",
-     "hair",
      "cloth_main",
      "cloth_accent",
      "cloth_dark",
@@ -171,12 +507,27 @@
     ]
    },
    {
+    "name": "npc_keeper_sunglasses",
+    "tris": 822,
+    "materials": [
+     "glasses_frame",
+     "glasses_lens"
+    ],
+    "attributes": [
+     "COLOR_0",
+     "JOINTS_0",
+     "NORMAL",
+     "POSITION",
+     "TEXCOORD_0",
+     "WEIGHTS_0"
+    ]
+   },
+   {
     "name": "npc_elder_body",
-    "tris": 5748,
+    "tris": 4288,
     "materials": [
      "skin",
      "face",
-     "hair",
      "cloth_main",
      "cloth_accent",
      "cloth_dark",
@@ -192,16 +543,110 @@
     ]
    },
    {
+    "name": "npc_elder_geta_R",
+    "tris": 284,
+    "materials": [
+     "cloth_dark",
+     "wood_geta"
+    ],
+    "attributes": [
+     "COLOR_0",
+     "JOINTS_0",
+     "NORMAL",
+     "POSITION",
+     "TEXCOORD_0",
+     "WEIGHTS_0"
+    ]
+   },
+   {
+    "name": "npc_elder_glasses",
+    "tris": 862,
+    "materials": [
+     "glasses_frame",
+     "glasses_lens"
+    ],
+    "attributes": [
+     "COLOR_0",
+     "JOINTS_0",
+     "NORMAL",
+     "POSITION",
+     "TEXCOORD_0",
+     "WEIGHTS_0"
+    ]
+   },
+   {
+    "name": "npc_elder_hair_bun",
+    "tris": 840,
+    "materials": [
+     "hair",
+     "cloth_accent"
+    ],
+    "attributes": [
+     "COLOR_0",
+     "JOINTS_0",
+     "NORMAL",
+     "POSITION",
+     "TEXCOORD_0",
+     "WEIGHTS_0"
+    ]
+   },
+   {
+    "name": "npc_elder_hair_low",
+    "tris": 840,
+    "materials": [
+     "hair",
+     "cloth_accent"
+    ],
+    "attributes": [
+     "COLOR_0",
+     "JOINTS_0",
+     "NORMAL",
+     "POSITION",
+     "TEXCOORD_0",
+     "WEIGHTS_0"
+    ]
+   },
+   {
+    "name": "npc_elder_hair_short",
+    "tris": 930,
+    "materials": [
+     "hair"
+    ],
+    "attributes": [
+     "COLOR_0",
+     "JOINTS_0",
+     "NORMAL",
+     "POSITION",
+     "TEXCOORD_0",
+     "WEIGHTS_0"
+    ]
+   },
+   {
     "name": "npc_elder_near",
-    "tris": 11598,
+    "tris": 11094,
     "materials": [
      "skin",
      "face",
-     "hair",
      "cloth_main",
      "cloth_accent",
      "cloth_dark",
      "wood_geta"
+    ],
+    "attributes": [
+     "COLOR_0",
+     "JOINTS_0",
+     "NORMAL",
+     "POSITION",
+     "TEXCOORD_0",
+     "WEIGHTS_0"
+    ]
+   },
+   {
+    "name": "npc_elder_sunglasses",
+    "tris": 822,
+    "materials": [
+     "glasses_frame",
+     "glasses_lens"
     ],
     "attributes": [
      "COLOR_0",
@@ -215,104 +660,236 @@
   ],
   "animations": [
    {
-    "name": "call",
-    "duration": 3,
-    "channels": 23,
+    "name": "bow",
+    "duration": 2.2667,
+    "channels": 42,
     "paths": {
      "translation": 1,
-     "rotation": 22
+     "rotation": 41
     },
-    "keys": 91
+    "keys": 38
+   },
+   {
+    "name": "call",
+    "duration": 3.0,
+    "channels": 42,
+    "paths": {
+     "translation": 1,
+     "rotation": 41
+    },
+    "keys": 14
+   },
+   {
+    "name": "cheer",
+    "duration": 2.9,
+    "channels": 42,
+    "paths": {
+     "translation": 1,
+     "rotation": 41
+    },
+    "keys": 86
+   },
+   {
+    "name": "cry",
+    "duration": 2.0,
+    "channels": 42,
+    "paths": {
+     "translation": 1,
+     "rotation": 41
+    },
+    "keys": 2
+   },
+   {
+    "name": "eat",
+    "duration": 3.9333,
+    "channels": 42,
+    "paths": {
+     "translation": 1,
+     "rotation": 41
+    },
+    "keys": 26
    },
    {
     "name": "fan",
-    "duration": 4,
-    "channels": 23,
+    "duration": 4.0,
+    "channels": 42,
     "paths": {
      "translation": 1,
-     "rotation": 22
+     "rotation": 41
     },
-    "keys": 121
+    "keys": 19
    },
    {
     "name": "idle",
-    "duration": 4,
-    "channels": 23,
+    "duration": 9.9333,
+    "channels": 42,
     "paths": {
      "translation": 1,
-     "rotation": 22
+     "rotation": 41
     },
-    "keys": 121
+    "keys": 70
+   },
+   {
+    "name": "look",
+    "duration": 6.3333,
+    "channels": 42,
+    "paths": {
+     "translation": 1,
+     "rotation": 41
+    },
+    "keys": 81
    },
    {
     "name": "lookup",
-    "duration": 4,
-    "channels": 23,
+    "duration": 4.0,
+    "channels": 42,
     "paths": {
      "translation": 1,
-     "rotation": 22
+     "rotation": 41
     },
-    "keys": 121
+    "keys": 16
+   },
+   {
+    "name": "peace",
+    "duration": 2.4,
+    "channels": 42,
+    "paths": {
+     "translation": 1,
+     "rotation": 41
+    },
+    "keys": 2
+   },
+   {
+    "name": "pick_up",
+    "duration": 2.4,
+    "channels": 42,
+    "paths": {
+     "translation": 1,
+     "rotation": 41
+    },
+    "keys": 58
+   },
+   {
+    "name": "point",
+    "duration": 2.2667,
+    "channels": 42,
+    "paths": {
+     "translation": 1,
+     "rotation": 41
+    },
+    "keys": 29
    },
    {
     "name": "run",
-    "duration": 0.4667,
-    "channels": 23,
+    "duration": 0.4,
+    "channels": 42,
     "paths": {
      "translation": 1,
-     "rotation": 22
+     "rotation": 41
     },
-    "keys": 15
+    "keys": 25
+   },
+   {
+    "name": "sit",
+    "duration": 4.0,
+    "channels": 42,
+    "paths": {
+     "translation": 1,
+     "rotation": 41
+    },
+    "keys": 2
+   },
+   {
+    "name": "sit_fan",
+    "duration": 4.0,
+    "channels": 42,
+    "paths": {
+     "translation": 1,
+     "rotation": 41
+    },
+    "keys": 2
+   },
+   {
+    "name": "sit_sleep",
+    "duration": 6.0,
+    "channels": 42,
+    "paths": {
+     "translation": 1,
+     "rotation": 41
+    },
+    "keys": 2
    },
    {
     "name": "sparkler",
-    "duration": 1,
-    "channels": 23,
+    "duration": 0.9333,
+    "channels": 42,
     "paths": {
      "translation": 1,
-     "rotation": 22
+     "rotation": 41
     },
-    "keys": 31
+    "keys": 29
    },
    {
     "name": "talk",
-    "duration": 4,
-    "channels": 23,
+    "duration": 6.8333,
+    "channels": 42,
     "paths": {
      "translation": 1,
-     "rotation": 22
+     "rotation": 41
     },
-    "keys": 121
+    "keys": 84
    },
    {
     "name": "walk",
-    "duration": 1,
-    "channels": 23,
+    "duration": 0.9333,
+    "channels": 42,
     "paths": {
      "translation": 1,
-     "rotation": 22
+     "rotation": 41
     },
-    "keys": 31
+    "keys": 29
+   },
+   {
+    "name": "walk_f",
+    "duration": 0.8667,
+    "channels": 42,
+    "paths": {
+     "translation": 1,
+     "rotation": 41
+    },
+    "keys": 27
    },
    {
     "name": "wave",
-    "duration": 2,
-    "channels": 23,
+    "duration": 1.8667,
+    "channels": 42,
     "paths": {
      "translation": 1,
-     "rotation": 22
+     "rotation": 41
     },
-    "keys": 61
+    "keys": 53
+   },
+   {
+    "name": "yawn",
+    "duration": 3.2,
+    "channels": 42,
+    "paths": {
+     "translation": 1,
+     "rotation": 41
+    },
+    "keys": 2
    }
   ],
   "materials": [
    "skin",
    "face",
-   "hair",
    "cloth_main",
    "cloth_accent",
    "cloth_dark",
    "wood_geta",
+   "glasses_frame",
+   "glasses_lens",
+   "hair",
    "cloth_shoe"
   ],
   "images": [
@@ -324,23 +901,23 @@
   "skins": [
    {
     "name": "npc_woman",
-    "joints": 22
+    "joints": 42
    },
    {
     "name": "npc_man",
-    "joints": 22
+    "joints": 42
    },
    {
     "name": "npc_kid",
-    "joints": 22
+    "joints": 42
    },
    {
     "name": "npc_keeper",
-    "joints": 22
+    "joints": 42
    },
    {
     "name": "npc_elder",
-    "joints": 22
+    "joints": 42
    }
   ]
  },
@@ -349,24 +926,12 @@
    "node": "npc_woman",
    "mesh": "npc_woman_body",
    "nearMesh": "npc_woman_near",
-   "height": 1.636,
+   "height": 1.652,
    "headTop": 1.6,
    "hipHeight": 0.8,
-   "tris": 6298,
-   "nearTris": 11938,
-   "walkSpeed": 0.9,
-   "runSpeed": 4.16,
-   "rootScale": {
-    "idle": 1.0,
-    "walk": 1.0,
-    "run": 1.6,
-    "sparkler": 1.0,
-    "wave": 1.0,
-    "call": 1.0,
-    "talk": 1.0,
-    "fan": 1.0,
-    "lookup": 1.0
-   },
+   "tris": 4586,
+   "nearTris": 11094,
+   "legScale": 1.0,
    "handR_palm": {
     "bone": "hand_R",
     "offset": [
@@ -389,7 +954,7 @@
     "bone": "head",
     "offset": [
      0.0,
-     0.2378,
+     0.2541,
      0.004
     ]
    },
@@ -401,42 +966,86 @@
     ],
     "max": [
      0.338,
-     1.636,
+     1.6,
      0.18
     ]
    },
    "tints": {
     "skin": "#f6d5c2",
-    "hair": "#3a2620",
+    "hair": "#ffffff",
     "cloth_main": "#f19aa6",
     "cloth_accent": "#f3c74f",
     "cloth_dark": "#3b3f6b",
     "wood_geta": "#c99a66",
     "face": "#ffffff"
-   }
+   },
+   "getaR": "npc_woman_geta_R",
+   "hairStyles": {
+    "bun": {
+     "mesh": "npc_woman_hair_bun",
+     "top": 1.652,
+     "headTopOffset": [
+      0.0,
+      0.2541,
+      0.004
+     ]
+    },
+    "bob": {
+     "mesh": "npc_woman_hair_bob",
+     "top": 1.611,
+     "headTopOffset": [
+      0.0,
+      0.2131,
+      0.004
+     ]
+    },
+    "ponytail": {
+     "mesh": "npc_woman_hair_ponytail",
+     "top": 1.609,
+     "headTopOffset": [
+      0.0,
+      0.2109,
+      0.004
+     ]
+    }
+   },
+   "glasses": [
+    "npc_woman_glasses",
+    "npc_woman_sunglasses"
+   ],
+   "faceLooks": {
+    "A": "basis",
+    "B": "face_b",
+    "meshes": [
+     "npc_woman_near",
+     "npc_woman_body"
+    ]
+   },
+   "nearTrisWorst": 13730,
+   "hairTris": {
+    "bun": 1490,
+    "bob": 1332,
+    "ponytail": 952
+   },
+   "glassesTris": {
+    "glasses": 862,
+    "sunglasses": 822
+   },
+   "getaRTris": 284,
+   "walkSpeed": 0.901,
+   "runSpeed": 1.851,
+   "seatHeight": 0.366
   },
   "man": {
    "node": "npc_man",
    "mesh": "npc_man_body",
    "nearMesh": "npc_man_near",
-   "height": 1.75,
+   "height": 1.746,
    "headTop": 1.74,
    "hipHeight": 0.875,
-   "tris": 5356,
-   "nearTris": 10610,
-   "walkSpeed": 0.984,
-   "runSpeed": 4.55,
-   "rootScale": {
-    "idle": 1.0938,
-    "walk": 1.0938,
-    "run": 1.75,
-    "sparkler": 1.0938,
-    "wave": 1.0938,
-    "call": 1.0938,
-    "talk": 1.0938,
-    "fan": 1.0938,
-    "lookup": 1.0938
-   },
+   "tris": 4196,
+   "nearTris": 10590,
+   "legScale": 1.09375,
    "handR_palm": {
     "bone": "hand_R",
     "offset": [
@@ -459,7 +1068,7 @@
     "bone": "head",
     "offset": [
      0.0,
-     0.221,
+     0.2168,
      0.004
     ]
    },
@@ -471,42 +1080,86 @@
     ],
     "max": [
      0.386,
-     1.75,
+     1.739,
      0.197
     ]
    },
    "tints": {
     "skin": "#e9c2a6",
-    "hair": "#1f1a1c",
+    "hair": "#ffffff",
     "cloth_main": "#40507a",
     "cloth_accent": "#c9b98f",
     "cloth_dark": "#2a2a2e",
     "wood_geta": "#b88a5a",
     "face": "#ffffff"
-   }
+   },
+   "getaR": "npc_man_geta_R",
+   "hairStyles": {
+    "short": {
+     "mesh": "npc_man_hair_short",
+     "top": 1.746,
+     "headTopOffset": [
+      0.0,
+      0.2168,
+      0.004
+     ]
+    },
+    "crop": {
+     "mesh": "npc_man_hair_crop",
+     "top": 1.744,
+     "headTopOffset": [
+      0.0,
+      0.2149,
+      0.004
+     ]
+    },
+    "slick": {
+     "mesh": "npc_man_hair_slick",
+     "top": 1.746,
+     "headTopOffset": [
+      0.0,
+      0.2165,
+      0.004
+     ]
+    }
+   },
+   "glasses": [
+    "npc_man_glasses",
+    "npc_man_sunglasses"
+   ],
+   "faceLooks": {
+    "A": "basis",
+    "B": "face_b",
+    "meshes": [
+     "npc_man_near",
+     "npc_man_body"
+    ]
+   },
+   "nearTrisWorst": 12554,
+   "hairTris": {
+    "short": 858,
+    "crop": 540,
+    "slick": 600
+   },
+   "glassesTris": {
+    "glasses": 822,
+    "sunglasses": 822
+   },
+   "getaRTris": 284,
+   "walkSpeed": 0.986,
+   "runSpeed": 2.023,
+   "seatHeight": 0.407
   },
   "kid": {
    "node": "npc_kid",
    "mesh": "npc_kid_body",
    "nearMesh": "npc_kid_near",
-   "height": 1.206,
+   "height": 1.197,
    "headTop": 1.15,
    "hipHeight": 0.5,
-   "tris": 4696,
-   "nearTris": 10456,
-   "walkSpeed": 0.562,
-   "runSpeed": 2.6,
-   "rootScale": {
-    "idle": 0.625,
-    "walk": 0.625,
-    "run": 1.0,
-    "sparkler": 0.625,
-    "wave": 0.625,
-    "call": 0.625,
-    "talk": 0.625,
-    "fan": 0.625,
-    "lookup": 0.625
-   },
+   "tris": 3498,
+   "nearTris": 10362,
+   "legScale": 0.625,
    "handR_palm": {
     "bone": "hand_R",
     "offset": [
@@ -529,54 +1182,96 @@
     "bone": "head",
     "offset": [
      0.0,
-     0.2405,
+     0.2319,
      0.004
     ]
    },
    "bbox": {
     "min": [
-     -0.232,
+     -0.225,
      0.0,
-     -0.111
+     -0.1
     ],
     "max": [
-     0.232,
-     1.206,
+     0.225,
+     1.15,
      0.112
     ]
    },
    "tints": {
     "skin": "#f7d9c6",
-    "hair": "#4a3426",
+    "hair": "#ffffff",
     "cloth_main": "#7cc3ea",
     "cloth_accent": "#ffffff",
     "cloth_dark": "#2d3b6b",
     "wood_geta": "#d0a46e",
     "face": "#ffffff"
-   }
+   },
+   "getaR": "npc_kid_geta_R",
+   "hairStyles": {
+    "short": {
+     "mesh": "npc_kid_hair_short",
+     "top": 1.197,
+     "headTopOffset": [
+      0.0,
+      0.2319,
+      0.004
+     ]
+    },
+    "bowl": {
+     "mesh": "npc_kid_hair_bowl",
+     "top": 1.161,
+     "headTopOffset": [
+      0.0,
+      0.1955,
+      0.004
+     ]
+    },
+    "pigtails": {
+     "mesh": "npc_kid_hair_pigtails",
+     "top": 1.159,
+     "headTopOffset": [
+      0.0,
+      0.1939,
+      0.004
+     ]
+    }
+   },
+   "glasses": [
+    "npc_kid_sunglasses"
+   ],
+   "faceLooks": {
+    "A": "basis",
+    "B": "face_b",
+    "meshes": [
+     "npc_kid_near",
+     "npc_kid_body"
+    ]
+   },
+   "nearTrisWorst": 12426,
+   "hairTris": {
+    "short": 840,
+    "bowl": 814,
+    "pigtails": 958
+   },
+   "glassesTris": {
+    "sunglasses": 822
+   },
+   "getaRTris": 284,
+   "walkSpeed": 0.565,
+   "runSpeed": 1.154,
+   "seatHeight": 0.195
   },
   "keeper": {
    "node": "npc_keeper",
    "mesh": "npc_keeper_body",
    "nearMesh": "npc_keeper_near",
-   "height": 1.707,
+   "height": 1.705,
    "headTop": 1.7,
    "hipHeight": 0.85,
-   "tris": 5204,
-   "nearTris": 11360,
-   "walkSpeed": 0.956,
-   "runSpeed": 4.42,
-   "rootScale": {
-    "idle": 1.0625,
-    "walk": 1.0625,
-    "run": 1.7,
-    "sparkler": 1.0625,
-    "wave": 1.0625,
-    "call": 1.0625,
-    "talk": 1.0625,
-    "fan": 1.0625,
-    "lookup": 1.0625
-   },
+   "tris": 4218,
+   "nearTris": 11490,
+   "legScale": 1.0625,
    "handR_palm": {
     "bone": "hand_R",
     "offset": [
@@ -599,31 +1294,87 @@
     "bone": "head",
     "offset": [
      0.0,
-     0.2131,
+     0.2114,
      0.004
     ]
    },
    "bbox": {
     "min": [
-     -0.372,
+     -0.37,
      0.0,
-     -0.122
+     -0.125
     ],
     "max": [
-     0.372,
-     1.707,
+     0.37,
+     1.699,
      0.186
     ]
    },
    "tints": {
     "skin": "#e3b896",
-    "hair": "#24201f",
+    "hair": "#ffffff",
     "cloth_main": "#d8423a",
     "cloth_accent": "#f4efe4",
     "cloth_dark": "#232a3a",
     "cloth_shoe": "#2a2c33",
     "face": "#ffffff"
-   }
+   },
+   "getaR": "npc_keeper_geta_R",
+   "hairStyles": {
+    "short": {
+     "mesh": "npc_keeper_hair_short",
+     "top": 1.705,
+     "headTopOffset": [
+      0.0,
+      0.2114,
+      0.004
+     ]
+    },
+    "crop": {
+     "mesh": "npc_keeper_hair_crop",
+     "top": 1.704,
+     "headTopOffset": [
+      0.0,
+      0.21,
+      0.004
+     ]
+    },
+    "tied": {
+     "mesh": "npc_keeper_hair_tied",
+     "top": 1.705,
+     "headTopOffset": [
+      0.0,
+      0.2112,
+      0.004
+     ]
+    }
+   },
+   "glasses": [
+    "npc_keeper_glasses",
+    "npc_keeper_sunglasses"
+   ],
+   "faceLooks": {
+    "A": "basis",
+    "B": "face_b",
+    "meshes": [
+     "npc_keeper_near",
+     "npc_keeper_body"
+    ]
+   },
+   "nearTrisWorst": 13544,
+   "hairTris": {
+    "short": 968,
+    "crop": 540,
+    "tied": 952
+   },
+   "glassesTris": {
+    "glasses": 822,
+    "sunglasses": 822
+   },
+   "getaRTris": 264,
+   "walkSpeed": 0.958,
+   "runSpeed": 1.965,
+   "seatHeight": 0.43
   },
   "elder": {
    "node": "npc_elder",
@@ -632,21 +1383,9 @@
    "height": 1.529,
    "headTop": 1.52,
    "hipHeight": 0.76,
-   "tris": 5748,
-   "nearTris": 11598,
-   "walkSpeed": 0.855,
-   "runSpeed": 3.952,
-   "rootScale": {
-    "idle": 0.95,
-    "walk": 0.95,
-    "run": 1.52,
-    "sparkler": 0.95,
-    "wave": 0.95,
-    "call": 0.95,
-    "talk": 0.95,
-    "fan": 0.95,
-    "lookup": 0.95
-   },
+   "tris": 4288,
+   "nearTris": 11094,
+   "legScale": 0.95,
    "handR_palm": {
     "bone": "hand_R",
     "offset": [
@@ -669,7 +1408,7 @@
     "bone": "head",
     "offset": [
      0.0,
-     0.2026,
+     0.2027,
      0.004
     ]
    },
@@ -681,283 +1420,360 @@
     ],
     "max": [
      0.319,
-     1.529,
+     1.519,
      0.313
     ]
    },
    "tints": {
     "skin": "#efcfb8",
-    "hair": "#bdb8b4",
+    "hair": "#ffffff",
     "cloth_main": "#cfc6e6",
     "cloth_accent": "#6a4a7a",
     "cloth_dark": "#3a3040",
     "wood_geta": "#b08458",
     "face": "#ffffff"
-   }
+   },
+   "getaR": "npc_elder_geta_R",
+   "hairStyles": {
+    "bun": {
+     "mesh": "npc_elder_hair_bun",
+     "top": 1.526,
+     "headTopOffset": [
+      0.0,
+      0.1999,
+      0.004
+     ]
+    },
+    "low": {
+     "mesh": "npc_elder_hair_low",
+     "top": 1.526,
+     "headTopOffset": [
+      0.0,
+      0.1999,
+      0.004
+     ]
+    },
+    "short": {
+     "mesh": "npc_elder_hair_short",
+     "top": 1.529,
+     "headTopOffset": [
+      0.0,
+      0.2027,
+      0.004
+     ]
+    }
+   },
+   "glasses": [
+    "npc_elder_glasses",
+    "npc_elder_sunglasses"
+   ],
+   "faceLooks": {
+    "A": "basis",
+    "B": "face_b",
+    "meshes": [
+     "npc_elder_near",
+     "npc_elder_body"
+    ]
+   },
+   "nearTrisWorst": 13170,
+   "hairTris": {
+    "bun": 840,
+    "low": 840,
+    "short": 930
+   },
+   "glassesTris": {
+    "glasses": 862,
+    "sunglasses": 822
+   },
+   "getaRTris": 284,
+   "walkSpeed": 0.856,
+   "runSpeed": 1.758,
+   "seatHeight": 0.344
   }
  },
  "clips": {
   "idle": {
-   "frames": 120,
-   "duration": 4.0,
+   "duration": 9.9333,
    "loop": true,
-   "fps": 30,
-   "contacts": {
-    "L": [
-     0.0,
-     4.0
-    ],
-    "R": [
-     0.0,
-     4.0
-    ]
-   },
-   "rootZ": [
-    -0.0162,
-    -0.0162
-   ],
-   "rootX": [
-    -0.014,
-    0.014
-   ],
-   "refSkeleton": "woman",
-   "refHip": 0.8
+   "kind": "mocap",
+   "source": "idle.fbx",
+   "keys": 299,
+   "keyRate": 30,
+   "note": "breathing idle"
   },
   "walk": {
-   "frames": 30,
-   "duration": 1.0,
+   "duration": 0.9333,
    "loop": true,
-   "fps": 30,
-   "speed": 0.9,
-   "stride": 0.9,
-   "contacts": {
-    "L": [
-     0.0,
-     0.56
-    ],
-    "R": [
-     0.5,
-     0.06
-    ]
-   },
+   "kind": "mocap",
+   "source": "walk.fbx",
+   "keys": 29,
+   "keyRate": 30,
+   "refSpeed": 0.9,
+   "refStride": 0.84,
+   "strideScale": 0.677,
    "events": {
-    "strikeL": 0.0,
-    "toeOffL": 0.56,
-    "strikeR": 0.5,
-    "toeOffR": 0.06
+    "footDownL": 0.2333,
+    "footUpL": 0.6667,
+    "footDownR": 0.6667,
+    "footUpR": 0.2
    },
-   "rootZ": [
-    -0.0445,
-    -0.0199
-   ],
-   "rootX": [
-    -0.011,
-    0.011
-   ],
-   "refSkeleton": "woman",
-   "refHip": 0.8
+   "duty": {
+    "L": 0.5,
+    "R": 0.536
+   },
+   "note": "standard walk",
+   "speed": {
+    "woman": 0.901,
+    "man": 0.986,
+    "kid": 0.565,
+    "keeper": 0.958,
+    "elder": 0.856
+   }
+  },
+  "walk_f": {
+   "duration": 0.8667,
+   "loop": true,
+   "kind": "mocap",
+   "source": "walk_f.fbx",
+   "keys": 27,
+   "keyRate": 30,
+   "refSpeed": 0.9,
+   "refStride": 0.78,
+   "strideScale": 0.719,
+   "events": {
+    "footDownL": 0.2,
+    "footUpL": 0.6,
+    "footDownR": 0.6,
+    "footUpR": 0.1667
+   },
+   "duty": {
+    "L": 0.5,
+    "R": 0.538
+   },
+   "note": "female walk (women)",
+   "speed": {
+    "woman": 0.9,
+    "man": 0.985,
+    "kid": 0.564,
+    "keeper": 0.957,
+    "elder": 0.856
+   }
   },
   "run": {
-   "frames": 14,
-   "duration": 0.4667,
+   "duration": 0.4,
    "loop": true,
-   "fps": 30,
-   "speed": 2.6,
-   "stride": 1.2133,
-   "contacts": {
-    "L": [
-     0.0,
-     0.1307
-    ],
-    "R": [
-     0.2333,
-     0.364
-    ]
-   },
+   "kind": "mocap",
+   "source": "run.fbx",
+   "keys": 25,
+   "keyRate": 60,
+   "refSpeed": 1.85,
+   "refStride": 0.74,
+   "strideScale": 0.839,
    "events": {
-    "strikeL": 0.0,
-    "toeOffL": 0.1307,
-    "strikeR": 0.2333,
-    "toeOffR": 0.364
+    "footDownL": 0.25,
+    "footUpL": 0.3333,
+    "footDownR": 0.3833,
+    "footUpR": 0.1333
    },
-   "rootZ": [
-    -0.0518,
-    -0.0207
-   ],
-   "rootX": [
-    -0.008,
-    0.008
-   ],
-   "refSkeleton": "kid",
-   "refHip": 0.5
+   "duty": {
+    "L": 0.25,
+    "R": 0.417
+   },
+   "note": "jog; keyed at 60 Hz",
+   "speed": {
+    "woman": 1.851,
+    "man": 2.023,
+    "kid": 1.154,
+    "keeper": 1.965,
+    "elder": 1.758
+   }
   },
   "sparkler": {
-   "frames": 30,
-   "duration": 1.0,
+   "duration": 0.9333,
    "loop": true,
-   "fps": 30,
-   "speed": 0.9,
-   "stride": 0.9,
-   "contacts": {
-    "L": [
-     0.0,
-     0.56
-    ],
-    "R": [
-     0.5,
-     0.06
-    ]
-   },
+   "kind": "mocap walk + hand-made arm",
+   "source": "walk.fbx",
+   "keys": 29,
+   "keyRate": 30,
+   "refSpeed": 0.9,
+   "refStride": 0.84,
+   "strideScale": 0.677,
    "events": {
-    "strikeL": 0.0,
-    "toeOffL": 0.56,
-    "strikeR": 0.5,
-    "toeOffR": 0.06
+    "footDownL": 0.2333,
+    "footUpL": 0.6667,
+    "footDownR": 0.6667,
+    "footUpR": 0.2
    },
-   "rootZ": [
-    -0.0445,
-    -0.0199
-   ],
-   "rootX": [
-    -0.011,
-    0.011
-   ],
-   "refSkeleton": "woman",
-   "refHip": 0.8
-  },
-  "wave": {
-   "frames": 60,
-   "duration": 2.0,
-   "loop": true,
-   "fps": 30,
-   "contacts": {
-    "L": [
-     0.0,
-     2.0
-    ],
-    "R": [
-     0.0,
-     2.0
-    ]
+   "duty": {
+    "L": 0.5,
+    "R": 0.536
    },
-   "rootZ": [
-    -0.0161,
-    -0.0161
-   ],
-   "rootX": [
-    -0.0084,
-    0.0084
-   ],
-   "refSkeleton": "woman",
-   "refHip": 0.8
-  },
-  "call": {
-   "frames": 90,
-   "duration": 3.0,
-   "loop": true,
-   "fps": 30,
-   "contacts": {
-    "L": [
-     0.0,
-     3.0
-    ],
-    "R": [
-     0.0,
-     3.0
-    ]
-   },
-   "rootZ": [
-    -0.0161,
-    -0.0161
-   ],
-   "rootX": [
-    -0.007,
-    0.007
-   ],
-   "refSkeleton": "woman",
-   "refHip": 0.8
+   "note": "the walk with the right arm up drawing small circles (attach the sparkler to hand_R)",
+   "speed": {
+    "woman": 0.901,
+    "man": 0.986,
+    "kid": 0.565,
+    "keeper": 0.958,
+    "elder": 0.856
+   }
   },
   "talk": {
-   "frames": 120,
-   "duration": 4.0,
+   "duration": 6.8333,
    "loop": true,
-   "fps": 30,
-   "contacts": {
-    "L": [
-     0.0,
-     4.0
-    ],
-    "R": [
-     0.0,
-     4.0
-    ]
-   },
-   "rootZ": [
-    -0.0161,
-    -0.0161
-   ],
-   "rootX": [
-    -0.0098,
-    0.0098
-   ],
-   "refSkeleton": "woman",
-   "refHip": 0.8
+   "kind": "mocap",
+   "source": "talk.fbx",
+   "keys": 206,
+   "keyRate": 30,
+   "note": "conversation, gestures inside the shoulders"
+  },
+  "look": {
+   "duration": 6.3333,
+   "loop": true,
+   "kind": "mocap",
+   "source": "look.fbx",
+   "keys": 191,
+   "keyRate": 30,
+   "note": "looking around, head turn limited to about 68 deg"
+  },
+  "wave": {
+   "duration": 1.8667,
+   "loop": false,
+   "kind": "mocap",
+   "source": "wave.fbx",
+   "keys": 57,
+   "keyRate": 30,
+   "note": "right hand"
+  },
+  "bow": {
+   "duration": 2.2667,
+   "loop": false,
+   "kind": "mocap",
+   "source": "bow.fbx",
+   "keys": 69,
+   "keyRate": 30,
+   "note": "quick informal bow"
+  },
+  "eat": {
+   "duration": 3.9333,
+   "loop": false,
+   "kind": "mocap",
+   "source": "eat.fbx",
+   "keys": 119,
+   "keyRate": 30,
+   "note": "hand to mouth"
+  },
+  "cheer": {
+   "duration": 2.9,
+   "loop": false,
+   "kind": "mocap",
+   "source": "cheer.fbx",
+   "keys": 88,
+   "keyRate": 30,
+   "note": "two fists pumping"
+  },
+  "point": {
+   "duration": 2.2667,
+   "loop": false,
+   "kind": "mocap",
+   "source": "point.fbx",
+   "keys": 69,
+   "keyRate": 30,
+   "note": "pointing with a bent arm"
+  },
+  "call": {
+   "duration": 3.0,
+   "loop": true,
+   "kind": "hand-made (npc/anim.py)",
+   "keys": 91,
+   "keyRate": 30,
+   "note": "cupped hand at the mouth, then a gesture to the side"
   },
   "fan": {
-   "frames": 120,
    "duration": 4.0,
    "loop": true,
-   "fps": 30,
-   "contacts": {
-    "L": [
-     0.0,
-     4.0
-    ],
-    "R": [
-     0.0,
-     4.0
-    ]
-   },
-   "rootZ": [
-    -0.0162,
-    -0.0162
-   ],
-   "rootX": [
-    -0.014,
-    0.014
-   ],
-   "refSkeleton": "woman",
-   "refHip": 0.8
+   "kind": "hand-made (npc/anim.py)",
+   "keys": 121,
+   "keyRate": 30,
+   "note": "idle while fanning with the right hand"
   },
   "lookup": {
-   "frames": 120,
    "duration": 4.0,
    "loop": true,
-   "fps": 30,
-   "contacts": {
-    "L": [
-     0.0,
-     4.0
-    ],
-    "R": [
-     0.0,
-     4.0
-    ]
-   },
-   "rootZ": [
-    -0.0161,
-    -0.0161
+   "kind": "hand-made (npc/anim.py)",
+   "keys": 121,
+   "keyRate": 30,
+   "note": "looking up at the sky"
+  },
+  "sit": {
+   "duration": 4.0,
+   "loop": true,
+   "kind": "hand-made (npc/handmade.py)",
+   "keys": 121,
+   "keyRate": 30,
+   "seated": true,
+   "note": "seated, hands on knees"
+  },
+  "sit_fan": {
+   "duration": 4.0,
+   "loop": true,
+   "kind": "hand-made (npc/handmade.py)",
+   "keys": 121,
+   "keyRate": 30,
+   "seated": true,
+   "note": "seated, right hand fanning slowly"
+  },
+  "sit_sleep": {
+   "duration": 6.0,
+   "loop": true,
+   "kind": "hand-made (npc/handmade.py)",
+   "keys": 181,
+   "keyRate": 30,
+   "seated": true,
+   "note": "seated asleep, nodding"
+  },
+  "yawn": {
+   "duration": 3.2,
+   "loop": false,
+   "kind": "hand-made (npc/handmade.py)",
+   "keys": 97,
+   "keyRate": 30,
+   "note": "stretch, hand to mouth"
+  },
+  "cry": {
+   "duration": 2.0,
+   "loop": true,
+   "kind": "hand-made (npc/handmade.py)",
+   "keys": 61,
+   "keyRate": 30,
+   "note": "fists at the eyes, shoulders bobbing"
+  },
+  "pick_up": {
+   "duration": 2.4,
+   "loop": false,
+   "kind": "hand-made (npc/handmade.py)",
+   "keys": 73,
+   "keyRate": 30,
+   "touch": [
+    0.95,
+    1.25
    ],
-   "rootX": [
-    -0.0084,
-    0.0084
+   "note": "crouch, right hand to the ground"
+  },
+  "peace": {
+   "duration": 2.4,
+   "loop": false,
+   "kind": "hand-made (npc/handmade.py)",
+   "keys": 73,
+   "keyRate": 30,
+   "hold": [
+    0.5,
+    1.7
    ],
-   "refSkeleton": "woman",
-   "refHip": 0.8
+   "note": "V sign beside the face, held about a second"
   }
  },
  "reimport": {
-  "objects": 20,
+  "objects": 49,
   "meshes": [
    {
     "name": "Icosphere",
@@ -986,50 +1802,130 @@
    },
    {
     "name": "npc_elder_body.001",
-    "tris": 5748,
+    "tris": 4288,
     "materials": [
      "skin.001",
      "face.001",
-     "hair.001",
      "cloth_main.001",
      "cloth_accent.001",
      "cloth_dark.001",
      "wood_geta.001"
+    ]
+   },
+   {
+    "name": "npc_elder_geta_R.001",
+    "tris": 284,
+    "materials": [
+     "cloth_dark.001",
+     "wood_geta.001"
+    ]
+   },
+   {
+    "name": "npc_elder_glasses.001",
+    "tris": 862,
+    "materials": [
+     "glasses_frame.001",
+     "glasses_lens.001"
+    ]
+   },
+   {
+    "name": "npc_elder_hair_bun.001",
+    "tris": 840,
+    "materials": [
+     "hair.001",
+     "cloth_accent.001"
+    ]
+   },
+   {
+    "name": "npc_elder_hair_low.001",
+    "tris": 840,
+    "materials": [
+     "hair.001",
+     "cloth_accent.001"
+    ]
+   },
+   {
+    "name": "npc_elder_hair_short.001",
+    "tris": 930,
+    "materials": [
+     "hair.001"
     ]
    },
    {
     "name": "npc_elder_near.001",
-    "tris": 11598,
+    "tris": 11094,
     "materials": [
      "skin.001",
      "face.001",
-     "hair.001",
      "cloth_main.001",
      "cloth_accent.001",
      "cloth_dark.001",
      "wood_geta.001"
+    ]
+   },
+   {
+    "name": "npc_elder_sunglasses.001",
+    "tris": 822,
+    "materials": [
+     "glasses_frame.001",
+     "glasses_lens.001"
     ]
    },
    {
     "name": "npc_keeper_body.001",
-    "tris": 5204,
+    "tris": 4218,
     "materials": [
      "skin.001",
      "face.001",
-     "hair.001",
      "cloth_main.001",
      "cloth_accent.001",
      "cloth_dark.001",
      "cloth_shoe.001"
+    ]
+   },
+   {
+    "name": "npc_keeper_geta_R.001",
+    "tris": 264,
+    "materials": [
+     "cloth_shoe.001"
+    ]
+   },
+   {
+    "name": "npc_keeper_glasses.001",
+    "tris": 822,
+    "materials": [
+     "glasses_frame.001",
+     "glasses_lens.001"
+    ]
+   },
+   {
+    "name": "npc_keeper_hair_crop.001",
+    "tris": 540,
+    "materials": [
+     "hair.001"
+    ]
+   },
+   {
+    "name": "npc_keeper_hair_short.001",
+    "tris": 968,
+    "materials": [
+     "hair.001"
+    ]
+   },
+   {
+    "name": "npc_keeper_hair_tied.001",
+    "tris": 952,
+    "materials": [
+     "hair.001",
+     "cloth_dark.001"
     ]
    },
    {
     "name": "npc_keeper_near.001",
-    "tris": 11360,
+    "tris": 11490,
     "materials": [
      "skin.001",
      "face.001",
-     "hair.001",
      "cloth_main.001",
      "cloth_accent.001",
      "cloth_dark.001",
@@ -1037,64 +1933,150 @@
     ]
    },
    {
+    "name": "npc_keeper_sunglasses.001",
+    "tris": 822,
+    "materials": [
+     "glasses_frame.001",
+     "glasses_lens.001"
+    ]
+   },
+   {
     "name": "npc_kid_body.001",
-    "tris": 4696,
+    "tris": 3498,
     "materials": [
      "skin.001",
      "face.001",
-     "hair.001",
      "cloth_main.001",
      "cloth_accent.001",
      "cloth_dark.001",
      "wood_geta.001"
+    ]
+   },
+   {
+    "name": "npc_kid_geta_R.001",
+    "tris": 284,
+    "materials": [
+     "cloth_accent.001",
+     "wood_geta.001"
+    ]
+   },
+   {
+    "name": "npc_kid_hair_bowl.001",
+    "tris": 814,
+    "materials": [
+     "hair.001"
+    ]
+   },
+   {
+    "name": "npc_kid_hair_pigtails.001",
+    "tris": 958,
+    "materials": [
+     "hair.001",
+     "cloth_accent.001"
+    ]
+   },
+   {
+    "name": "npc_kid_hair_short.001",
+    "tris": 840,
+    "materials": [
+     "hair.001"
     ]
    },
    {
     "name": "npc_kid_near.001",
-    "tris": 10456,
+    "tris": 10362,
     "materials": [
      "skin.001",
      "face.001",
-     "hair.001",
      "cloth_main.001",
      "cloth_accent.001",
      "cloth_dark.001",
      "wood_geta.001"
+    ]
+   },
+   {
+    "name": "npc_kid_sunglasses.001",
+    "tris": 822,
+    "materials": [
+     "glasses_frame.001",
+     "glasses_lens.001"
     ]
    },
    {
     "name": "npc_man_body.001",
-    "tris": 5356,
+    "tris": 4196,
     "materials": [
      "skin.001",
      "face.001",
-     "hair.001",
      "cloth_main.001",
      "cloth_accent.001",
      "cloth_dark.001",
      "wood_geta.001"
+    ]
+   },
+   {
+    "name": "npc_man_geta_R.001",
+    "tris": 284,
+    "materials": [
+     "cloth_dark.001",
+     "wood_geta.001"
+    ]
+   },
+   {
+    "name": "npc_man_glasses.001",
+    "tris": 822,
+    "materials": [
+     "glasses_frame.001",
+     "glasses_lens.001"
+    ]
+   },
+   {
+    "name": "npc_man_hair_crop.001",
+    "tris": 540,
+    "materials": [
+     "hair.001"
+    ]
+   },
+   {
+    "name": "npc_man_hair_short.001",
+    "tris": 858,
+    "materials": [
+     "hair.001"
+    ]
+   },
+   {
+    "name": "npc_man_hair_slick.001",
+    "tris": 600,
+    "materials": [
+     "hair.001"
     ]
    },
    {
     "name": "npc_man_near.001",
-    "tris": 10610,
+    "tris": 10590,
     "materials": [
      "skin.001",
      "face.001",
-     "hair.001",
      "cloth_main.001",
      "cloth_accent.001",
      "cloth_dark.001",
      "wood_geta.001"
+    ]
+   },
+   {
+    "name": "npc_man_sunglasses.001",
+    "tris": 822,
+    "materials": [
+     "glasses_frame.001",
+     "glasses_lens.001"
     ]
    },
    {
     "name": "npc_woman_body.001",
-    "tris": 6298,
+    "tris": 4586,
     "materials": [
      "skin.001",
      "face.001",
-     "hair.001",
      "cloth_main.001",
      "cloth_accent.001",
      "cloth_dark.001",
@@ -1102,85 +2084,280 @@
     ]
    },
    {
+    "name": "npc_woman_geta_R.001",
+    "tris": 284,
+    "materials": [
+     "cloth_accent.001",
+     "wood_geta.001"
+    ]
+   },
+   {
+    "name": "npc_woman_glasses.001",
+    "tris": 862,
+    "materials": [
+     "glasses_frame.001",
+     "glasses_lens.001"
+    ]
+   },
+   {
+    "name": "npc_woman_hair_bob.001",
+    "tris": 1332,
+    "materials": [
+     "hair.001"
+    ]
+   },
+   {
+    "name": "npc_woman_hair_bun.001",
+    "tris": 1490,
+    "materials": [
+     "hair.001",
+     "cloth_accent.001",
+     "wood_geta.001"
+    ]
+   },
+   {
+    "name": "npc_woman_hair_ponytail.001",
+    "tris": 952,
+    "materials": [
+     "hair.001",
+     "cloth_accent.001"
+    ]
+   },
+   {
     "name": "npc_woman_near.001",
-    "tris": 11938,
+    "tris": 11094,
     "materials": [
      "skin.001",
      "face.001",
-     "hair.001",
      "cloth_main.001",
      "cloth_accent.001",
      "cloth_dark.001",
      "wood_geta.001"
+    ]
+   },
+   {
+    "name": "npc_woman_sunglasses.001",
+    "tris": 822,
+    "materials": [
+     "glasses_frame.001",
+     "glasses_lens.001"
     ]
    }
   ],
   "armatures": [
    {
     "name": "npc_elder.001",
-    "bones": 22
+    "bones": 42
    },
    {
     "name": "npc_keeper.001",
-    "bones": 22
+    "bones": 42
    },
    {
     "name": "npc_kid.001",
-    "bones": 22
+    "bones": 42
    },
    {
     "name": "npc_man.001",
-    "bones": 22
+    "bones": 42
    },
    {
     "name": "npc_woman.001",
-    "bones": 22
+    "bones": 42
    }
   ],
   "actions": [
+   "bow.001",
    "call.001",
+   "cheer.001",
+   "cry.001",
+   "eat.001",
    "fan.001",
    "idle.001",
+   "look.001",
    "lookup.001",
+   "peace.001",
+   "pick_up.001",
+   "point.001",
    "run.001",
+   "sit.001",
+   "sit_fan.001",
+   "sit_sleep.001",
    "sparkler.001",
    "talk.001",
    "walk.001",
-   "wave.001"
+   "walk_f.001",
+   "wave.001",
+   "yawn.001"
   ]
  },
- "buildSeconds": 6.9,
+ "buildSeconds": 82.9,
+ "checks": {
+  "clipSpeed": {
+   "walk": {
+    "woman": 0.901,
+    "man": 0.986,
+    "kid": 0.565,
+    "keeper": 0.958,
+    "elder": 0.856
+   },
+   "walk_f": {
+    "woman": 0.9,
+    "man": 0.985,
+    "kid": 0.564,
+    "keeper": 0.957,
+    "elder": 0.856
+   },
+   "run": {
+    "woman": 1.851,
+    "man": 2.023,
+    "kid": 1.154,
+    "keeper": 1.965,
+    "elder": 1.758
+   },
+   "sparkler": {
+    "woman": 0.901,
+    "man": 0.986,
+    "kid": 0.565,
+    "keeper": 0.958,
+    "elder": 0.856
+   }
+  },
+  "problems": [],
+  "slip": {
+   "walk": {
+    "woman": {
+     "max": 2.33,
+     "p95": 1.33
+    },
+    "man": {
+     "max": 2.61,
+     "p95": 1.47
+    },
+    "kid": {
+     "max": 1.76,
+     "p95": 0.89
+    },
+    "keeper": {
+     "max": 2.61,
+     "p95": 1.48
+    },
+    "elder": {
+     "max": 2.25,
+     "p95": 1.29
+    }
+   },
+   "walk_f": {
+    "woman": {
+     "max": 1.77,
+     "p95": 1.35
+    },
+    "man": {
+     "max": 1.93,
+     "p95": 1.43
+    },
+    "kid": {
+     "max": 1.19,
+     "p95": 0.88
+    },
+    "keeper": {
+     "max": 1.88,
+     "p95": 1.41
+    },
+    "elder": {
+     "max": 1.7,
+     "p95": 1.21
+    }
+   },
+   "run": {
+    "woman": {
+     "max": 2.52,
+     "p95": 2.19
+    },
+    "man": {
+     "max": 2.82,
+     "p95": 2.4
+    },
+    "kid": {
+     "max": 2.17,
+     "p95": 2.0
+    },
+    "keeper": {
+     "max": 2.87,
+     "p95": 2.37
+    },
+    "elder": {
+     "max": 3.03,
+     "p95": 2.14
+    }
+   },
+   "sparkler": {
+    "woman": {
+     "max": 2.33,
+     "p95": 1.33
+    },
+    "man": {
+     "max": 2.61,
+     "p95": 1.47
+    },
+    "kid": {
+     "max": 1.76,
+     "p95": 0.89
+    },
+    "keeper": {
+     "max": 2.61,
+     "p95": 1.48
+    },
+    "elder": {
+     "max": 2.25,
+     "p95": 1.29
+    }
+   }
+  }
+ },
  "previews": [
-  "previews\\lineup_front.png",
-  "previews\\lineup_threequarter.png",
-  "previews\\lineup_back.png",
-  "previews\\lineup_threequarter_far.png",
-  "previews\\closeup_man_idle_30_near_vs_far.png",
-  "previews\\closeup_woman_idle_30_near_vs_far.png",
-  "previews\\closeup_woman_walk_07_near_vs_far.png",
-  "previews\\closeup_woman_walk_22_near_vs_far.png",
-  "previews\\closeup_woman_sparkler_09_near_vs_far.png",
-  "previews\\closeup_woman_wave_15_near_vs_far.png",
-  "previews\\closeup_man_call_20_near_vs_far.png",
-  "previews\\closeup_elder_fan_22_near_vs_far.png",
-  "previews\\closeup_man_talk_25_near_vs_far.png",
-  "previews\\clip_idle_60.png",
-  "previews\\clip_walk_07.png",
-  "previews\\clip_walk_22.png",
-  "previews\\clip_run_04.png",
-  "previews\\clip_run_11.png",
-  "previews\\clip_wave_15.png",
-  "previews\\clip_call_20.png",
-  "previews\\clip_call_60.png",
-  "previews\\clip_talk_25.png",
-  "previews\\clip_fan_22.png",
-  "previews\\clip_lookup_30.png",
-  "previews\\clip_sparkler_09.png",
+  "previews\\lineup_crowd_mix.png",
   "previews\\face_woman.png",
+  "previews\\hands_woman.png",
   "previews\\face_man.png",
+  "previews\\hands_man.png",
   "previews\\face_kid.png",
+  "previews\\hands_kid.png",
   "previews\\face_keeper.png",
-  "previews\\face_elder.png"
+  "previews\\hands_keeper.png",
+  "previews\\face_elder.png",
+  "previews\\hands_elder.png",
+  "previews\\far_10m_full.png",
+  "previews\\far_10m_faces_x4.png",
+  "previews\\walk_woman.png",
+  "previews\\walk_man.png",
+  "previews\\walk_kid.png",
+  "previews\\walk_keeper.png",
+  "previews\\walk_elder.png",
+  "previews\\walk_f_woman.png",
+  "previews\\walk_f_elder.png",
+  "previews\\run_kid.png",
+  "previews\\run_man.png",
+  "previews\\run_woman.png",
+  "previews\\sparkler_kid.png",
+  "previews\\clip_idle.png",
+  "previews\\clip_talk.png",
+  "previews\\clip_look.png",
+  "previews\\clip_wave.png",
+  "previews\\clip_bow.png",
+  "previews\\clip_eat.png",
+  "previews\\clip_cheer.png",
+  "previews\\clip_point.png",
+  "previews\\clip_call.png",
+  "previews\\clip_fan.png",
+  "previews\\clip_lookup.png",
+  "previews\\clip_sit.png",
+  "previews\\clip_sit_fan.png",
+  "previews\\clip_sit_sleep.png",
+  "previews\\clip_yawn.png",
+  "previews\\clip_cry.png",
+  "previews\\clip_pick_up.png",
+  "previews\\clip_peace.png"
  ],
  "gpu": "NVIDIA GeForce RTX 4060/PCIe/SSE2"
 }

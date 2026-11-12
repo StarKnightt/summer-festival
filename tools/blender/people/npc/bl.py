@@ -111,8 +111,11 @@ def pattern_image():
 # ---------------------------------------------------------------- materials
 
 DEFAULT_COLOURS = {   # neutral defaults; the game tints per instance (see README / extras)
-    "skin": "#f4d3bf", "hair": "#3b2b26", "face": "#ffffff", "cloth_main": "#ffffff",
+    "skin": "#f4d3bf", "hair": "#ffffff", "face": "#ffffff", "cloth_main": "#ffffff",
     "cloth_accent": "#e8c35a", "cloth_dark": "#2c3346", "wood_geta": "#c79a68", "cloth_shoe": "#30323a",
+    # hair and glasses carry their colour in COLOR_0 (white base): grey elder hair, varied browns,
+    # dark or metal frames; the lens tint AND opacity are in COLOR_0 (rgb, a) - see README
+    "glasses_frame": "#ffffff", "glasses_lens": "#ffffff",
 }
 
 
@@ -140,7 +143,9 @@ def material(name, image=None):
 
 # ---------------------------------------------------------------- skinned mesh
 
-MAT_ORDER = ["skin", "face", "hair", "cloth_main", "cloth_accent", "cloth_dark", "wood_geta", "cloth_shoe"]
+MAT_ORDER = ["skin", "face", "hair", "cloth_main", "cloth_accent", "cloth_dark", "wood_geta", "cloth_shoe",
+             "glasses_frame", "glasses_lens"]
+MORPH = "face_b"
 
 
 def make_mesh(mb, arm, col, mats):
@@ -160,8 +165,8 @@ def make_mesh(mb, arm, col, mats):
     me.loops.foreach_get("vertex_index", vi)
     UV = np.asarray(mb.UV, float)
     uvl.data.foreach_set("uv", UV[vi].ravel())
-    # vertex colour (multiplies the base colour in the game)
-    C = np.hstack([np.asarray(mb.C, float), np.ones((len(V), 1))])
+    # vertex colour (multiplies the base colour in the game); alpha only matters for glasses_lens
+    C = np.hstack([np.asarray(mb.C, float), np.asarray(mb.A, float)[:, None]])
     attr = me.color_attributes.new("Col", "BYTE_COLOR", "CORNER")
     attr.data.foreach_set("color", C[vi].ravel())
     me.color_attributes.active_color = attr
@@ -176,12 +181,51 @@ def make_mesh(mb, arm, col, mats):
             if g is None:
                 g = groups[b] = ob.vertex_groups.new(name=b)
             g.add([i], v, "REPLACE")
+    NF = np.asarray(mb.NF, bool)
+    if NF.any():
+        gn = ob.vertex_groups.new(name="_nrm")
+        gn.add([int(i) for i in np.where(NF)[0]], 1.0, "REPLACE")
+    # face look B as a shape key (before the weld: bmesh keeps shape-key layers)
+    extra = mb.morph_names()
+    if mb.has_morph() or extra:
+        ob.shape_key_add(name="Basis", from_mix=False)
+        keys = ([(MORPH, mb.Vb)] if mb.has_morph() else []) + [(nm, mb.M[nm]) for nm in extra]
+        for nm, P in keys:
+            sk = ob.shape_key_add(name=nm, from_mix=False)
+            sk.data.foreach_set("co", np.asarray(P, float).ravel())
+            sk.slider_min, sk.slider_max, sk.value = 0.0, 1.0, 0.0
     # weld loft seams / coincident points so smooth normals do not split (UVs stay per corner)
     bm = bmesh.new()
     bm.from_mesh(me)
     bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)
     bm.to_mesh(me)
     bm.free()
+    # analytic normals on the head skin and the painted face (a clean toon terminator)
+    if NF.any() and mb.normal_fn is not None:
+        gi = ob.vertex_groups["_nrm"].index
+        nv = len(me.vertices)
+        flag = np.zeros(nv, bool)
+        for v in me.vertices:
+            for ge in v.groups:
+                if ge.group == gi and ge.weight > 0.5:
+                    flag[v.index] = True
+        co = np.zeros(nv * 3)
+        me.vertices.foreach_get("co", co)
+        co = co.reshape(-1, 3)
+        vi = np.zeros(len(me.loops), dtype=np.int64)
+        me.loops.foreach_get("vertex_index", vi)
+        cn = np.zeros(len(me.loops) * 3)
+        me.corner_normals.foreach_get("vector", cn)
+        cn = cn.reshape(-1, 3)
+        idx = np.where(flag)[0]
+        Nv = np.zeros((nv, 3))
+        Nv[idx] = mb.normal_fn(co[idx])
+        lf = flag[vi]
+        cn[lf] = Nv[vi[lf]]
+        me.normals_split_custom_set([tuple(n) for n in cn])
+        ob.vertex_groups.remove(ob.vertex_groups["_nrm"])
+    elif "_nrm" in ob.vertex_groups:
+        ob.vertex_groups.remove(ob.vertex_groups["_nrm"])
     ob.parent = arm
     mod = ob.modifiers.new("Armature", "ARMATURE")
     mod.object = arm

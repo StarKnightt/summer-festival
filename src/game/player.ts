@@ -26,6 +26,9 @@ export class Player {
   distance = 0;
   private idleT = 0;
 
+  /** A blocker added after the world was built (benches and other props from the moments). */
+  addCollider(c: Collider): void { this.colliders.push(c); }
+
   constructor(
     private her: Heroine,
     private colliders: Collider[],
@@ -56,7 +59,9 @@ export class Player {
     } else if (this.enabled) {
       // Standing still: after a moment she turns to face down the street (toward the sea).
       this.idleT += dt;
-      if (this.idleT > 1.2) her.heading = dampAngle(her.heading, Math.PI, 2.2, dt);
+      // Looking at something past her neck's range: turn the body toward it.
+      if (her.bodyTurn !== 0) her.heading = dampAngle(her.heading, her.heading + her.bodyTurn, 2.5, dt);
+      else if (this.idleT > 1.2 && !her.lookTarget) her.heading = dampAngle(her.heading, Math.PI, 2.2, dt);
     }
 
     const p = her.position;
@@ -73,25 +78,29 @@ export class Player {
     p.y += (gy - p.y) * (1 - Math.exp(-18 * dt));
   }
 
-  /** Push her out of every box and circle. */
+  /** Push her out of every box, oriented box and circle. */
   resolve(p: THREE.Vector3): void {
     for (let it = 0; it < 2; it++) {
       for (const c of this.colliders) {
-        const cx = Math.max(c.x0, Math.min(p.x, c.x1));
-        const cz = Math.max(c.z0, Math.min(p.z, c.z1));
-        const dx = p.x - cx, dz = p.z - cz;
-        const d2 = dx * dx + dz * dz;
-        if (d2 >= RADIUS * RADIUS) continue;
-        if (d2 > 1e-8) {
-          const d = Math.sqrt(d2);
-          p.x = cx + (dx / d) * RADIUS;
-          p.z = cz + (dz / d) * RADIUS;
-        } else {
-          // Inside: leave by the nearest face.
-          const l = p.x - c.x0, r = c.x1 - p.x, b = p.z - c.z0, f = c.z1 - p.z;
-          const m = Math.min(l, r, b, f);
-          if (m === l) p.x = c.x0 - RADIUS; else if (m === r) p.x = c.x1 + RADIUS; else if (m === b) p.z = c.z0 - RADIUS; else p.z = c.z1 + RADIUS;
+        if (p.x < c.x0 - RADIUS || p.x > c.x1 + RADIUS || p.z < c.z0 - RADIUS || p.z > c.z1 + RADIUS) continue;
+        if (c.circle) {
+          const dx = p.x - c.circle.x, dz = p.z - c.circle.z, d = Math.hypot(dx, dz), m = c.circle.r + RADIUS;
+          if (d >= m) continue;
+          if (d > 1e-4) { p.x = c.circle.x + (dx / d) * m; p.z = c.circle.z + (dz / d) * m; } else p.x = c.circle.x + m;
+          continue;
         }
+        if (c.ob) {
+          // Into the box's own frame, resolve as an axis-aligned box, and back out.
+          const o = c.ob, cs = Math.cos(o.ang), sn = Math.sin(o.ang);
+          const wx = p.x - o.x, wz = p.z - o.z;
+          const q = { x: wx * cs - wz * sn, z: wx * sn + wz * cs };
+          if (boxOut(q, -o.hx, o.hx, -o.hz, o.hz)) {
+            p.x = o.x + q.x * cs + q.z * sn;
+            p.z = o.z - q.x * sn + q.z * cs;
+          }
+          continue;
+        }
+        boxOut(p, c.x0, c.x1, c.z0, c.z1);
       }
       for (const c of this.circles) {
         const dx = p.x - c.x, dz = p.z - c.z;
@@ -104,4 +113,24 @@ export class Player {
       }
     }
   }
+}
+
+/** Circle (her) out of an axis-aligned box; true if it moved her. */
+function boxOut(p: { x: number; z: number }, x0: number, x1: number, z0: number, z1: number): boolean {
+  const cx = Math.max(x0, Math.min(p.x, x1));
+  const cz = Math.max(z0, Math.min(p.z, z1));
+  const dx = p.x - cx, dz = p.z - cz;
+  const d2 = dx * dx + dz * dz;
+  if (d2 >= RADIUS * RADIUS) return false;
+  if (d2 > 1e-8) {
+    const d = Math.sqrt(d2);
+    p.x = cx + (dx / d) * RADIUS;
+    p.z = cz + (dz / d) * RADIUS;
+  } else {
+    // Inside: leave by the nearest face.
+    const l = p.x - x0, r = x1 - p.x, b = p.z - z0, f = z1 - p.z;
+    const m = Math.min(l, r, b, f);
+    if (m === l) p.x = x0 - RADIUS; else if (m === r) p.x = x1 + RADIUS; else if (m === b) p.z = z0 - RADIUS; else p.z = z1 + RADIUS;
+  }
+  return true;
 }

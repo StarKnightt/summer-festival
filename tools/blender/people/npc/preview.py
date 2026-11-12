@@ -9,11 +9,11 @@ import numpy as np
 from .geo import srgb
 
 TINTS = {
-    "woman": dict(skin="#f6d5c2", hair="#3a2620", cloth_main="#f19aa6", cloth_accent="#f3c74f", cloth_dark="#3b3f6b", wood_geta="#c99a66", face="#ffffff"),
-    "man": dict(skin="#e9c2a6", hair="#1f1a1c", cloth_main="#40507a", cloth_accent="#c9b98f", cloth_dark="#2a2a2e", wood_geta="#b88a5a", face="#ffffff"),
-    "kid": dict(skin="#f7d9c6", hair="#4a3426", cloth_main="#7cc3ea", cloth_accent="#ffffff", cloth_dark="#2d3b6b", wood_geta="#d0a46e", face="#ffffff"),
-    "keeper": dict(skin="#e3b896", hair="#24201f", cloth_main="#d8423a", cloth_accent="#f4efe4", cloth_dark="#232a3a", cloth_shoe="#2a2c33", face="#ffffff"),
-    "elder": dict(skin="#efcfb8", hair="#bdb8b4", cloth_main="#cfc6e6", cloth_accent="#6a4a7a", cloth_dark="#3a3040", wood_geta="#b08458", face="#ffffff"),
+    "woman": dict(skin="#f6d5c2", hair="#ffffff", cloth_main="#f19aa6", cloth_accent="#f3c74f", cloth_dark="#3b3f6b", wood_geta="#c99a66", face="#ffffff"),
+    "man": dict(skin="#e9c2a6", hair="#ffffff", cloth_main="#40507a", cloth_accent="#c9b98f", cloth_dark="#2a2a2e", wood_geta="#b88a5a", face="#ffffff"),
+    "kid": dict(skin="#f7d9c6", hair="#ffffff", cloth_main="#7cc3ea", cloth_accent="#ffffff", cloth_dark="#2d3b6b", wood_geta="#d0a46e", face="#ffffff"),
+    "keeper": dict(skin="#e3b896", hair="#ffffff", cloth_main="#d8423a", cloth_accent="#f4efe4", cloth_dark="#232a3a", cloth_shoe="#2a2c33", face="#ffffff"),
+    "elder": dict(skin="#efcfb8", hair="#ffffff", cloth_main="#cfc6e6", cloth_accent="#6a4a7a", cloth_dark="#3a3040", wood_geta="#b08458", face="#ffffff"),
 }
 SPACING = 0.95
 
@@ -59,6 +59,13 @@ def preview_material(base, v):
         nt.links.new(out, mul2.inputs[6])
         nt.links.new(tex.outputs["Color"], mul2.inputs[7])
         out = mul2.outputs[2]
+    if base.name == "glasses_lens":
+        nt.links.new(va.outputs["Alpha"], bsdf.inputs["Alpha"])
+        bsdf.inputs["Roughness"].default_value = 0.15
+        try:
+            m.surface_render_method = "BLENDED"
+        except Exception:
+            m.blend_method = "BLEND"
     if base.name == "face":
         # the game draws face features unlit-ish: show them at their albedo
         nt.links.new(out, bsdf.inputs["Emission Color"])
@@ -138,28 +145,14 @@ def render(path):
     return path
 
 
-ROOT_SCALE = {}   # (clip, variant) -> scale for root.position (set by run_all)
-_SCALED = {}
+LK = {}           # variant -> leg scale (hips travel of the shared clips is multiplied by it; set by run_all)
 
 
 def scaled_action(action, v):
-    """Preview copy of a clip with root.location scaled for this variant's legs (what the game does)."""
-    k = ROOT_SCALE.get((action.name, v), 1.0)
-    if abs(k - 1.0) < 1e-4:
-        return action
-    key = (action.name, v)
-    if key not in _SCALED:
-        a2 = action.copy()
-        a2.name = f"prev_{action.name}_{v}"
-        for layer in a2.layers:
-            for st in layer.strips:
-                for cb in st.channelbags:
-                    for fc in cb.fcurves:
-                        if fc.data_path == 'pose.bones["root"].location':
-                            for kp in fc.keyframe_points:
-                                kp.co[1] *= k
-        _SCALED[key] = a2
-    return _SCALED[key]
+    """Preview copy of a clip as variant v plays it: the hips translation times its leg scale
+    (in the GLB the rest scales of root / hips do this, see glbtools.leg_units)."""
+    from . import mocap
+    return mocap.variant_action(action, LK.get(v, 1.0), v)
 
 
 def lineup(arms, order, yaw=0.0, action=None, frame=0, slot=None, spacing=SPACING):
@@ -234,62 +227,312 @@ def solo(arms, order, v, action, frame, yaw=0.0):
     bpy.context.view_layer.update()
 
 
-def run_all(arms, meshes, nears, order, outdir, actions, root_scale=None):
-    ROOT_SCALE.clear()
-    ROOT_SCALE.update(root_scale or {})
-    setup({v: meshes[v] for v in order})
-    setup({v: nears[v] for v in order})
+def compose(rows, out, gap=6, scale=1):
+    """Tile rendered PNGs: rows = [[path, ...], ...] (top row first); deletes the inputs."""
+    def load(p):
+        im = bpy.data.images.load(p, check_existing=False)
+        a = np.empty(im.size[0] * im.size[1] * 4, dtype=np.float32)
+        im.pixels.foreach_get(a)
+        a = a.reshape(im.size[1], im.size[0], 4)[::-1]          # top-down
+        bpy.data.images.remove(im)
+        if scale != 1:
+            a = a.repeat(scale, 0).repeat(scale, 1)
+        return a
+    R = []
+    for row in rows:
+        arrs = [load(p) for p in row]
+        h = max(a.shape[0] for a in arrs)
+        parts = []
+        for k, a in enumerate(arrs):
+            if k:
+                parts.append(np.ones((h, gap, 4), np.float32))
+            if a.shape[0] < h:
+                a = np.vstack([a, np.ones((h - a.shape[0], a.shape[1], 4), np.float32)])
+            parts.append(a)
+        R.append(np.concatenate(parts, 1))
+    w = max(r.shape[1] for r in R)
+    rows_ = []
+    for k, r in enumerate(R):
+        if k:
+            rows_.append(np.ones((gap, w, 4), np.float32))
+        if r.shape[1] < w:
+            r = np.hstack([r, np.ones((r.shape[0], w - r.shape[1], 4), np.float32)])
+        rows_.append(r)
+    img = np.concatenate(rows_, 0)[::-1].copy()
+    o = bpy.data.images.new("prev_cmp", img.shape[1], img.shape[0], alpha=False)
+    o.pixels.foreach_set(img.ravel())
+    o.filepath_raw = out
+    o.file_format = "PNG"
+    o.save()
+    bpy.data.images.remove(o)
+    for row in rows:
+        for p in row:
+            try:
+                os.remove(p)
+            except OSError:
+                pass
+    return out
+
+
+def crop(path, x0, y0, x1, y1, scale=1):
+    """Crop (top-down pixel box) a rendered PNG in place, optionally nearest-upscaled."""
+    im = bpy.data.images.load(path, check_existing=False)
+    W, H = im.size
+    a = np.empty(W * H * 4, dtype=np.float32)
+    im.pixels.foreach_get(a)
+    bpy.data.images.remove(im)
+    a = a.reshape(H, W, 4)[::-1][y0:y1, x0:x1]
+    a = a.repeat(scale, 0).repeat(scale, 1)[::-1].copy()
+    o = bpy.data.images.new("prev_crop", a.shape[1], a.shape[0], alpha=False)
+    o.pixels.foreach_set(a.ravel())
+    o.filepath_raw = path
+    o.file_format = "PNG"
+    o.save()
+    bpy.data.images.remove(o)
+    return path
+
+
+class Dress:
+    """Which hairstyle / specs / face look each variant shows in the previews."""
+
+    def __init__(self, extras, meshes, nears):
+        self.ex, self.meshes, self.nears = extras, meshes, nears
+
+    def set(self, v, hair=0, specs=None, look="A", blink=0.0, smile=0.0):
+        ex = self.ex[v]
+        styles = list(ex["hair"])
+        for i, st in enumerate(styles):
+            ex["hair"][st].hide_render = i != (hair % len(styles))
+        for k in ("glasses", "sunglasses"):
+            if ex[k] is not None:
+                ex[k].hide_render = specs != k
+        for ob in (self.meshes[v], self.nears[v]):
+            sk = ob.data.shape_keys
+            if sk is not None:
+                for nm, val in (("face_b", 1.0 if look == "B" else 0.0), ("blink", blink), ("smile", smile)):
+                    if nm in sk.key_blocks:
+                        sk.key_blocks[nm].value = val
+
+
+def cam_vfov(loc, target, vfov_deg):
+    cam = camera(loc, target)
+    cam.data.sensor_fit = "VERTICAL"
+    cam.data.angle_y = math.radians(vfov_deg)
+    return cam
+
+
+def walk_strip(arms, order, v, action, n_keys, key_rate, speed, outdir, tag, nshots=8):
+    """Side view of one cycle: the armature advances at the clip speed (as the game moves it), the
+    camera stays put, so a planted shoe must stay on the same ground tick from tile to tile.
+    n_keys: key intervals in the cycle; key_rate: keys per second."""
+    sc = bpy.context.scene
+    sc.render.resolution_x, sc.render.resolution_y = 400, 520
+    tiles = []
+    a = arms[v]
+    T = n_keys / key_rate
+    for k in range(nshots):
+        f = int(round(k * n_keys / nshots))
+        solo(arms, order, v, action, 1 + f)
+        t = f / key_rate
+        a.location = (0, -speed * t + speed * T / 2, 0)
+        bpy.context.view_layer.update()
+        h = a.data.bones["head"].head_local.z
+        cam = camera((3.2, 0, h * 0.58), (0, 0, h * 0.58))
+        cam.data.type = "ORTHO"
+        cam.data.ortho_scale = h * 1.30
+        tiles.append(render(os.path.join(outdir, f"_tmp_strip_{k}.png")))
+    bpy.data.objects["PrevCam"].data.type = "PERSP"
+    a.location = (0, 0, 0)
+    return compose([tiles], os.path.join(outdir, f"{tag}.png"), gap=2)
+
+
+def bench(top=0.45, show=True):
+    """A plain 0.45 m seat behind the feet of the whole lineup, for the seated stills."""
+    ob = bpy.data.objects.get("PrevBench")
+    if ob is None:
+        x, y0, y1 = 3.0, 0.14, 0.62
+        V = [(-x, y0, 0), (x, y0, 0), (x, y1, 0), (-x, y1, 0), (-x, y0, top), (x, y0, top), (x, y1, top), (-x, y1, top)]
+        F = [(0, 1, 5, 4), (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7), (4, 5, 6, 7)]
+        me = bpy.data.meshes.new("PrevBench")
+        me.from_pydata(V, [], F)
+        ob = bpy.data.objects.new("PrevBench", me)
+        m = bpy.data.materials.new("prev_bench")
+        m.use_nodes = True
+        bs = next(n for n in m.node_tree.nodes if n.type == "BSDF_PRINCIPLED")
+        bs.inputs["Base Color"].default_value = (*srgb("#8a6a48"), 1)
+        bs.inputs["Roughness"].default_value = 1.0
+        me.materials.append(m)
+        bpy.context.scene.collection.objects.link(ob)
+    ob.hide_render = not show
+    return ob
+
+
+def ground_ticks():
+    """Thin dark lines across the ground every 10 cm (Y) to read foot slip in the walk strips."""
+    if "PrevTicks" in bpy.data.objects:
+        return bpy.data.objects["PrevTicks"]
+    V, F = [], []
+    for i in range(-30, 31):
+        y = i * 0.1
+        w = 0.006 if i % 5 else 0.012
+        b = len(V)
+        V += [(-0.6, y - w / 2, 0.001), (0.6, y - w / 2, 0.001), (0.6, y + w / 2, 0.001), (-0.6, y + w / 2, 0.001)]
+        F.append((b, b + 1, b + 2, b + 3))
+    me = bpy.data.meshes.new("PrevTicks")
+    me.from_pydata(V, [], F)
+    ob = bpy.data.objects.new("PrevTicks", me)
+    m = bpy.data.materials.new("prev_ticks")
+    m.use_nodes = True
+    bs = next(n for n in m.node_tree.nodes if n.type == "BSDF_PRINCIPLED")
+    bs.inputs["Base Color"].default_value = (0.05, 0.05, 0.06, 1)
+    me.materials.append(m)
+    bpy.context.scene.collection.objects.link(ob)
+    return ob
+
+
+def run_all(arms, meshes, nears, order, outdir, actions, lk=None, extras=None, speeds=None, clips=None, stills=None,
+            full=True):
+    LK.clear()
+    LK.update(lk or {})
+    for v in order:
+        ex = extras[v]
+        setup({v: meshes[v]})
+        setup({v: nears[v]})
+        for o in [ex["geta"], ex["glasses"], ex["sunglasses"]] + list(ex["hair"].values()):
+            if o is not None:
+                setup({v: o})
     sc = bpy.context.scene
     shots = []
-    gpu_r = None
-    # near lineups at the first idle frame: front, 3/4, back; far 3/4 for reference
-    show_lod(meshes, nears, "near")
-    for tag, yaw in (("front", 0.0), ("threequarter", -38.0), ("back", 180.0)):
-        lineup(arms, order, yaw, actions.get("idle"), 0)
-        camera((0, -6.2, 1.0), (0, 0, 0.85), lens=45)
-        shots.append(render(os.path.join(outdir, f"lineup_{tag}.png")))
-        if gpu_r is None:
-            gpu_r = gpu_check()
-    show_lod(meshes, nears, "far")
-    lineup(arms, order, -38.0, actions.get("idle"), 0)
-    shots.append(render(os.path.join(outdir, "lineup_threequarter_far.png")))
-    # game-camera close-ups, near | far side by side: ~1.5 m high, ~2.7 m away, 3/4 front
-    sc.render.resolution_x, sc.render.resolution_y = 900, 1000
-    for v, clip, frame, yaw in (("man", "idle", 30, -25.0), ("woman", "idle", 30, -25.0), ("woman", "walk", 7, -40.0),
-                                ("woman", "walk", 22, -40.0), ("woman", "sparkler", 9, -40.0), ("woman", "wave", 15, -25.0),
-                                ("man", "call", 20, -30.0), ("elder", "fan", 22, -30.0), ("man", "talk", 25, -25.0)):
-        act = actions.get(clip)
-        tmp = []
-        for which in ("near", "far"):
-            solo(arms, order, v, act, frame, yaw)
-            show_lod(meshes, nears, which, only=v)
-            camera((0.9, -2.55, 1.5), (0, 0, 1.0), lens=38)
-            tmp.append(render(os.path.join(outdir, f"_tmp_{which}.png")))
-        shots.append(side_by_side(tmp, os.path.join(outdir, f"closeup_{v}_{clip}_{frame:02d}_near_vs_far.png")))
-    sc.render.resolution_x, sc.render.resolution_y = 1600, 900
-    # clip frames of the near LODs from a street-level camera ~4 m away
-    show_lod(meshes, nears, "near")
-    for clip, frame in (("idle", 60), ("walk", 7), ("walk", 22), ("run", 4), ("run", 11), ("wave", 15), ("call", 20),
-                        ("call", 60), ("talk", 25), ("fan", 22), ("lookup", 30), ("sparkler", 9)):
-        act = actions.get(clip)
-        if act is None:
-            continue
-        lineup(arms, order, 70.0, act, frame)
-        camera((2.2, -4.2, 1.15), (0, 0, 0.8), lens=32)
-        shots.append(render(os.path.join(outdir, f"clip_{clip}_{frame:02d}.png")))
-    # face close-ups, near | far
-    sc.render.resolution_x = sc.render.resolution_y = 600
-    for v in order:
-        tmp = []
-        for which in ("near", "far"):
-            solo(arms, order, v, actions.get("idle"), 0)
-            show_lod(meshes, nears, which, only=v)
+    gpu_r = None          # queried right after the first render (no GPU context before it in background)
+    D = Dress(extras, meshes, nears)
+    os.makedirs(outdir, exist_ok=True)
+    for f in os.listdir(outdir):
+        if f.endswith(".png"):
+            os.remove(os.path.join(outdir, f))
+    idle = actions.get("idle")
+    if full:
+        # ---- crowd lineups (near LOD): every hairstyle, plain / glasses / sunglasses, both face looks
+        show_lod(meshes, nears, "near")
+        combos = [(0, None, "A"), (1, "glasses", "B"), (2, "sunglasses", "A")]
+        rows = []
+        for k, (hs, sp, lk) in enumerate(combos):
+            row = []
+            for yaw in (0.0, -35.0):
+                for v in order:
+                    D.set(v, hs, ("sunglasses" if sp else None) if v == "kid" else sp, lk)
+                lineup(arms, order, yaw, idle, 0)
+                camera((0, -6.2, 1.0), (0, 0, 0.85), lens=45)
+                row.append(render(os.path.join(outdir, f"_tmp_l{k}_{int(yaw)}.png")))
+                if gpu_r is None:
+                    gpu_r = gpu_check()      # raises on a software rasteriser
+            rows.append(row)
+        shots.append(compose(rows, os.path.join(outdir, "lineup_crowd_mix.png")))
+        # ---- per-variant face close-ups (near LOD). Row per look; front + 3/4 with style 0, then 3/4
+        # with style 1 + glasses (kid: sunglasses) and style 2
+        sc.render.resolution_x = sc.render.resolution_y = 520
+        for v in order:
+            rows = []
+            for lk in ("A", "B"):
+                row = []
+                for hsx, sp in ((0, None), (1, "glasses" if v != "kid" else "sunglasses"), (2, None)):
+                    D.set(v, hsx, sp, lk)
+                    solo(arms, order, v, idle, 0)
+                    show_lod(meshes, nears, "near", only=v)
+                    a = arms[v]
+                    hp = a.matrix_world @ a.pose.bones["head"].head
+                    k_ = a.data.bones["head"].length / 0.12
+                    views = ((0.0, "front"), (0.55, "tq")) if hsx == 0 else ((0.55, "tq"),)
+                    for ang, nm in views:
+                        dist = 0.95 * k_
+                        zc = hp.z + 0.07 * k_
+                        camera((hp.x + dist * math.sin(ang), hp.y - dist * math.cos(ang), zc + 0.01), (hp.x, hp.y, zc), lens=95)
+                        row.append(render(os.path.join(outdir, f"_tmp_f{v}{lk}{hsx}{nm}.png")))
+                rows.append(row)
+            # expressions on look A (front / 3/4): blink, smile, both looks smiling at 3/4
+            row = []
+            for nm, kw, ang in (("blink", dict(blink=1.0), 0.0), ("blink", dict(blink=1.0), 0.55), ("smile", dict(smile=1.0), 0.0),
+                                ("smileB", dict(smile=1.0, look="B"), 0.55)):
+                D.set(v, 0, None, **kw)
+                solo(arms, order, v, idle, 0)
+                show_lod(meshes, nears, "near", only=v)
+                a = arms[v]
+                hp = a.matrix_world @ a.pose.bones["head"].head
+                k_ = a.data.bones["head"].length / 0.12
+                dist, zc = 0.95 * k_, hp.z + 0.07 * k_
+                camera((hp.x + dist * math.sin(ang), hp.y - dist * math.cos(ang), zc + 0.01), (hp.x, hp.y, zc), lens=95)
+                row.append(render(os.path.join(outdir, f"_tmp_x{v}{nm}{ang}.png")))
+            rows.append(row)
+            shots.append(compose(rows, os.path.join(outdir, f"face_{v}.png")))
+            D.set(v, 0, None, "A")
+            # hands (near): right hand from the front-side and the palm side, left hand from outside
+            row = []
             a = arms[v]
-            pb = a.pose.bones["head"]
-            hp = a.matrix_world @ pb.head
-            camera((hp.x + 0.14, hp.y - 0.62, hp.z + 0.07), (hp.x, hp.y, hp.z + 0.06), lens=85)
-            tmp.append(render(os.path.join(outdir, f"_tmp_{which}.png")))
-        shots.append(side_by_side(tmp, os.path.join(outdir, f"face_{v}.png")))
-    sc.render.resolution_x, sc.render.resolution_y = 1600, 900
+            for side, view in (("R", (-0.25, -0.40, 0.05)), ("R", (0.30, -0.15, 0.02)), ("L", (0.40, -0.25, 0.05))):
+                solo(arms, order, v, None, 0)
+                show_lod(meshes, nears, "near", only=v)
+                hb = a.data.bones[f"hand_{side}"]
+                c = a.matrix_world @ ((hb.head_local + hb.tail_local) / 2)
+                sc_ = hb.length / 0.15
+                camera((c.x + view[0] * sc_, c.y + view[1] * sc_, c.z + view[2] * sc_), tuple(c), lens=85)
+                row.append(render(os.path.join(outdir, f"_tmp_h{v}{side}{view[0]}.png")))
+            solo(arms, order, v, None, 0)
+            show_lod(meshes, nears, "far", only=v)
+            hb = a.data.bones["hand_R"]
+            c = a.matrix_world @ ((hb.head_local + hb.tail_local) / 2)
+            camera((c.x - 0.25 * hb.length / 0.15, c.y - 0.40 * hb.length / 0.15, c.z + 0.05), tuple(c), lens=85)
+            row.append(render(os.path.join(outdir, f"_tmp_h{v}far.png")))
+            shots.append(compose([row], os.path.join(outdir, f"hands_{v}.png")))
+        # ---- far LOD at 10 m with the game's 55 deg vertical FOV (full frame + faces cropped, 4x nearest)
+        sc.render.resolution_x, sc.render.resolution_y = 1920, 1080
+        show_lod(meshes, nears, "far")
+        for k, v in enumerate(order):
+            D.set(v, k, ("glasses" if v == "elder" else None), "A")
+            extras[v]["geta"].hide_render = False
+        lineup(arms, order, -15.0, idle, 0)
+        cam_vfov((0, -10.0, 1.55), (0, 0, 1.30), 55.0)
+        p = render(os.path.join(outdir, "far_10m_full.png"))
+        shots.append(p)
+        import shutil
+        p2 = os.path.join(outdir, "far_10m_faces_x4.png")
+        shutil.copyfile(p, p2)
+        shots.append(crop(p2, 960 - 270, 540 - 150, 960 + 270, 540 + 60, scale=4))
+        cam = bpy.data.objects["PrevCam"]
+        cam.data.sensor_fit = "AUTO"
+    # ---- side-view strips of every locomotion clip (near LOD, default hair)
     show_lod(meshes, nears, "near")
+    for v in order:
+        D.set(v, 0, None, "A")
+        extras[v]["geta"].hide_render = False
+    ticks = ground_ticks()
+    plan = [("walk", v) for v in order] + [("walk_f", "woman"), ("walk_f", "elder"), ("run", "kid"), ("run", "man"),
+                                            ("run", "woman"), ("sparkler", "kid")]
+    for clip, v in plan:
+        c = clips[clip]
+        tag = f"walk_{v}" if clip == "walk" else f"{clip}_{v}"
+        shots.append(walk_strip(arms, order, v, actions[clip], c["keys"] - 1, c["keyRate"], speeds[clip][v], outdir, tag))
+        if gpu_r is None:
+            gpu_r = gpu_check()          # raises on a software rasteriser
+    bpy.data.objects.remove(ticks, do_unlink=True)
+    # ---- a still (or two) of every clip on all five variants: 3/4 front above, side below
+    sc.render.resolution_x, sc.render.resolution_y = 1600, 760
+    for k, v in enumerate(order):
+        D.set(v, k + 1, None, "B" if k % 2 else "A")
+    for clip, frames in (stills or {}).items():
+        act = actions[clip]
+        seated = clips[clip].get("seated")
+        bench(show=bool(seated))
+        rows = []
+        for fr in frames:
+            row = []
+            for yaw, cam in ((-28.0, ((0.0, -5.6, 1.25), (0, 0, 0.82))), (72.0, ((0.0, -5.6, 1.25), (0, 0, 0.82)))):
+                lineup(arms, order, yaw, act, 1 + fr)
+                camera(cam[0], cam[1], lens=40)
+                row.append(render(os.path.join(outdir, f"_tmp_{clip}_{fr}_{int(yaw)}.png")))
+            rows.append(row)
+        shots.append(compose(rows, os.path.join(outdir, f"clip_{clip}.png")))
+    if "PrevBench" in bpy.data.objects:
+        bpy.data.objects.remove(bpy.data.objects["PrevBench"], do_unlink=True)
+    for v in order:
+        D.set(v, 0, None, "A")
+    lineup(arms, order, 0.0, None, 1)
     return shots, gpu_r

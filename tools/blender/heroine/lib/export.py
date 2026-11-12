@@ -70,6 +70,9 @@ def export(path, meta=None):
     for ln in log.getvalue().splitlines():
         if "ERROR" in ln or "WARNING" in ln:
             print("[export]", ln)
-    from .glbpost import strip_scale_channels
-    print("[export] removed scale channels:", strip_scale_channels(path))
+    from . import glbpost, mocap
+    clips = (meta or {}).get("clips", {})
+    stats = glbpost.postprocess(path, meta, add_bones=mocap.ADD_BONES,
+                                time_scale={k: FPS / c["keyRate"] for k, c in clips.items() if c.get("keyRate", FPS) != FPS})
+    print("[export] post-pass:", stats)
     return os.path.getsize(path)

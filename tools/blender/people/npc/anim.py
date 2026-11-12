@@ -132,15 +132,25 @@ def chain_rot(*ms):
     return R
 
 
+def geta_pivots(J):
+    """(front, rear) ground-contact edges of the geta teeth, as Y offsets from the ankle (+Y = back):
+    the foot rocks forward on the FRONT edge of the front tooth and back on the REAR edge of the rear
+    tooth (see body.Body.geta: teeth at y1 + 0.42 hl and y0 - 0.38 hl, half length 0.011 lk)."""
+    lk = J["lk"]
+    hl = (J["heel"] + J["toe"] + 0.024 * lk) / 2
+    front = -(J["toe"] + 0.012 * lk) + 0.42 * hl - 0.011 * lk
+    rear = (J["heel"] + 0.012 * lk) - 0.38 * hl + 0.011 * lk
+    return front, rear
+
+
 def foot_ankle(J, flat_ankle, pitch):
     """Ankle position for a foot whose flat (pitch 0) ankle would be at flat_ankle; positive pitch
-    lifts the heel (pivot on the toe), negative lifts the toes (pivot on the heel)."""
+    lifts the heel (rocking on the front tooth's front edge), negative lifts the toes (rocking on the
+    rear tooth's rear edge). The contact edge stays put, so a rocking planted geta does not slide."""
     a = np.asarray(flat_ankle, float)
     h = J["ankle_z"]
-    if pitch >= 0:
-        piv = a + np.array([0, -J["toe"] * 0.78, -h])
-    else:
-        piv = a + np.array([0, J["heel"] * 0.9, -h])
+    front, rear = geta_pivots(J)
+    piv = a + np.array([0, front if pitch >= 0 else rear, -h])
     return piv + Rx(pitch) @ (a - piv)
 
 
@@ -260,6 +270,8 @@ def lowpass(x, k):
 # ---------------------------------------------------------------- gait
 
 class Gait:
+    LIFT, LAND = 0.12, 0.16
+
     def __init__(self, J, v, T, duty, clear, toe_off=20.0, strike=-8.0, kick=0.0, width=1.0, swing_back=0.0):
         self.J, self.v, self.T, self.duty = J, v, T, duty
         self.D = v * T * duty
@@ -281,10 +293,24 @@ class Gait:
             lift = 0.0
         else:
             s = (ph - du) / (1 - du)
-            e = (1 - math.cos(math.pi * s)) / 2
-            y = D / 2 - D * e + self.swing_back * math.sin(math.pi * s) * (1 - s) ** 1.5
-            pitch = self.toe_off * (1 - smooth(0.0, 0.55, s)) + self.kick * math.sin(math.pi * min(s * 1.6, 1.0)) * (1 - s) + \
-                self.strike * smooth(0.55, 1.0, s)
+            # swing: the first LIFT and last LAND fractions only raise / lower the foot while it keeps
+            # drifting back at the ground speed (stationary on the ground: no skate at toe-off or
+            # strike); the forward travel happens in between on a Hermite curve that matches that
+            # drift velocity at both ends.
+            Ts = (1 - du) * self.T
+            a_, b_ = self.LIFT, self.LAND
+            if s < a_:
+                y = D / 2 + self.v * Ts * s
+            elif s > 1 - b_:
+                y = -D / 2 - self.v * Ts * (1 - s)
+            else:
+                u = (s - a_) / (1 - a_ - b_)
+                y0_, y1_ = D / 2 + self.v * Ts * a_, -D / 2 - self.v * Ts * b_
+                m = self.v * Ts * (1 - a_ - b_)
+                h00, h10, h01, h11 = 2 * u ** 3 - 3 * u ** 2 + 1, u ** 3 - 2 * u ** 2 + u, -2 * u ** 3 + 3 * u ** 2, u ** 3 - u ** 2
+                y = h00 * y0_ + h10 * m + h01 * y1_ + h11 * m
+                y += self.swing_back * math.sin(math.pi * u) * (1 - u) ** 1.5
+            pitch = self.toe_off * (1 - smooth(0.0, 0.45, s)) + self.kick * math.sin(math.pi * min(s * 1.6, 1.0)) * (1 - s) +                 self.strike * smooth(0.60, 1.0, s)
             lift = self.clear * math.sin(math.pi * s) ** 1.2 * (1 + 0.6 * self.kick / 40 * math.sin(math.pi * s) * (1 - s))
         flat = np.array([x, y, h0 + lift])
         return foot_ankle(J, flat, pitch), pitch
@@ -358,7 +384,7 @@ def walk_pose(fk, g, phi, sparkler=False):
     J = fk.J
     ps = Pose()
     c = math.cos(2 * math.pi * phi)
-    ps.root = np.array([0.011 * math.cos(2 * math.pi * (phi - g.duty / 2)), 0.0, 0.0])
+    ps.root = np.zeros(3)
     yaw = -4.5 * c
     roll = -2.5 * math.cos(2 * math.pi * (phi - g.duty / 2))
     ps.delta["hips"] = Rz(yaw) @ Ry(roll) @ Rx(2.0)
@@ -370,7 +396,7 @@ def walk_pose(fk, g, phi, sparkler=False):
         A, pitch = g.foot(side, phi)
         ps.feet[side] = (A, pitch, 0.0)
     for side, ph0 in (("L", 0.5), ("R", 0.0)):
-        sw, e = swing_arm(side, phi, ph0, 17.0, 0.04, ARM_E - 2.0)
+        sw, e = swing_arm(side, phi, ph0, 22.0, 0.04, ARM_E - 2.0, follow=0.08)
         # wrist trails the forearm a little more (flicks back at the end of the forward swing)
         wl = 12.0 + 6.0 * math.sin(2 * math.pi * (phi - ph0 - 0.18))
         ps.arms[side] = relaxed(side, sw, e=e, wrist=(wl, -4.0, 0.0))
@@ -388,7 +414,7 @@ def run_pose(fk, g, phi):
     ps = Pose()
     c = math.cos(2 * math.pi * phi)
     ms = g.duty / 2
-    ps.root = np.array([0.008 * math.cos(2 * math.pi * (phi - ms)), 0.0,
+    ps.root = np.array([0.0, 0.0,
                         -0.026 * J["lk"] * math.cos(4 * math.pi * (phi - ms))])
     yaw = -8.0 * c
     ps.delta["hips"] = Rz(yaw) @ Ry(-3.0 * math.cos(2 * math.pi * (phi - ms))) @ Rx(6.0)
@@ -587,7 +613,7 @@ def build_clip(name, n, fk):
     meta = dict(frames=n, duration=round(T, 4), loop=True, fps=FPS)
     if name in ("walk", "sparkler"):
         du = WALK_DUTY
-        g = Gait(J, WALK_V, T, du, clear=0.055 * J["lk"], toe_off=24.0, strike=-10.0, width=0.92)
+        g = Gait(J, WALK_V, T, du, clear=0.050 * J["lk"], toe_off=16.0, strike=-7.0, width=0.92)
         pss = [walk_pose(fk, g, i / n, sparkler=(name == "sparkler")) for i in range(n + 1)]
         out = finish(fk, pss, "lowpass", k=6)
         meta.update(speed=WALK_V, stride=round(WALK_V * T, 4),
@@ -643,6 +669,8 @@ def bake(arm, fk, name, out):
         locs[i] = basis["root"][0]
     fr = np.arange(n, dtype=float)
     for b in fk.order:
+        if b.startswith("finger_"):
+            continue            # fingers stay in their relaxed rest curl (not keyed by these clips)
         grp = cb.groups.new(b)
         for k in range(4):
             fc = cb.fcurves.new(f'pose.bones["{b}"].rotation_quaternion', index=k)

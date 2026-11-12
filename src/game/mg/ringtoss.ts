@@ -22,6 +22,8 @@ export class RingToss extends MiniGame {
   private proto: THREE.Object3D;
   private winT = -1;
   private centre = new THREE.Vector3();
+  /** Rings thrown this visit (fewer to a ringer is better). */
+  tosses = 0;
 
   constructor(c: Ctx) {
     super(c);
@@ -106,6 +108,7 @@ export class RingToss extends MiniGame {
     }
     this.rings.push({ o, s, t: target.clone(), u: 0, peg, slide: 0, done: false });
     this.left--;
+    this.tosses++;
     this.c.audio.blip("whoosh", s);
     her.play("throw");
   }
@@ -145,7 +148,8 @@ export class RingToss extends MiniGame {
   end(): void {
     this.reticle.removeFromParent();
     this.c.game.input.captureMouse = false;
-    // The winning ring stays on its peg; the others are tidied away.
-    for (const r of this.rings) if (!r.peg) r.o.removeFromParent();
+    // The winning ring stays on its peg; the others (missed, or still in the air when she
+    // stepped away) are tidied away rather than left hanging.
+    for (const r of this.rings) if (!(r.peg && r.done)) r.o.removeFromParent();
   }
 }

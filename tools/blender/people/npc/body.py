@@ -30,7 +30,10 @@ class Body:
         self.P = self.J["P"]
         self.lk = self.J["lk"]
         self.bw = BW[v]
-        self.mb = MB(f"npc_{v}_body")
+        from .headshape import Head
+        self.hs = Head(v, self.J)
+        self.mb = MB(f"npc_{v}_body", normal_fn=self.hs.grad)
+        self.geta_mb = None                  # MB for the right geta (npc_X_geta_R); None = skip it
         self.cref = 0.95 * self.bw          # reference circumference for the pattern
         self.meta = {}
 
@@ -46,32 +49,41 @@ class Body:
 
     # ------------------------------------------------------------ head + face
     def head_point(self, d, inflate=1.0, center_scale=None):
-        J, P = self.J, self.P
-        hh = P["head"]
-        hw, hdp = P["hw"] * hh, P["hd"] * hh
-        Rz = 0.56 * hh
-        top = J["top"]
-        cz, cy = top[2] - Rz, top[1] + 0.006
+        """Point on the analytic head along direction(s) d from the head centre, scaled by inflate
+        about that centre."""
         d = np.asarray(d, float)
-        dx, dy, dz = d[..., 0], d[..., 1], d[..., 2]
-        x = dx * hw / 2
-        y = dy * hdp / 2
-        y = np.where(dy < 0, y * 0.94, y)
-        t = np.clip(-dz, 0, 1)
-        z = np.where(dz >= 0, cz + dz * Rz, cz + dz * (hh - Rz))
-        x = x * (1 - 0.40 * t ** 1.5)
-        y = np.where(dy > 0, y * (1 - 0.55 * t ** 1.2), y * (1 - 0.10 * t))
-        y = y - 0.30 * hdp * t ** 1.6 * (1 - 0.3 * np.clip(dy, 0, 1))
-        p = np.stack([x, y + cy, z], -1)
+        shp = d.shape
+        D = d.reshape(-1, 3)
+        p = self.hs.point(D)
         if inflate != 1.0:
-            c = np.array([0, cy, cz])
-            p = c + (p - c) * inflate
-        return p
+            p = self.hs.C + (p - self.hs.C) * inflate
+        return p.reshape(shp)
 
     def head_center(self):
-        J, P = self.J, self.P
-        Rz = 0.56 * P["head"]
-        return np.array([0, J["top"][1] + 0.006, J["top"][2] - Rz])
+        return self.hs.C.copy()
+
+    def head_face(self, detail="near"):
+        """Analytic head skin + ears + the painted face (look A; look B as the face_b morph)."""
+        from . import face as FACE
+        J = self.J
+        hs = self.hs
+        rows, cols, er, ec = (26, 32, 7, 10) if detail == "near" else (13, 18, 4, 7)
+        V, F = hs.skin(rows, cols)
+        c = hs.C
+
+        def wf(p):
+            if p[2] < J["headj"][2] + 0.02 and p[1] > c[1] - 0.02:
+                k = float(smooth(J["headj"][2] - 0.02, J["headj"][2] + 0.03, p[2]))
+                return {"head": k, "neck": 1 - k}
+            return {"head": 1.0}
+        self.mb.add(V, F, "skin", wf, tag="head", analytic=True)
+        for sg in (1.0, -1.0):
+            V, F = hs.ear(sg, er, ec)
+            self.mb.add(V, F, "skin", {"head": 1.0}, tag="ear")
+        for Va, Vb, F, Cc, tag, mv in FACE.build_pair(hs, self.v, detail):
+            Cc = np.minimum(Cc, 0.96)       # nothing in the face reaches full white (no glowing blobs)
+            self.mb.add(Va, F, "face", {"head": 1.0}, C=Cc, tag="face_" + tag, Vb=Vb, analytic=True, morphs=mv)
+        self.headV = None
 
     @staticmethod
     def sphere_dirs(nlon, lats, lon0=0.0, lon1=TAU):
@@ -282,21 +294,22 @@ class Body:
         self.mb.add(V, Fo, mat, {"head": 1.0}, C=C, tag="hair")
         return V
 
-    def bun(self, dirv, dist, radii, mat="hair", band=True, nu=12, nv=8, band_n=6):
+    def bun(self, dirv, dist, radii, mat="hair", band=True, nu=12, nv=8, band_n=6, mb=None, C=None):
+        mb = mb or self.mb
         c = self.head_center()
         Rz = 0.56 * self.P["head"]
         d = norm(dirv)
         p = c + d * dist * Rz
         a, b = norm(np.cross(d, X)), X
         V, F, U = ellipsoid(p, (X, norm(np.cross(d, X)), d), np.array(radii) * Rz, nu, nv)
-        self.mb.add(V, F, mat, {"head": 1.0}, tag="bun")
+        mb.add(V, F, mat, {"head": 1.0}, C=C, tag="bun")
         if band:
             q = p - d * radii[2] * Rz * 0.55
             ang = np.linspace(0, TAU, 13)[:-1]
             e1, e2 = X, norm(np.cross(d, X))
             path = [q + (e1 * math.cos(t) * radii[0] + e2 * math.sin(t) * radii[1]) * Rz * 0.86 for t in ang]
             V, F, U, RI = sweep(path, 0.006 * self.lk, band_n, closed_path=True)
-            self.mb.add(V, F, "cloth_accent", {"head": 1.0}, tag="hairband")
+            mb.add(V, F, "cloth_accent", {"head": 1.0}, tag="hairband")
         return p
 
     # ------------------------------------------------------------ neck, hands, arms, legs, feet
@@ -309,25 +322,9 @@ class Body:
         self.mb.add(V, F, "skin", lambda p: torso_w(J, p), tag="neck")
 
     def hand(self, side, mat="skin"):
-        J, P = self.J, self.P
-        sg = 1.0 if side == "L" else -1.0
-        d = J[f"d0_{side}"]
-        s = np.array([0, -1.0, 0])
-        n = norm(np.cross(d, s)) * sg  # palm normal (toward the body)
-        wr = J[f"wr_{side}"]
-        hl = P["hand"]
-        k = hl / 0.15
-        c = wr + d * hl * 0.42 + n * 0.002
-        V, F, U = ellipsoid(c, (s, n, d), (0.031 * k, 0.020 * k, hl * 0.41), 9, 6, p=2.4)
-        wfun = lambda p: chain(float((p - wr) @ d), [0.0], [f"forearm_{side}", f"hand_{side}"], 0.02 * k)
-        self.mb.add(V, F, mat, wfun, tag="hand")
-        tc = wr + d * hl * 0.22 + s * 0.022 * k + n * 0.010 * k
-        td = norm(d * 0.8 + s * 0.6 + n * 0.25)
-        e1 = norm(np.cross(td, n))
-        V, F, U = ellipsoid(tc + td * 0.018 * k, (e1, norm(np.cross(td, e1)), td), (0.011 * k, 0.011 * k, 0.027 * k), 6, 4)
-        self.mb.add(V, F, mat, {f"hand_{side}": 1.0}, tag="thumb")
-        self.meta.setdefault("grip", {})[side] = dict(point=(wr + d * hl * 0.45 + n * 0.012 * k).tolist(),
-                                                       axis=s.tolist(), palm=n.tolist())
+        """Far LOD hand: five low-poly fingers in the relaxed rest curl (see hands.py)."""
+        from . import hands
+        hands.build(self.mb, self.J, side, "far", mat, meta=self.meta)
 
     def arm_skin(self, side, s0, s1, r0, r1, mat="skin", n=10):
         J = self.J
@@ -373,6 +370,11 @@ class Body:
         self.mb.add(V, F, mat, wf, tag="foot")
 
     def geta(self, side, strap_mat="cloth_accent"):
+        """Geta sandal. The left one goes into this mesh; the right one into self.geta_mb (the
+        separate npc_X_geta_R mesh, built once and shared by both LODs) or is skipped."""
+        mb = self.mb if side == "L" else self.geta_mb
+        if mb is None:
+            return
         J = self.J
         lk = self.lk
         an = J[f"an_{side}"]
@@ -388,12 +390,12 @@ class Body:
         F = orient_out(V, F, lambda q: np.array([x, cy, sole - th / 2]))
         C = np.tile([1.0, 0.96, 0.9], (len(V), 1))
         C[V[:, 2] > sole - 0.002] = [1.0, 1.0, 1.0]
-        self.mb.add(V, F, "wood_geta", {f"foot_{side}": 1.0}, C=C, smooth_shade=False, tag="geta")
+        mb.add(V, F, "wood_geta", {f"foot_{side}": 1.0}, C=C, smooth_shade=False, tag="geta")
         for ty in (y1 + hl * 0.42, y0 - hl * 0.38):
             rings = [ring([x, ty, 0.0], X, Y, hw * 0.92, 0.011 * lk, p=6), ring([x, ty, sole - th], X, Y, hw * 0.92, 0.011 * lk, p=6)]
             V, F, U, RI, TH = loft(rings, 12, cap0=True, cap1=True)
             F = orient_out(V, F, lambda q: np.array([x, ty, (sole - th) / 2]))
-            self.mb.add(V, F, "wood_geta", {f"foot_{side}": 1.0}, C=np.tile([0.8, 0.74, 0.68], (len(V), 1)), smooth_shade=False, tag="geta")
+            mb.add(V, F, "wood_geta", {f"foot_{side}": 1.0}, C=np.tile([0.8, 0.74, 0.68], (len(V), 1)), smooth_shade=False, tag="geta")
         # hanao (thong strap): toe post -> instep peak, and peak -> both sides
         sg = 1.0 if side == "L" else -1.0
         post = np.array([x - sg * 0.006 * lk, an[1] - J["toe"] * 0.62, sole])
@@ -406,10 +408,28 @@ class Body:
             arcs.append([peak, m, e])
         for a in arcs:
             V, F, U, RI = sweep(np.array(a), 0.0065 * lk, 6)
-            self.mb.add(V, F, strap_mat, {f"foot_{side}": 1.0}, tag="hanao")
+            mb.add(V, F, strap_mat, {f"foot_{side}": 1.0}, tag="hanao")
 
     def tabi(self, side):
-        """Keeper: split-toe work boots (jika-tabi) in cloth_shoe, thin dark sole."""
+        """Keeper: split-toe work boots (jika-tabi) in cloth_shoe, thin dark sole. The right boot goes
+        into self.geta_mb (npc_keeper_geta_R) with a dark sock foot left in this mesh under it."""
+        J = self.J
+        lk = self.lk
+        an = J[f"an_{side}"]
+        if side == "R":
+            # the sock (jika-tabi liner) that shows when the right boot is hidden
+            self.foot(side, mat="cloth_dark", grow=1.0, sole_top=0.016)
+            if self.geta_mb is None:
+                return
+            body_mb, self.mb = self.mb, self.geta_mb
+            try:
+                self._tabi(side)
+            finally:
+                self.mb = body_mb
+            return
+        self._tabi(side)
+
+    def _tabi(self, side):
         J = self.J
         lk = self.lk
         an = J[f"an_{side}"]

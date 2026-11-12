@@ -110,7 +110,7 @@ def theta_of_xy(x, y, cy=0.0):
 class NearBody(Body):
     def __init__(self, v):
         super().__init__(v)
-        self.mb = MB(f"npc_{v}_near")
+        self.mb = MB(f"npc_{v}_near", normal_fn=self.hs.grad)
 
     # ------------------------------------------------------------ UV helper for surface pieces
     def uv_from_pos(self, V, z_top, circ):
@@ -350,56 +350,9 @@ class NearBody(Body):
 
     # ------------------------------------------------------------ hands
     def hand_soft(self, side, mat="skin", curl=34.0):
-        """Relaxed mitten: palm, fingers curling toward the palm, a thumb resting forward."""
-        J, P = self.J, self.P
-        sg = 1.0 if side == "L" else -1.0
-        d = J[f"d0_{side}"]
-        s = np.array([0, -1.0, 0])
-        n = norm(np.cross(d, s)) * sg                 # palm normal (toward the body)
-        wr = J[f"wr_{side}"]
-        hl = P["hand"]
-        k = hl / 0.15
-        Lk = 0.50 * hl
-        nst = 11
-        Ls = np.linspace(-0.012 * k, hl * 0.97, nst)
-        pos, dirs, nrm = [], [], []
-        p = wr + d * Ls[0] + n * 0.002
-        prev = Ls[0]
-        for L in Ls:
-            a = math.radians(curl) * float(smooth(Lk, hl, L))
-            dv = d * math.cos(a) + n * math.sin(a)
-            nv = n * math.cos(a) - d * math.sin(a)
-            p = p + dv * (L - prev)
-            prev = L
-            pos.append(p.copy())
-            dirs.append(dv)
-            nrm.append(nv)
-        tt = (Ls - Ls[0]) / (Ls[-1] - Ls[0])
-        wid = np.interp(tt, [0, 0.15, 0.45, 0.6, 0.85, 1.0], [0.026, 0.030, 0.036, 0.035, 0.031, 0.026]) * k
-        thk = np.interp(tt, [0, 0.15, 0.45, 0.6, 0.85, 1.0], [0.017, 0.018, 0.019, 0.015, 0.013, 0.012]) * k
-        close = np.ones(nst)
-        for i in range(nst - 3, nst):
-            q = (tt[i] - tt[nst - 4]) / (1 - tt[nst - 4])
-            close[i] = math.sqrt(max(0.0, 1 - q * q)) if i < nst - 1 else 0.18
-        rings = [ring(pos[i] + nrm[i] * 0.001, s, nrm[i], wid[i] * close[i], thk[i] * close[i], p=2.5) for i in range(nst)]
-        V, F, U, RI, TH = loft(rings, 12, cap0=True, cap1=True)
-        cents = np.array(pos)
-        F = orient_out(V, F, lambda q: cents[int(np.argmin(np.linalg.norm(cents - q, axis=1)))])
-        wfun = lambda q: chain(float((q - wr) @ d), [0.0], [f"forearm_{side}", f"hand_{side}"], 0.02 * k)
-        # a soft crease between palm and fingers on the palm side
-        C = np.ones((len(V), 3))
-        for i, q in enumerate(V):
-            L = float((q - wr) @ d)
-            if abs(L - Lk) < 0.012 * k and float((q - wr) @ n) > 0.004 * k:
-                C[i] = 0.9
-        self.mb.add(V, F, mat, wfun, C=C, tag="hand")
-        # thumb: from the base of the palm, forward and toward the palm, slightly curled
-        tb = wr + d * hl * 0.20 + s * 0.020 * k + n * 0.006 * k
-        t1 = tb + norm(d * 0.75 + s * 0.45 + n * 0.25) * 0.026 * k
-        t2 = t1 + norm(d * 0.7 + s * 0.15 + n * 0.6) * 0.022 * k
-        path = np.array([tb, lerp(tb, t1, 0.5), t1, lerp(t1, t2, 0.5), t2])
-        V, F, U, RI = sweep(path, np.array([0.0115, 0.011, 0.0105, 0.0095, 0.006]) * k, 8)
-        self.mb.add(V, F, mat, {f"hand_{side}": 1.0}, tag="thumb")
+        """Near LOD hand: palm, thenar pad and five separate fingers in a relaxed curl (hands.py)."""
+        from . import hands
+        hands.build(self.mb, self.J, side, "near", mat, meta=self.meta)
 
     # ------------------------------------------------------------ face decals
     def _proj(self, u, v, layer):
@@ -759,22 +712,7 @@ def woman(b):
         limbs(b, side, arm=(P["ua"] + P["fa"] * 0.55, P["ua"] + P["fa"] + 0.012, 0.027, 0.023),
               leg=(kn - 0.04, J["ankle_z"] + 0.012, 0.042, 0.029), geta="cloth_accent")
     b.neck(0.041)
-    b.head(nlon=30, nlat=18)
-    b.near_face(dict(ex=0.041, ew=0.0168, eh=0.0205, iris=(0.36, 0.15, 0.08), blush=True, tilt=0.10, lash_w=0.0064,
-                     brow_w=0.0026, browh=1.12, arch=0.003, smile=0.0028))
-    hair_hi(b, OF.hair_bound(-0.78, -0.42, 0.36, fringe=0.24, nfr=8.0),
-            lambda phi, t: 1.075 + 0.035 * OF.frontness(phi) * t * t + 0.012 * (1 - t))
-    sidelocks_soft(b, 0.10, 0.016)
-    bp = b.bun(np.array([0, 0.48, 0.88]), 1.0, (0.40, 0.40, 0.36), nu=16, nv=10, band_n=8)
-    a = bp + np.array([-0.075, 0.01, 0.03])
-    c2 = bp + np.array([0.07, -0.005, -0.015])
-    V, F, U, RI = sweep(np.array([a, lerp(a, c2, 0.5), c2]), 0.0032, 6)
-    b.mb.add(V, F, "wood_geta", {"head": 1.0}, tag="kanzashi")
-    for kk in range(5):
-        ang = TAU * kk / 5
-        q = a + np.array([-0.004, 0.014 * math.cos(ang), 0.014 * math.sin(ang)])
-        b.blob(q, (X, Y, Z), (0.006, 0.0085, 0.0085), "cloth_accent", {"head": 1.0}, nu=5, nv=3, C=np.array([1.0, 0.75, 0.8]), tag="flower")
-    b.blob(a + np.array([-0.006, 0, 0]), (X, Y, Z), (0.006, 0.006, 0.006), "cloth_accent", {"head": 1.0}, nu=6, nv=4, C=np.array([1.0, 0.95, 0.5]), tag="flower")
+    b.head_face("near")
 
 
 # ================================================================ man
@@ -826,14 +764,7 @@ def man(b):
         limbs(b, side, arm=(P["ua"] + P["fa"] * 0.45, P["ua"] + P["fa"] + 0.012, 0.034, 0.028),
               leg=(kn - 0.04, J["ankle_z"] + 0.012, 0.050, 0.034), geta="cloth_dark")
     b.neck(0.050)
-    b.head(nlon=30, nlat=18)
-    b.ears()
-    b.near_face(dict(ex=0.041, ew=0.0152, eh=0.0136, iris=(0.20, 0.12, 0.08), blush=False, tilt=0.0, lash_w=0.0054,
-                     brow_w=0.0048, browh=1.10, arch=0.0012, brow_tilt=0.0014, mw=0.010, smile=0.0016,
-                     lower_lash=True, lower_w=0.0007, crease=False, irw=0.60, irh=1.08, up_k=0.22, lo_k=0.45, lo_h=0.8,
-                     flick=0.1, hl=0.85))
-    hair_hi(b, OF.hair_bound(-0.62, -0.05, 0.44, fringe=0.17, nfr=5.0),
-            lambda phi, t: 1.075 + 0.02 * OF.frontness(phi) * t, spikes=OF.spikes_fn(9, 0.07, 0.15))
+    b.head_face("near")
 
 
 # ================================================================ kid
@@ -903,19 +834,7 @@ def kid(b):
         limbs(b, side, arm=(P["ua"] * 0.35, P["ua"] + P["fa"] + 0.008, 0.026, 0.019),
               leg=(kn + 0.05, J["ankle_z"] + 0.01, 0.032, 0.022), geta="cloth_accent")
     b.neck(0.034)
-    b.head(nlon=30, nlat=18)
-    b.ears()
-    b.near_face(dict(ex=0.042, ew=0.0188, eh=0.0245, iris=(0.28, 0.15, 0.06), blush=True, open=True, mw=0.0095,
-                     mh=0.010, tilt=0.06, lash_w=0.0060, brow_w=0.0026, browh=1.05, arch=0.004, irw=0.66, irh=0.98,
-                     hl=1.1, crease=False))
-    hair_hi(b, OF.hair_bound(-0.58, -0.18, 0.36, fringe=0.22, nfr=5.5),
-            lambda phi, t: 1.085 + 0.03 * OF.frontness(phi) * t * t, spikes=OF.spikes_fn(7, 0.05, 0.3))
-    c = b.head_center()
-    Rz = 0.56 * P["head"]
-    a = c + np.array([0.01, 0.02, Rz * 1.04])
-    path = np.array([a, a + [0.008, 0.012, 0.03], a + [0.02, 0.03, 0.045], a + [0.035, 0.04, 0.04]])
-    V, F, U, RI = sweep(path, np.array([0.016, 0.011, 0.006, 0.002]), 8)
-    b.mb.add(V, F, "hair", {"head": 1.0}, tag="cowlick")
+    b.head_face("near")
 
 
 # ================================================================ keeper
@@ -981,13 +900,7 @@ def keeper(b):
         b.hand_soft(side)
         b.tabi(side)
     b.neck(0.050)
-    b.head(nlon=30, nlat=18)
-    b.ears()
-    b.near_face(dict(ex=0.041, ew=0.0150, eh=0.0145, iris=(0.22, 0.13, 0.08), blush=False, tilt=0.02, lash_w=0.0056,
-                     brow_w=0.0052, browh=1.08, arch=0.002, brow_tilt=0.0018, open=True, mw=0.012, mh=0.008,
-                     irw=0.60, irh=1.06, up_k=0.25, lo_k=0.45, lo_h=0.8, flick=0.4, crease=False, hl=0.85))
-    hair_hi(b, OF.hair_bound(-0.55, -0.05, 0.48, fringe=0.08, nfr=7.0),
-            lambda phi, t: 1.05 + 0.0 * t, spikes=OF.spikes_fn(11, 0.035, 0.2))
+    b.head_face("near")
     c = b.head_center()
     phi = np.linspace(0, TAU, 37)[:-1]
     lam = np.interp(OF.frontness(phi), [0, 1], [0.42, 0.30])
@@ -1063,15 +976,7 @@ def elder(b):
         limbs(b, side, arm=(P["ua"] + P["fa"] * 0.55, P["ua"] + P["fa"] + 0.012, 0.026, 0.022),
               leg=(kn - 0.04, J["ankle_z"] + 0.012, 0.040, 0.028), geta="cloth_dark")
     b.neck(0.037)
-    b.head(nlon=30, nlat=18)
-    b.ears()
-    b.near_face(dict(ex=0.040, ew=0.0150, eh=0.0088, iris=(0.24, 0.16, 0.11), blush=True, tilt=-0.25, lash_w=0.0042,
-                     brow=(0.55, 0.52, 0.50), brow_w=0.0036, browh=1.55, arch=0.0035, brow_tilt=-0.0015,
-                     irw=0.52, irh=1.3, iy=0.0, up_k=0.7, lo_k=0.7, lo_h=0.7, flick=0.15, lower_lash=False,
-                     crease=False, smile_crease=True, hl=0.9, smile=0.0035, mw=0.0095, blush_col=(0.92, 0.50, 0.46)))
-    comb = lambda phi, t: np.where((np.sin(phi * 30) > 0.55)[:, None], np.full(3, 0.86), np.ones(3)) * np.ones((len(phi), 3))
-    hair_hi(b, OF.hair_bound(-0.70, -0.08, 0.62), lambda phi, t: 1.06 + 0.012 * (1 - t) + 0 * phi, colfn=comb)
-    b.bun(np.array([0, 0.80, 0.60]), 1.0, (0.34, 0.34, 0.30), band=True, nu=16, nv=10, band_n=8)
+    b.head_face("near")
     OF.fan(b)
 
 

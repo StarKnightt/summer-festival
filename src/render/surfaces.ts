@@ -30,6 +30,50 @@ export function pavingMaterial(): ToonMaterial {
   return m;
 }
 
+/**
+ * Sea wall, steps and coping: dressed ashlar blocks in courses with recessed mortar, each block
+ * its own tone, the faces mottled and pitted, grime and damp darkening toward the sand, a little
+ * green weed at the foot, and paler, worn treads and tops. Tinted by the vertex colour (wall /
+ * coping / step), so the parts read apart.
+ */
+export function seawallMaterial(): ToonMaterial {
+  const m = new ToonMaterial({ vertexColors: true, paint: 0.65, rim: 0.35 });
+  m.colorNode = Fn(() => {
+    const vc = vertexColor();
+    const n = abs(normalWorld);
+    const top = smoothstep(0.6, 0.85, n.y);
+    // Triplanar 2D coordinates: along the face, up the face.
+    const p = mix(mix(positionWorld.xy, positionWorld.zy, smoothstep(0.4, 0.6, n.x)), positionWorld.xz, top);
+    const row = floor(p.y.div(0.46));
+    const cell = vec2(p.x.div(mix(float(0.95), float(1.25), h2(vec2(row, 3.0)))).add(h2(vec2(row, 7.0))), p.y.div(0.46));
+    const id = floor(cell);
+    const f = fract(cell);
+    // Mortar: soft recessed joints, with a lighter lip just above each joint.
+    const jx = smoothstep(0.0, 0.035, f.x).mul(smoothstep(1.0, 0.965, f.x));
+    const jy = smoothstep(0.0, 0.07, f.y).mul(smoothstep(1.0, 0.93, f.y));
+    const joint = jx.mul(jy);
+    const lip = smoothstep(0.07, 0.16, f.y).mul(smoothstep(0.3, 0.16, f.y)).mul(0.06);
+    // Each block: its own tone and warmth; the face mottled, pitted and edge-worn.
+    const tone = h2(id).mul(0.2).add(0.86);
+    const warm = mix(vec3(0.95, 0.97, 1.0), vec3(1.05, 1.0, 0.92), h2(id.add(5.0)));
+    const mott = nz(p.mul(2.2)).mul(0.16).add(nz(p.mul(9.0)).mul(0.08)).add(0.86);
+    const pit = smoothstep(0.78, 0.86, nz(p.mul(14.0))).mul(0.12);
+    const edge = smoothstep(0.82, 1.0, max(abs(f.x.sub(0.5)), abs(f.y.sub(0.5))).mul(2.0)).mul(0.08);
+    const face = vc.mul(tone).mul(warm).mul(mott).sub(pit).add(edge).add(lip);
+    // Treads and tops: paler and smoother, worn by feet; no vertical courses.
+    const tread = vc.mul(nz(positionWorld.xz.mul(3.0)).mul(0.1).add(1.02)).mul(h2(floor(positionWorld.xz.mul(vec2(0.8, 2.0)))).mul(0.08).add(0.95));
+    const c0 = mix(face, tread, top);
+    // Grime and damp toward the sand, weed at the very foot (vertical faces only).
+    const low = smoothstep(-0.2, -1.5, positionWorld.y).mul(float(1).sub(top));
+    const streak = nz(vec2(positionWorld.x.mul(3.0).add(positionWorld.z.mul(3.0)), 0.5));
+    const c1 = c0.mul(float(1).sub(low.mul(streak.mul(0.25).add(0.12))));
+    const weed = smoothstep(-1.25, -1.55, positionWorld.y).mul(smoothstep(0.45, 0.7, nz(positionWorld.xz.mul(1.7).add(positionWorld.y)))).mul(float(1).sub(top));
+    const c2 = mix(c1, vec3(0.3, 0.38, 0.24), weed.mul(0.55));
+    return mix(c2.mul(0.42), c2, mix(joint, float(1), top.mul(0.7)));
+  })();
+  return m;
+}
+
 /** Plain stone (promenade, steps, sea wall): big blocks with soft joints. */
 export function stoneMaterial(base = "#9a948c", scale = 1): ToonMaterial {
   const m = new ToonMaterial({ color: base, paint: 0.7, rim: 0.3 });

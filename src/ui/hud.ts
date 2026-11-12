@@ -9,6 +9,7 @@ const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls = "", html = "") 
   return e;
 };
 
+const FORTUNE_NAMES = ["大吉", "中吉", "小吉", "吉", "末吉", "凶"];
 const TOD_ICON: Record<Preset, string> = { morning: "🌅", day: "☀", sunset: "🌇", night: "🌙" };
 
 /**
@@ -46,7 +47,7 @@ export class Hud {
     this.controls.id = "controls";
     this.tasks.innerHTML = `<h3>Festival</h3><ul>${TASKS.map((t) => `<li data-t="${t.id}"><i class="box"></i><span>${t.label}</span></li>`).join("")}</ul><div class="finale">Fireworks soon, down at the shore…</div>`;
     this.mg.innerHTML = `<div class="line"></div><div class="meter"><i></i></div><div class="pips"></div>`;
-    this.controls.innerHTML = `<span><b>WASD</b>walk</span><span><b>Shift</b>run</span><span><b>Drag</b>look</span><span><b>E</b>interact</span>`;
+    this.controls.innerHTML = `<span><b>WASD</b>walk</span><span><b>Shift</b>run</span><span><b>Click</b>look</span><span><b>Esc</b>free cursor</span><span><b>E</b>interact</span><span><b>T</b>time of day</span><span><b>G</b>guide</span><span><b>1</b>wave</span><span><b>2</b>bow</span><span><b>3</b>cheer</span><span><b>4</b>photo</span>`;
     for (const p of PRESETS) {
       const b = el("button", "", TOD_ICON[p]);
       b.title = p[0].toUpperCase() + p.slice(1);
@@ -83,6 +84,29 @@ export class Hud {
   renderTasks(): void {
     for (const li of this.tasks.querySelectorAll<HTMLLIElement>("li")) li.classList.toggle("done", this.prog.has(li.dataset.t as TaskId));
     this.tasks.classList.toggle("all", this.prog.taskCount >= 5 && !this.prog.data.fireworks);
+    // Small counts beside what's been replayed, and a line for the side activities.
+    const c = (k: string) => this.prog.count(k);
+    const note: Record<string, string> = {
+      goldfish: c("goldfish") > 1 ? `×${c("goldfish")}` : "",
+      candyapple: c("candyapple") > 1 ? `×${c("candyapple")}` : "",
+      ringtoss: c("ringtoss.best") ? `best: toss ${c("ringtoss.best")}` : "",
+      masks: "",
+      lantern: c("lantern") > 1 ? `×${c("lantern")}` : "",
+    };
+    for (const li of this.tasks.querySelectorAll<HTMLLIElement>("li")) {
+      let em = li.querySelector("em");
+      if (!em) { em = document.createElement("em"); li.append(em); }
+      em.textContent = note[li.dataset.t!] ?? "";
+    }
+    const side: string[] = [];
+    const food = c("yakisoba") + c("takoyaki") + c("shavedice");
+    if (food) side.push(`🍡 ${food}`);
+    if (c("gallery")) side.push(`🎯 best ${c("gallery.best")}`);
+    if (c("omikuji")) side.push(`🎋 ${FORTUNE_NAMES[c("omikuji.best")] ?? ""}`);
+    let st = this.tasks.querySelector<HTMLElement>(".side");
+    if (!st) { st = el("div", "side"); this.tasks.querySelector("ul")!.after(st); }
+    st.textContent = side.join("   ");
+    st.style.display = side.length ? "" : "none";
   }
 
   renderAch(): void {
@@ -134,6 +158,56 @@ export class Hud {
     b.style.left = `${x}px`;
     b.style.top = `${y}px`;
     b.classList.add("on");
+  }
+
+  private markers = new Map<string, HTMLElement>();
+  /** A soft marker over a task stall: screen position and opacity (0 hides it). */
+  marker(key: string, x: number, y: number, a: number): void {
+    let m = this.markers.get(key);
+    if (!m) {
+      m = el("div", "marker hud");
+      m.innerHTML = "<i></i>";
+      document.body.append(m);
+      this.markers.set(key, m);
+    }
+    m.style.opacity = a.toFixed(3);
+    if (a <= 0.001) { m.style.visibility = "hidden"; return; }
+    m.style.visibility = "visible";
+    m.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`;
+  }
+
+  private pinEl: HTMLElement | null = null;
+  private arrowEl: HTMLElement | null = null;
+  private flashEl: HTMLElement | null = null;
+  /** The guide's pin over a far target that's in view (null hides it). */
+  pin(p: { x: number; y: number; a: number; text: string } | null): void {
+    if (!this.pinEl) { this.pinEl = el("div", "gpin hud", "<i></i><span></span>"); document.body.append(this.pinEl); }
+    const e = this.pinEl;
+    if (!p) { e.style.opacity = "0"; return; }
+    e.style.opacity = (p.a * 0.9).toFixed(3);
+    e.style.transform = `translate(${p.x.toFixed(1)}px, ${p.y.toFixed(1)}px)`;
+    const s = e.lastElementChild as HTMLElement;
+    if (s.textContent !== p.text) s.textContent = p.text;
+  }
+  /** The guide's arrow at the edge of the screen toward a target that's out of view. */
+  arrow(p: { x: number; y: number; ang: number; a: number; text: string } | null): void {
+    if (!this.arrowEl) { this.arrowEl = el("div", "garrow hud", "<i></i><span></span>"); document.body.append(this.arrowEl); }
+    const e = this.arrowEl;
+    if (!p) { e.style.opacity = "0"; return; }
+    e.style.opacity = (p.a * 0.9).toFixed(3);
+    e.style.transform = `translate(${p.x.toFixed(1)}px, ${p.y.toFixed(1)}px)`;
+    (e.firstElementChild as HTMLElement).style.transform = `rotate(${p.ang.toFixed(3)}rad)`;
+    const s = e.lastElementChild as HTMLElement;
+    if (s.textContent !== p.text) s.textContent = p.text;
+    s.style.transform = `translate(${p.x > innerWidth * 0.75 ? "-110%" : p.x < innerWidth * 0.25 ? "22px" : "-50%"}, ${p.y > innerHeight * 0.6 ? "-34px" : "20px"})`;
+  }
+  /** A camera flash: the screen whitens for an instant. */
+  flash(): void {
+    if (!this.flashEl) { this.flashEl = el("div", "flash"); document.body.append(this.flashEl); }
+    const e = this.flashEl;
+    e.classList.remove("go");
+    void e.offsetWidth;
+    e.classList.add("go");
   }
 
   update(dt: number): void {

@@ -1,9 +1,10 @@
 import * as THREE from "three/webgpu";
-import { mergeGeometries as mg } from "three/addons/utils/BufferGeometryUtils.js";
+import { mergeGeometries as mg, mergeVertices } from "three/addons/utils/BufferGeometryUtils.js";
+import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { Builder, rng, range, pick, vary, solid, sagCurve } from "./geo";
 import { STREET, SHORE, GATES, STALLS, stallX, STALL_W } from "./layout";
 import { ToonMaterial, lanternSwing, paperGlow, windCloth, type LightSpot } from "../render/toon";
-import { pavingMaterial, stoneMaterial, roofMaterial, sandMaterial, plasterMaterial, woodMaterial, latticeMaterial } from "../render/surfaces";
+import { seawallMaterial, pavingMaterial, stoneMaterial, roofMaterial, sandMaterial, plasterMaterial, woodMaterial, latticeMaterial } from "../render/surfaces";
 import { windowGlow, lanternPaper, noOutline, norenMaterial, shopInterior } from "../render/townMats";
 
 /**
@@ -11,7 +12,15 @@ import { windowGlow, lanternPaper, noOutline, norenMaterial, shopInterior } from
  * per material (a handful of draw calls); lanterns are instanced and swing in the wind.
  */
 
-export interface Collider { x0: number; x1: number; z0: number; z1: number; y1?: number }
+/**
+ * A blocker on the ground plane. The AABB (x0..x1, z0..z1) is the shape for plain boxes and the
+ * broad bound for the others: `circle` (rocks) or `ob`, an oriented box (beached boats).
+ */
+export interface Collider {
+  x0: number; x1: number; z0: number; z1: number; y1?: number;
+  circle?: { x: number; z: number; r: number };
+  ob?: { x: number; z: number; hx: number; hz: number; ang: number };
+}
 
 export interface Town {
   group: THREE.Group;
@@ -258,29 +267,43 @@ export function buildTown(): Town {
   // Promenade (wide stone strip along the town front) and its sea wall.
   const promo = new THREE.PlaneGeometry(90, 5.4).rotateX(-Math.PI / 2).translate(0, 0.0, -97.3);
   group.add(solid(promo, stoneMaterial("#a39a8e", 1.2), false));
+  // Sea wall, coping and steps: dressed stone with rounded, worn edges (seawallMaterial carves
+  // the blocks and weathering; the vertex colour tells wall, coping and steps apart).
   const stone = new Builder();
-  const wallC = "#8d867c";
+  const rb = (w: number, h: number, d: number, rad: number) => new RoundedBoxGeometry(w, h, d, 2, Math.min(rad, w / 2.01, h / 2.01, d / 2.01));
+  const wallC = "#a59c90", copeC = "#b8b0a3", stepC = "#b3aa9d";
   for (const side of [-1, 1]) {
     const x0 = side * 2.2, x1 = side * 45;
     const cx = (x0 + x1) / 2, w = Math.abs(x1 - x0);
-    stone.box(w, 2.2, 0.5, wallC, cx, -0.55, -100.2);
-    stone.box(w, 0.25, 0.7, "#9c968c", cx, 0.62, -100.1);
-    stone.box(w, 0.5, 0.35, wallC, cx, 0.25, -100.05);
-    colliders.push({ x0: Math.min(x0, x1), x1: Math.max(x0, x1), z0: -100.5, z1: -99.8 });
+    stone.add(rb(w, 2.2, 0.5, 0.05), wallC, cx, -0.55, -100.2);
+    stone.add(rb(w, 0.5, 0.35, 0.04), wallC, cx, 0.25, -100.05);
+    // Coping: separate dressed blocks, each sitting a hair differently.
+    const xa = Math.min(x0, x1), xb = Math.max(x0, x1);
+    for (let x = xa; x < xb - 0.3; ) {
+      const len = Math.min(range(r, 1.05, 1.5), xb - x);
+      stone.add(rb(len - 0.025, 0.24, 0.72, 0.06), vary(copeC, r, 0.12), x + len / 2, 0.62 + range(r, -0.008, 0.008), -100.1, range(r, -0.006, 0.006), range(r, -0.008, 0.008), 0);
+      x += len;
+    }
+    colliders.push({ x0: xa, x1: xb, z0: -100.5, z1: -99.8 });
   }
   // Steps down to the beach, flanked by low walls with standing lanterns.
   const NS = 8;
   for (let k = 0; k < NS; k++) {
     const y = -((k + 1) / NS) * 1.6;
-    stone.box(4.4, 0.22, 0.52, k % 2 ? "#a49d92" : "#9b958b", 0, y + 0.1, -100.25 - k * 0.5);
-    stone.box(4.4, Math.abs(y) - 0.0, 0.5, "#8f897f", 0, y / 2, -100.25 - k * 0.5 - 0.02);
+    stone.add(rb(4.4, 0.22, 0.54, 0.05), vary(stepC, r, 0.1), 0, y + 0.1, -100.25 - k * 0.5);
+    // The riser under each tread stands on the sand and stops under the tread (so these are real
+    // steps going down, not one block at promenade height).
+    stone.add(rb(4.36, y + 1.95, 0.5, 0.03), wallC, 0, (y - 1.95) / 2, -100.25 - k * 0.5 - 0.02);
   }
   for (const side of [-1, 1]) {
-    stone.box(0.45, 0.9, 4.6, wallC, side * 2.42, -0.6, -102.0);
-    stone.box(0.45, 0.4, 0.45, "#9c968c", side * 2.42, 0.55, -99.8);
+    stone.add(rb(0.45, 0.9, 4.6, 0.05), wallC, side * 2.42, -0.6, -102.0);
+    stone.add(rb(0.5, 0.12, 4.65, 0.04), copeC, side * 2.42, -0.1, -102.0);
+    stone.add(rb(0.45, 0.4, 0.45, 0.05), copeC, side * 2.42, 0.55, -99.8);
     houseLanterns.push(new THREE.Vector3(side * 2.42, 1.15, -99.8));
+    // The low walls beside the steps are solid.
+    colliders.push({ x0: side < 0 ? -2.68 : 2.18, x1: side < 0 ? -2.18 : 2.68, z0: -104.35, z1: -100.4 });
   }
-  group.add(solid(stone.build(), stoneMaterial("#ffffff", 1.0)));
+  group.add(solid(stone.build(), seawallMaterial()));
   // Beach: flat, then sloping gently into the sea.
   const beachG = new THREE.PlaneGeometry(140, 80, 70, 40).rotateX(-Math.PI / 2);
   const bp = beachG.attributes.position as THREE.BufferAttribute;
@@ -294,23 +317,48 @@ export function buildTown(): Town {
   colliders.push({ x0: -70, x1: -30, z0: -200, z1: -100 }, { x0: 30, x1: 70, z0: -200, z1: -100 });
 
   // Rocks and a couple of beached boats to frame the beach (close, so nothing reads as far).
+  // Rounded, weathered boulders (smooth noise-displaced spheres settled into the sand), some in
+  // small clusters; every one is solid.
   const rocks = new Builder();
-  for (let k = 0; k < 14; k++) {
+  const rockSpots: [number, number, number][] = [];
+  for (let k = 0; k < 9; k++) {
     const side = k % 2 ? 1 : -1;
-    const x = side * range(r, 16, 30), z = range(r, -104, -130);
-    const s = range(r, 0.6, 2.2);
-    rocks.add(new THREE.DodecahedronGeometry(s, 0), vary("#7c766e", r, 0.2), x, beachHeight(x, z) + s * 0.3, z, r(), r(), r(), 1, range(r, 0.5, 0.8), 1);
+    const x = side * range(r, 15, 29), z = range(r, -106, -128);
+    rockSpots.push([x, z, range(r, 1.0, 2.1)]);
+    // Smaller companions around some of them.
+    const nb = Math.floor(range(r, 0, 3));
+    for (let i = 0; i < nb; i++) {
+      const a = range(r, 0, Math.PI * 2), d = range(r, 1.8, 3.0);
+      rockSpots.push([x + Math.cos(a) * d, z + Math.sin(a) * d, range(r, 0.35, 0.8)]);
+    }
+  }
+  for (const [x, z, sz] of rockSpots) {
+    const sx = sz * range(r, 0.95, 1.35), sy = sz * range(r, 0.55, 0.8), szz = sz * range(r, 0.85, 1.15);
+    const ry = range(r, 0, Math.PI * 2);
+    const g = rockGeometry(r, sx, sy, szz);
+    g.applyMatrix4(new THREE.Matrix4().makeRotationY(ry).setPosition(x, beachHeight(x, z) - sy * 0.22, z));
+    rocks.addKeep(g);
+    const rad = Math.max(sx, szz) * 0.92;
+    colliders.push({ x0: x - rad, x1: x + rad, z0: z - rad, z1: z + rad, circle: { x, z, r: rad } });
   }
   for (const [x, z, ry] of [[-9, -109, 0.5], [11, -111, -0.3]]) {
+    // A small wooden fishing boat hauled up on the sand, heeled over on its bilge.
     const b = new Builder();
-    b.box(1.3, 0.45, 4.2, "#e9e2d2", 0, 0.32, 0);
-    b.box(1.34, 0.12, 4.24, "#3f6d8a", 0, 0.12, 0);
-    b.box(1.1, 0.06, 3.9, "#7a5a3a", 0, 0.52, 0);
-    b.box(1.0, 0.25, 0.9, "#e9e2d2", 0, 0.42, 2.3, 0, 0.3);
+    b.addKeep(boatHull(false)).addKeep(boatHull(true));
+    for (const tz of [-0.75, 0.55]) b.box(1.16, 0.045, 0.24, "#8a6a48", 0, 0.4, tz);
+    b.box(0.5, 0.04, 0.5, "#8a6a48", 0, 0.47, 1.62);
+    // A pair of oars lying across the thwarts.
+    b.cyl(0.022, 0.022, 2.6, "#b89a6c", 0.22, 0.44, -0.1, 8, Math.PI / 2, 0, 0.06);
+    b.box(0.13, 0.02, 0.5, "#b89a6c", 0.3, 0.44, 1.28, 0.06);
     const g = b.build();
-    g.applyMatrix4(new THREE.Matrix4().makeRotationY(ry).setPosition(x, beachHeight(x, z), z));
+    g.applyMatrix4(new THREE.Matrix4().makeRotationZ(ry > 0 ? 0.14 : -0.14));
+    g.applyMatrix4(new THREE.Matrix4().makeRotationY(ry).setPosition(x, beachHeight(x, z) - 0.04, z));
     rocks.addKeep(g);
-    colliders.push({ x0: x - 1.4, x1: x + 1.4, z0: z - 2.4, z1: z + 2.4 });
+    // The hull as an oriented box that turns with the boat (bow included), not an axis-aligned
+    // box that both missed its ends and blocked open sand at its corners.
+    const hx = 0.74, hz = 2.35;
+    const ex = Math.abs(Math.cos(ry)) * hx + Math.abs(Math.sin(ry)) * hz, ez = Math.abs(Math.sin(ry)) * hx + Math.abs(Math.cos(ry)) * hz;
+    colliders.push({ x0: x - ex, x1: x + ex, z0: z - ez, z1: z + ez, ob: { x, z, hx, hz, ang: ry } });
   }
   group.add(solid(rocks.build(), new ToonMaterial({ vertexColors: true, paint: 0.8 })));
 
@@ -393,6 +441,101 @@ export function buildTown(): Town {
   };
 }
 
+/**
+ * A clinker fishing boat hull, 4.6 m long, bow at +z, keel on y = 0: a lofted shell (outside or
+ * inside) with a pointed stem, a flat transom, a rising sheer, and painted in vertex colour
+ * (red-brown bottom, cream topsides, a blue sheer strake; bare wood inside).
+ */
+function boatHull(inside: boolean): THREE.BufferGeometry {
+  const NS = 18, NJ = 7, L = 4.6;
+  const pos: number[] = [], col: number[] = [], idx: number[] = [];
+  const c = new THREE.Color();
+  const paint = (u: number) => (inside ? "#8f6f4c" : u > 0.8 ? "#3f6d8a" : u < 0.3 ? "#7a3b30" : "#ece5d6");
+  for (let i = 0; i <= NS; i++) {
+    const s = i / NS, z = (s - 0.5) * L;
+    const taper = s > 0.5 ? Math.pow(Math.max(0, 1 - Math.pow((s - 0.5) / 0.5, 2.2)), 0.7) : 0.86 + 0.14 * (s / 0.5);
+    const B = 0.7 * taper * (inside ? 0.93 : 1), H = 0.5 + 0.24 * Math.pow(s, 2.4);
+    const K = 0.3 * Math.pow(Math.max(0, (s - 0.72) / 0.28), 2) + (inside ? 0.05 : 0);
+    for (let j = -NJ; j <= NJ; j++) {
+      const u = Math.abs(j) / NJ;
+      pos.push(Math.sign(j) * B * Math.pow(u, 0.62), K + (H - K) * Math.pow(u, 1.7), z + (inside ? (s < 0.5 ? 0.04 : -0.04 * taper) : 0));
+      c.set(paint(u)).multiplyScalar(inside ? 0.92 + 0.1 * u : 1);
+      col.push(c.r, c.g, c.b);
+    }
+  }
+  const W = NJ * 2 + 1;
+  for (let i = 0; i < NS; i++) for (let j = 0; j < W - 1; j++) {
+    const a = i * W + j, b = a + 1, d = a + W, e = d + 1;
+    if (inside) idx.push(a, d, b, b, d, e); else idx.push(a, b, d, b, e, d);
+  }
+  // Transom (flat stern): a fan from the keel point to the section's edge.
+  const k0 = NJ;
+  for (let j = 0; j < W - 1; j++) if (j !== k0 && j + 1 !== k0) { if (inside) idx.push(k0, j, j + 1); else idx.push(k0, j + 1, j); }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  return g;
+}
+
+/**
+ * A rounded, weathered boulder (radii sx, sy, sz): a smooth sphere pushed about by low-frequency
+ * noise, its underside flattened where it has settled, with vertex colour for the weathering:
+ * darker in hollows and toward the base, paler on the rain-washed top, patches of lichen.
+ */
+function rockGeometry(r: () => number, sx: number, sy: number, sz: number): THREE.BufferGeometry {
+  let g: THREE.BufferGeometry = new THREE.IcosahedronGeometry(1, 3);
+  g.deleteAttribute("normal");
+  g.deleteAttribute("uv");
+  g = mergeVertices(g);
+  const seed = r() * 100;
+  const pos = g.attributes.position as THREE.BufferAttribute;
+  const n = pos.count;
+  const col = new Float32Array(n * 3);
+  const base = vary(pick(r, ["#8a8378", "#7d776f", "#948a7c", "#857c72"]), r, 0.15);
+  const lichen = new THREE.Color(pick(r, ["#a59a6a", "#8e9672", "#b0a27c"]));
+  const v = new THREE.Vector3(), c = new THREE.Color();
+  for (let i = 0; i < n; i++) {
+    v.fromBufferAttribute(pos, i).normalize();
+    const big = fbm3(v.x * 1.3 + seed, v.y * 1.3, v.z * 1.3);
+    const small = fbm3(v.x * 4.2, v.y * 4.2 + seed, v.z * 4.2);
+    const rad = 1 + big * 0.32 + small * 0.07;
+    let y = v.y * rad;
+    if (y < -0.3) y = -0.3 + (y + 0.3) * 0.25;
+    pos.setXYZ(i, v.x * rad * sx, y * sy, v.z * rad * sz);
+    // Weathering.
+    const hollow = THREE.MathUtils.clamp(0.5 - (big * 0.32 + small * 0.07) * 2.5, 0, 1);
+    const up = THREE.MathUtils.clamp(v.y, 0, 1);
+    const lich = THREE.MathUtils.smoothstep(fbm3(v.x * 3 - seed, v.y * 3, v.z * 3 + 7), 0.12, 0.3) * THREE.MathUtils.smoothstep(v.y, 0.0, 0.5);
+    c.copy(base).multiplyScalar(0.8 + up * 0.28 - hollow * 0.22 - THREE.MathUtils.clamp(-v.y, 0, 1) * 0.18 + small * 0.25);
+    c.lerp(lichen, lich * 0.6);
+    col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b;
+  }
+  g.setAttribute("color", new THREE.BufferAttribute(col, 3));
+  g.computeVertexNormals();
+  return g;
+}
+
+/** Smooth 3D value noise, 3 octaves, about −0.5…0.5. */
+function fbm3(x: number, y: number, z: number): number {
+  let s = 0, a = 0.5, f = 1;
+  for (let o = 0; o < 3; o++) { s += a * (vnoise(x * f, y * f, z * f) - 0.5); a *= 0.5; f *= 2.03; }
+  return s * 1.6;
+}
+function vnoise(x: number, y: number, z: number): number {
+  const xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z);
+  const xf = x - xi, yf = y - yi, zf = z - zi;
+  const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf), w = zf * zf * (3 - 2 * zf);
+  const h = (a: number, b: number, c: number) => { const s = Math.sin(a * 127.1 + b * 311.7 + c * 74.7) * 43758.5453; return s - Math.floor(s); };
+  const l = (a: number, b: number, t: number) => a + (b - a) * t;
+  return l(
+    l(l(h(xi, yi, zi), h(xi + 1, yi, zi), u), l(h(xi, yi + 1, zi), h(xi + 1, yi + 1, zi), u), v),
+    l(l(h(xi, yi, zi + 1), h(xi + 1, yi, zi + 1), u), l(h(xi, yi + 1, zi + 1), h(xi + 1, yi + 1, zi + 1), u), v),
+    w,
+  );
+}
+
 /** Beach height: flat below the sea wall, then gently down into the sea. */
 export function beachHeight(x: number, z: number): number {
   const t = Math.max(0, -z - 108);
@@ -401,9 +544,10 @@ export function beachHeight(x: number, z: number): number {
 
 /** Walkable ground height: the street and promenade at 0, the steps, then the beach. */
 export function groundHeight(x: number, z: number): number {
-  if (z > SHORE.promenadeZ1 + 0.25) return 0;
+  // Tread k's top is at −0.2·k and its nose is at z = −100.02 − 0.5·k (matches the stone in buildTown).
+  if (z > SHORE.promenadeZ1 - 0.02) return 0;
   if (Math.abs(x) < 2.2 && z > SHORE.stepsZ1) {
-    const k = Math.min(8, Math.max(0, Math.floor((-(z - (SHORE.promenadeZ1 + 0.25))) / 0.5) + 1));
+    const k = Math.min(8, Math.max(0, Math.floor(-(z - (SHORE.promenadeZ1 - 0.02)) / 0.5)));
     return -(k / 8) * 1.6;
   }
   return beachHeight(x, z);

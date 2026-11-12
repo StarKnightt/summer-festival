@@ -18,6 +18,13 @@ BONES = [  # name, parent
     ("thigh_L", "hips"), ("shin_L", "thigh_L"), ("foot_L", "shin_L"),
     ("thigh_R", "hips"), ("shin_R", "thigh_R"), ("foot_R", "shin_R"),
 ]
+FINGERS = ["thumb", "index", "middle", "ring", "pinky"]
+# Finger bones (added after the original 22, which keep their names, parents and rest pose): two per
+# finger, children of the hand bone; the rest pose IS the relaxed curl (the clips do not key them).
+for _s in ("L", "R"):
+    for _f in FINGERS:
+        BONES.append((f"finger_{_f}_1_{_s}", f"hand_{_s}"))
+        BONES.append((f"finger_{_f}_2_{_s}", f"finger_{_f}_1_{_s}"))
 PARENT = dict(BONES)
 
 # Per-variant proportions (metres). hip = thigh joint height; ua/fa/hand = arm segment lengths;
@@ -38,6 +45,61 @@ VARIANTS = {
 ORDER = ["woman", "man", "kid", "keeper", "elder"]
 
 
+# Relaxed hand, in the hand frame (d along the hand bone, s forward = thumb side, n palm normal toward
+# the body), lengths in units of the hand length hl / widths in k = hl / 0.15. The angles are the same
+# for every variant, so the finger rest rotations match across variants like the rest of the rig.
+FINGER_LAYOUT = {  # knuckle (along d in hl, across s in k), length (hl), splay deg, curl deg (seg 1, seg 2), radius k
+    "index": dict(kd=0.475, ks=0.0245, L=0.46, splay=5.0, c1=22.0, c2=38.0, r=0.0086),
+    "middle": dict(kd=0.485, ks=0.0080, L=0.51, splay=0.0, c1=28.0, c2=44.0, r=0.0090),
+    "ring": dict(kd=0.475, ks=-0.0085, L=0.48, splay=-5.0, c1=34.0, c2=48.0, r=0.0084),
+    "pinky": dict(kd=0.445, ks=-0.0240, L=0.38, splay=-11.0, c1=40.0, c2=52.0, r=0.0074),
+}
+SEG1 = 0.47     # proximal phalanx share of the finger length (bone 2 = middle + distal)
+
+
+def hand_frame(J, side):
+    sg = 1.0 if side == "L" else -1.0
+    d = J[f"d0_{side}"]
+    s = np.array([0, -1.0, 0])
+    n = norm(np.cross(d, s)) * sg
+    return d, s, n
+
+
+def _rot(axis, deg, v):
+    a = norm(axis)
+    t = math.radians(deg)
+    return v * math.cos(t) + np.cross(a, v) * math.sin(t) + a * (a @ v) * (1 - math.cos(t))
+
+
+def finger_joints(J, side):
+    """{finger: (base, mid, tip, radius)} at rest (relaxed curl, thumb opposed)."""
+    d, s, n = hand_frame(J, side)
+    wr = J[f"wr_{side}"]
+    hl = J["P"]["hand"]
+    k = hl / 0.15
+    out = {}
+    for f, L in FINGER_LAYOUT.items():
+        base = wr + d * L["kd"] * hl + s * L["ks"] * k + n * 0.002 * k
+        f0 = _rot(n, L["splay"], d)                    # splay in the palm plane (toward the thumb side +)
+        side_ax = norm(np.cross(f0, n))
+        d1 = _rot(side_ax, -L["c1"], f0)               # curl toward the palm
+        d2 = _rot(side_ax, -(L["c1"] + L["c2"]), f0)
+        if (d1 - f0) @ n < 0:                          # make sure the curl goes toward the palm
+            d1 = _rot(side_ax, L["c1"], f0)
+            d2 = _rot(side_ax, L["c1"] + L["c2"], f0)
+        mid = base + d1 * L["L"] * hl * SEG1
+        tip = mid + d2 * L["L"] * hl * (1 - SEG1)
+        out[f] = (base, mid, tip, L["r"] * k)
+    # thumb: from the thenar pad, forward and across toward the palm (opposed), slightly bent
+    tb = wr + d * 0.255 * hl + s * 0.027 * k + n * 0.012 * k
+    t1 = norm(d * 0.82 + s * 0.20 + n * 0.50)
+    t2 = norm(d * 0.70 - s * 0.12 + n * 0.80)
+    tm = tb + t1 * 0.205 * hl
+    tt = tm + t2 * 0.185 * hl
+    out["thumb"] = (tb, tm, tt, 0.0098 * k)
+    return out
+
+
 def skeleton(v):
     """Joint positions + bone (head, tail, parent) list for a variant (Blender coords)."""
     P = VARIANTS[v]
@@ -45,6 +107,7 @@ def skeleton(v):
     lk = hip / 0.80                        # leg scale vs the reference woman
     hc, hn, hh = P["hunch"]
     J = {}
+    J["P"] = P
     J["lk"] = lk
     J["ankle_z"] = 0.144 * hip
     J["sole"] = 0.045 * lk                 # sandal top (where the sole of the foot rests)
@@ -93,6 +156,9 @@ def skeleton(v):
         J[f"ua_{s}"], J[f"el_{s}"], J[f"wr_{s}"], J[f"tip_{s}"] = ua, el, wr, tip
         J[f"th_{s}"], J[f"kn_{s}"], J[f"an_{s}"] = th, kn, an
         J[f"sh_{s}"] = sh
+        for f, (fb, fm, ft, fr) in finger_joints(J, s).items():
+            bones[f"finger_{f}_1_{s}"] = (fb, fm)
+            bones[f"finger_{f}_2_{s}"] = (fm, ft)
     J["bones"] = bones
     J["P"] = P
     return J

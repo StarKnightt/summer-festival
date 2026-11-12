@@ -13,7 +13,11 @@ export class Wind {
   private gustT = 3;
   private listeners: ((k: number) => void)[] = [];
 
-  onGust(fn: (strength: number) => void): void { this.listeners.push(fn); }
+  /** Calls `fn` on each gust; returns a function that stops listening. */
+  onGust(fn: (strength: number) => void): () => void {
+    this.listeners.push(fn);
+    return () => { const i = this.listeners.indexOf(fn); if (i >= 0) this.listeners.splice(i, 1); };
+  }
 
   update(dt: number): void {
     this.t += dt;

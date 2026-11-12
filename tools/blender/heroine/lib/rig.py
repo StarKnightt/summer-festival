@@ -3,6 +3,10 @@
 Bones (names as in glTF / three.js; underscores, never dots):
   root > hips > spine > spine1 > spine2 > neck > head
   spine2 > shoulder_L > upperarm_L > forearm_L > hand_L > (thumb_L, fingers_L)      (same for _R)
+  hand_L > finger_<thumb|index|middle|ring|pinky>_1_L > finger_<...>_2_L           (same for _R)
+      five separate fingers; their rest pose is the relaxed curl. thumb_L / fingers_L are the old
+      one-bone-per-hand controls: kept (same name, parent and rest) but no vertex is weighted to
+      them any more.
   hips > thigh_L > shin_L > foot_L > toe_L                                         (same for _R)
   helper chains registered by the builders with add_chain(): sleeve_L1-2 / sleeve_R1-2 (forearm),
   hairSideL1-2, hairSideR1-2, hairBack1-3, hairBun1 (head), kanzashi1-2 (hairBun1),
@@ -62,6 +66,44 @@ def hand_points():
             "thumb0": thumb0, "thumb1": thumb0 + tdir * 0.052, "d": d, "w": w, "n": n}
 
 
+FINGERS = ("thumb", "index", "middle", "ring", "pinky")
+# finger: offset of the knuckle across the hand (+ = thumb side), length, radius, curl, fan (deg).
+# Distinct lengths, curls and a slight fan keep the fingers apart, so the hand never reads as a mitten.
+_FDEF = {
+    "index": (0.0228, 0.062, 0.0068, 0.75, 5.0),
+    "middle": (0.0078, 0.069, 0.0070, 1.00, 1.0),
+    "ring": (-0.0072, 0.064, 0.0066, 1.25, -3.5),
+    "pinky": (-0.0218, 0.051, 0.0059, 1.50, -8.5),
+}
+
+
+def finger_joints():
+    """Left hand, relaxed curl: finger -> (base, mid, bend, tip, radius). Bone _1 runs base -> mid
+    (the first phalanx), bone _2 runs mid -> tip (the other two, with the last bend in the mesh)."""
+    import math
+    hp = hand_points()
+    d, w, n = hp["d"], hp["w"], hp["n"]
+    out = {}
+    for f, (off, L, r, c, fan) in _FDEF.items():
+        dd = norm(d * math.cos(math.radians(fan)) + w * math.sin(math.radians(fan)))
+        a1 = math.radians(6.0 + 12.0 * c)
+        a2 = a1 + math.radians(26.0 * c)
+        a3 = a2 + math.radians(20.0 * c)
+        dr = lambda a: dd * math.cos(a) + n * math.sin(a)
+        p0 = hp["knuck"] + w * off - d * 0.004
+        p1 = p0 + dr(a1) * L * 0.40
+        p2 = p1 + dr(a2) * L * 0.33
+        p3 = p2 + dr(a3) * L * 0.27
+        out[f] = (p0, p1, p2, p3, r)
+    t0 = hp["thumb0"]
+    tdir = norm(hp["thumb1"] - t0)
+    q1 = t0 + tdir * 0.027
+    q2 = t0 + tdir * 0.044 + d * 0.008 + n * 0.006
+    q3 = t0 + tdir * 0.056 + d * 0.016 + n * 0.012
+    out["thumb"] = (t0, q1, q2, q3, 0.0082)
+    return out
+
+
 def bone_defs():
     """[(name, head, tail, parent, roll_vector)] in the bind pose (barefoot frame)."""
     B = []
@@ -82,6 +124,12 @@ def bone_defs():
         ("hand_L", hp["wrist"], hp["knuck"], "forearm_L", tuple(-hp["n"])),
         ("thumb_L", hp["thumb0"], hp["thumb1"], "hand_L", tuple(-hp["n"])),
         ("fingers_L", hp["knuck"], hp["fing_tip"], "hand_L", tuple(-hp["n"])),
+    ]
+    for f in FINGERS:
+        p0, p1, p2, p3, r = finger_joints()[f]
+        left.append((f"finger_{f}_1_L", p0, p1, "hand_L", tuple(-hp["n"])))
+        left.append((f"finger_{f}_2_L", p1, p3, f"finger_{f}_1_L", tuple(-hp["n"])))
+    left += [
         ("thigh_L", S.HIP, S.KNEE, "hips", fwd),
         ("shin_L", S.KNEE, S.ANKLE, "thigh_L", fwd),
         ("foot_L", S.ANKLE, S.BALL, "shin_L", (0, 0, 1)),

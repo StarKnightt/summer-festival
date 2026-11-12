@@ -2,11 +2,12 @@
 nose, blush) in ONE mesh `heroine_head` with shape keys `blink` and `smile`.
 
 Face layout (barefoot frame, her left eye; the right is mirrored):
-  eye 15..53 mm out from the centre line, 1.350..1.389 m high; iris amber-brown, two highlights.
-  brows ~1.405, nose tip 1.350, mouth 1.316, chin 1.284.
-Blink: the eye decals collapse onto the lower lid curve and the upper lash line drops onto it,
-which reads as a soft closed anime eye. Smile: cheeks push the lower lids up a little, the eyes
-narrow, the mouth corners curl up.
+  crown 1.505, chin 1.284 (head 0.221 m). Eye 14.5..44.5 mm out from the centre line (one eye width
+  apart), 1.371..1.400 m high (eye line at the middle of the head); warm brown iris with highlights.
+  Brows ~1.415, nose tip ~1.341, mouth 1.318, ears 1.358..1.400.
+Blink: both lids meet on a soft arc 30% up from the lower lid and the upper lash line folds onto it.
+Smile: the eyes bow upward a little (they keep their size), brows and blush lift, the mouth widens
+and its corners curl up. Each key only closes or moves, so blink + smile together stay clean.
 """
 import math
 
@@ -17,10 +18,15 @@ from . import shape as S
 from . import tex
 from .common import catmull, image_from_array, make_mesh, material, merge_geo, mirror, norm, orient
 
-# Eye outline (her left): s from inner (0) to outer (1) corner.
-EYE_X0, EYE_X1 = 0.0165, 0.0515
-TOP = np.array([[0.0, 1.3625], [0.12, 1.3780], [0.40, 1.3885], [0.72, 1.3870], [0.90, 1.3800], [1.0, 1.3715]])
-BOT = np.array([[0.0, 1.3570], [0.15, 1.3520], [0.50, 1.3500], [0.82, 1.3525], [1.0, 1.3640]])
+# Eye outline (her left): s from inner (0) to outer (1) corner. Proportions follow the usual
+# modern-anime front-view construction (refs/heroine): the eye line sits at the vertical middle of
+# the head (crown 1.505, chin 1.284 -> 1.394; eye centre 1.386), one eye width (29 mm) between the
+# eyes, eye 30 mm wide and 29 mm tall (about 1/6 of the 0.17 m face, hairline to chin).
+EYE_X0, EYE_X1 = 0.0145, 0.0445
+TOP = np.array([[0.0, 1.3800], [0.12, 1.3915], [0.40, 1.3995], [0.72, 1.3990], [0.90, 1.3940], [1.0, 1.3868]])
+BOT = np.array([[0.0, 1.3762], [0.15, 1.3728], [0.50, 1.3708], [0.82, 1.3726], [1.0, 1.3812]])
+CLOSE = 0.30          # blink: both lids meet 30% of the way up from the lower lid (a soft downward arc)
+SMILE_LIFT = 0.0018   # smile: the whole eye bows upward (happy eyes) - it moves, it never opens or grows
 
 
 def _top(s):
@@ -29,6 +35,21 @@ def _top(s):
 
 def _bot(s):
     return catmull(BOT, s)[:, 0]
+
+
+def _lids(s, state):
+    """(top, bottom) lid heights for state. Every state is a sum of the basis and two deltas that
+    are each a pure closing (blink) or a pure rigid lift (smile), so blink + smile at 1 together
+    is the closed lid line lifted: it never inverts and the eye never gets bigger."""
+    sc = np.clip(s, 0, 1)
+    top, bot = _top(sc), _bot(sc)
+    if state == "blink":
+        c = bot + CLOSE * (top - bot)
+        top, bot = c + 0.0004, c
+    if state == "smile":
+        u = SMILE_LIFT * np.sin(np.pi * sc) ** 0.8
+        top, bot = top + u, bot + u
+    return top, bot
 
 
 def _decal_grid(xs, zs, off):
@@ -56,12 +77,7 @@ def eye_geo(state):
     s = np.linspace(0, 1, cols)
     t = np.linspace(0, 1, rows)
     x = EYE_X0 + s * (EYE_X1 - EYE_X0)
-    top, bot = _top(s), _bot(s)
-    if state == "smile":
-        bot = bot + 0.0060 * np.sin(np.pi * s) ** 0.8
-        top = top - 0.0025 * np.sin(np.pi * s)
-    if state == "blink":
-        top = bot + 0.0004
+    top, bot = _lids(s, state)
     X = np.tile(x, (rows, 1))
     Z = bot[None, :] + t[:, None] * (top - bot)[None, :]
     V = _decal_grid(X, Z, 0.0007)
@@ -73,23 +89,22 @@ def eye_geo(state):
 
 
 def lash_geo(state):
-    """Upper lash line: a band along the top lid, thick at the outer end, with a little flick."""
+    """Upper lash line: a firm band along the top lid, thickest toward the outer corner, ending in
+    a short flick out and up."""
     cols = 18
-    s = np.linspace(-0.03, 1.0, cols)
+    s = np.linspace(-0.04, 1.0, cols)
     x = EYE_X0 + s * (EYE_X1 - EYE_X0)
-    top, bot = _top(np.clip(s, 0, 1)), _bot(np.clip(s, 0, 1))
-    w = 0.0010 + 0.0032 * np.clip(s, 0, 1) ** 1.3
-    if state == "smile":
-        top = top - 0.0025 * np.sin(np.pi * np.clip(s, 0, 1))
+    top, bot = _lids(s, state)
+    sc = np.clip(s, 0, 1)
+    w = 0.0011 + 0.0021 * sc ** 1.1 - 0.0008 * sc ** 6
     if state == "blink":
-        top = bot + 0.0004
-        w = w * 0.75
-    lo = top - 0.0009
+        w = w * 0.8
+    lo = top - 0.0008
     hi = top + w
     # Flick: three extra columns curling out and up past the outer corner.
-    fx = EYE_X1 + np.array([0.0022, 0.0042, 0.0058])
-    fz_lo = top[-1] + np.array([-0.0002, 0.0010, 0.0026]) - (0.001 if state == "blink" else 0.0)
-    fz_hi = fz_lo + np.array([0.0030, 0.0020, 0.0008])
+    fx = EYE_X1 + np.array([0.0018, 0.0034, 0.0047])
+    fz_lo = top[-1] + np.array([-0.0003, 0.0007, 0.0019])
+    fz_hi = fz_lo + np.array([0.0024, 0.0016, 0.0007])
     xs = np.concatenate([x, fx])
     lo = np.concatenate([lo, fz_lo])
     hi = np.concatenate([hi, fz_hi])
@@ -100,13 +115,14 @@ def lash_geo(state):
 
 
 def lower_lash_geo(state):
+    """A thin lower-lid line on the outer half (it folds into the closed lid line on a blink)."""
     cols = 9
     s = np.linspace(0.45, 1.0, cols)
     x = EYE_X0 + s * (EYE_X1 - EYE_X0)
-    bot = _bot(s)
-    if state == "smile":
-        bot = bot + 0.0060 * np.sin(np.pi * s) ** 0.8
-    w = 0.0004 + 0.0007 * (s - 0.45) / 0.55
+    _, bot = _lids(s, state)
+    w = 0.00035 + 0.00055 * (s - 0.45) / 0.55
+    if state == "blink":
+        w = w * 0.0 + 0.00005
     X = np.stack([x, x])
     Z = np.stack([bot - w, bot + 0.0002])
     V = _decal_grid(X, Z, 0.0013)
@@ -114,24 +130,27 @@ def lower_lash_geo(state):
 
 
 def brow_geo(state):
+    """Soft, gently arched brows well above the eyes (they sit just under the bang tips)."""
     cols = 10
     s = np.linspace(0, 1, cols)
-    x = 0.0150 + s * 0.0350
-    zc = 1.4040 + 0.0045 * np.sin(np.pi * (s * 0.85 + 0.1)) - 0.002 * s
+    x = 0.0120 + s * 0.0345
+    zc = 1.4130 + 0.0032 * np.sin(np.pi * (s * 0.85 + 0.1)) - 0.0022 * s
     if state == "smile":
-        zc = zc + 0.0012
-    w = 0.0011 + 0.0011 * np.sin(np.pi * np.clip(s * 0.9 + 0.05, 0, 1))
+        zc = zc + 0.0010
+    w = 0.0008 + 0.0008 * np.sin(np.pi * np.clip(s * 0.9 + 0.05, 0, 1)) - 0.0003 * s
     X = np.stack([x, x])
     Z = np.stack([zc - w, zc + w])
     V = _decal_grid(X, Z, 0.0012)
     return V, _grid_faces(2, cols)
 
 
-def blush_geo():
-    """Soft oval blush on the cheek (her left)."""
+def blush_geo(state="basis"):
+    """Soft oval blush on the cheek (her left), under the outer half of the eye."""
     n = 14
     a = np.linspace(0, 2 * np.pi, n, endpoint=False)
-    cx, cz, rx, rz = 0.0460, 1.3410, 0.0125, 0.0055
+    cx, cz, rx, rz = 0.0370, 1.3595, 0.0105, 0.0042
+    if state == "smile":
+        cz += 0.0010
     X = np.concatenate([[cx], cx + rx * np.cos(a)])
     Z = np.concatenate([[cz], cz + rz * np.sin(a)])
     V, _ = S.head_front(X, Z, 0.0006)
@@ -140,18 +159,29 @@ def blush_geo():
 
 
 def mouth_geo(state):
-    """A small soft mouth line, centred."""
+    """A small soft closed mouth with the corners turned up a touch (pleasant, not blank)."""
     cols = 11
     s = np.linspace(-1, 1, cols)
-    half = 0.0085 if state != "smile" else 0.0098
+    half = 0.0068 if state != "smile" else 0.0080
     x = s * half
-    zc = 1.3160 - 0.0006 * (1 - s * s)
+    zc = 1.3180 - 0.0003 * (1 - s * s) + 0.0007 * s ** 4
     if state == "smile":
-        zc = 1.3155 + 0.0030 * s ** 2 - 0.0006
-    w = 0.00055 + 0.00035 * (1 - np.abs(s))
+        zc = 1.3172 + 0.0030 * s ** 2 - 0.0004
+    w = 0.00045 + 0.00035 * (1 - np.abs(s)) ** 0.7
     X = np.stack([x, x])
     Z = np.stack([zc - w, zc + w])
     V = _decal_grid(X, Z, 0.0010)
+    return V, _grid_faces(2, cols)
+
+
+def lip_geo(state):
+    """A faint lower-lip shade under the mouth line."""
+    cols = 7
+    s = np.linspace(-1, 1, cols)
+    x = s * 0.0035
+    zc = 1.3150 + 0.0003 * s * s + (0.0006 if state == "smile" else 0.0)
+    w = 0.0004 * (1 - s * s) + 0.00005
+    V = _decal_grid(np.stack([x, x]), np.stack([zc - w, zc + w]), 0.0009)
     return V, _grid_faces(2, cols)
 
 
@@ -159,9 +189,9 @@ def nose_geo():
     """A tiny shadow tick under the nose tip."""
     cols = 5
     s = np.linspace(-1, 1, cols)
-    x = 0.0030 * s - 0.0008
-    zc = 1.3445 + 0.0006 * s * s
-    w = 0.0004 + 0.0003 * (1 - np.abs(s))
+    x = 0.0026 * s - 0.0007
+    zc = 1.3385 + 0.0005 * s * s
+    w = 0.00035 + 0.00025 * (1 - np.abs(s))
     V = _decal_grid(np.stack([x, x]), np.stack([zc - w, zc + w]), 0.0010)
     return V, _grid_faces(2, cols)
 
@@ -193,27 +223,42 @@ def skin_geo():
     return V, F
 
 
+def _ear_centre(y=0.014, z=1.3790, sink=0.0012):
+    """Ear centre: on the head's side surface at (y, z), sunk a touch so it sits flush."""
+    lo, hi = 0.0, 0.2
+    for _ in range(40):
+        m = 0.5 * (lo + hi)
+        if S.head_sdf(np.array([[m, y, z]]))[0] < 0:
+            lo = m
+        else:
+            hi = m
+    return np.array([0.5 * (lo + hi) - sink, y, z])
+
+
+EAR_C = _ear_centre()   # top level with the brows' underside, lobe at the nose
+
+
 def ear_geo():
     """Her left ear: a small flattened, slightly cupped oval tilted back."""
     rows, cols = 8, 12
     th = np.linspace(0.15, np.pi - 0.15, rows)
     ph = np.linspace(0, 2 * np.pi, cols, endpoint=False)
     TH, PH = np.meshgrid(th, ph, indexing="ij")
-    lx = 0.0045 * np.sin(TH) * np.cos(PH)
-    ly = 0.0105 * np.sin(TH) * np.sin(PH)
-    lz = 0.0175 * np.cos(TH)
-    ly = ly + 0.0025 * (lz / 0.0175) ** 2               # rim curls back at top and bottom
+    lx = 0.0048 * np.sin(TH) * np.cos(PH)
+    ly = 0.0115 * np.sin(TH) * np.sin(PH) * (1.0 + 0.18 * np.cos(TH))   # a little wider at the top
+    lz = 0.0210 * np.cos(TH)
+    ly = ly + 0.0026 * (lz / 0.0210) ** 2               # rim curls back at top and bottom
     P = np.stack([lx, ly, lz], -1).reshape(-1, 3)
     tilt = np.radians(-14)
     R = np.array([[1, 0, 0], [0, math.cos(tilt), -math.sin(tilt)], [0, math.sin(tilt), math.cos(tilt)]])
-    P = P @ R.T + np.array([0.0715, 0.016, 1.369])
+    P = P @ R.T + EAR_C
     V, F = P, []
     for i in range(rows - 1):
         for j in range(cols):
             a = i * cols + j
             b = i * cols + (j + 1) % cols
             F.append((a, b, b + cols, a + cols))
-    c = np.array([0.0715, 0.016, 1.369])
+    c = EAR_C
     F = orient(V, F, lambda C: np.tile(c, (len(C), 1)))
     return V, F
 
@@ -232,9 +277,9 @@ def build(col):
     mats = [m_skin, m_eye, m_line, m_brow, m_mouth, m_nose, m_blush]
 
     def assemble(state):
-        parts, mids, uvs = [], [], []
+        parts, mids, uvs, tags = [], [], [], []
 
-        def add(geo, mi, uv=None, both=True):
+        def add(geo, mi, uv=None, both=True, tag="face"):
             V, F = geo[0], geo[1]
             F = _outward(V, F)
             items = [(V, F)]
@@ -242,12 +287,13 @@ def build(col):
                 items.append(mirror(V, F))
             for (Vk, Fk) in items:
                 parts.append((Vk, Fk))
+                tags.append(np.full(len(Vk), tag == "ear"))
                 mids.append(np.full(len(Fk), mi))
                 uvs.append(uv if uv is not None else np.zeros((len(Vk), 2)))
 
         hv, hf = skin_geo()
         add((hv, hf), 0, both=False)
-        add(ear_geo(), 0)
+        add(ear_geo(), 0, tag="ear")
         ev, ef, eu = eye_geo(state)
         add((ev, ef), 1, eu)
         add(lash_geo(state), 2)
@@ -255,12 +301,24 @@ def build(col):
         add(brow_geo(state), 3)
         add(mouth_geo(state), 4, both=False)
         add(nose_geo(), 5, both=False)
-        add(blush_geo(), 6)
+        add(lip_geo(state), 5, both=False)
+        add(blush_geo(state), 6)
         V, F = merge_geo(parts)
+        assemble.ear = np.concatenate(tags)
         return V, F, np.concatenate(mids), np.vstack(uvs)
 
     V, F, mi, UV = assemble("basis")
+    ear = assemble.ear
     ob = make_mesh("heroine_head", V, F, col, mats, mi)
+    # Normals straight from the analytic head surface (skin and the painted features on it), so
+    # the tessellation can never put a facet or a shading dent into the face under a hard toon
+    # terminator. The ears keep their own mesh normals.
+    me = ob.data
+    vn = np.zeros(len(V) * 3)
+    me.vertices.foreach_get("normal", vn)
+    N = S.head_grad(V)
+    N[ear] = vn.reshape(-1, 3)[ear]
+    me.normals_split_custom_set_from_vertices([tuple(n) for n in N])
     from .common import set_uv_vertex
     set_uv_vertex(ob, UV)
     ob.shape_key_add(name="Basis", from_mix=False)

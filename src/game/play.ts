@@ -6,6 +6,9 @@ import { Audio } from "../audio/audio";
 import { Fx } from "../fx/fx";
 import { buildCats, type Cat } from "../world/cats";
 import { Crowd } from "../actors/crowd";
+import { Moments } from "../actors/moments";
+import { Animals } from "../actors/animals";
+import { PRESETS } from "../world/timeofday";
 import { GATES, SHORE, SPAWNS, TASKS, STREET, SLEEPING_CAT, type TaskId } from "../world/layout";
 import type { Stall } from "../world/stalls";
 import { MiniGame, toScreen, type Ctx } from "./mg/common";
@@ -13,6 +16,11 @@ import { Goldfish, Tub, goldfishBag } from "./mg/goldfish";
 import { CandyApple, Masks, wearMask } from "./mg/pickers";
 import { RingToss } from "./mg/ringtoss";
 import { Lantern, prepareLantern, updateLantern, type LanternState } from "./mg/lantern";
+import { Snack, type SnackKind } from "./mg/snack";
+import { buildGallery, Shooting, type GalleryStall } from "./mg/gallery";
+import { buildShrine, Omikuji, type Shrine } from "./mg/omikuji";
+import { Social, EMOTES } from "./social";
+import { Guide, type GuideTarget } from "./guide";
 
 const VERB: Record<TaskId, string> = {
   goldfish: "Scoop a goldfish",
@@ -21,6 +29,16 @@ const VERB: Record<TaskId, string> = {
   masks: "Look at the masks",
   lantern: "Light a lantern",
 };
+
+/** The same stalls once their task is ticked off: everything can be played again. */
+const AGAIN: Record<TaskId, string> = {
+  goldfish: "Scoop another goldfish",
+  candyapple: "Buy another candy apple",
+  ringtoss: "Play ring toss again",
+  masks: "Try another mask",
+  lantern: "Light the lantern again and make a wish",
+};
+const SNACK_VERB: Record<SnackKind, string> = { yakisoba: "Buy a plate of yakisoba", takoyaki: "Buy some takoyaki", shavedice: "Order a shaved ice" };
 
 interface Interactable { pos: THREE.Vector3; r: number; label: () => string | null; act: () => void }
 
@@ -35,11 +53,18 @@ export class Play {
   readonly audio = new Audio();
   readonly fx = new Fx();
   readonly crowd: Crowd;
+  moments: Moments | null = null;
+  animals: Animals | null = null;
   private waved = new Set<Stall>();
   private items: Interactable[] = [];
   private mg: MiniGame | null = null;
   private mgStall: Stall | null = null;
   private mgWinT = 0;
+  social!: Social;
+  guide!: Guide;
+  gallery!: GalleryStall;
+  shrine!: Shrine;
+  private emoteLock = false;
   private walkIn: { from: THREE.Vector3; to: THREE.Vector3; h0: number; h1: number; t: number } | null = null;
   private tub: Tub | null = null;
   private lantern: LanternState | null = null;
@@ -71,6 +96,12 @@ export class Play {
     this.cats = await buildCats();
     g.scene.add(this.cats.group);
     await this.crowd.load(g.stalls.stalls);
+    const appleProto = g.stalls.stalls.find((s) => s.spot.kind === "candyapple")?.findAll("apple_")[0] ?? null;
+    this.moments = new Moments(this.crowd, this.fx, this.audio, g.scene, (x, z) => g.town.groundY(x, z), appleProto,
+      (x0, x1, z0, z1) => g.player.addCollider({ x0, x1, z0, z1 }));
+    this.moments.build();
+    this.animals = new Animals((x, z) => g.town.groundY(x, z));
+    g.scene.add(this.animals.group);
     // Ambient: steam from the food stalls, the tub of goldfish, the lantern stall's dark lantern.
     this.fx.steamPoints = g.stalls.stalls.flatMap((s) => s.steam);
     for (const s of g.stalls.stalls) {
@@ -84,11 +115,41 @@ export class Play {
         const task = s.spot.task;
         this.items.push({
           pos: st.use, r: 1.5,
-          label: () => (this.prog.has(task) ? null : VERB[task]),
+          label: () => (this.prog.has(task) ? AGAIN[task] : VERB[task]),
           act: () => this.startTask(st),
         });
       }
     }
+    // The food stalls: buy something and eat it, as often as she likes.
+    const mkCtx = (stall: any): Ctx => ({ game: g, hud: this.hud, audio: this.audio, fx: this.fx, stall });
+    for (const s of g.stalls.stalls) {
+      if (s.spot.task) continue;
+      const kind: SnackKind = s.spot.kind === "shavedice" ? "shavedice" : s.spot.kind === "food_b" ? "takoyaki" : "yakisoba";
+      this.items.push({ pos: s.use, r: 1.5, label: () => SNACK_VERB[kind], act: () => this.startMini(new Snack(mkCtx(s), kind, () => this.prog.count(kind), () => this.crowd.npcs), s) });
+    }
+    // Two side activities: the cork-gun gallery up the street and the lucky draw at the little
+    // shrine near the shore.
+    this.gallery = buildGallery(-1, -21);
+    this.shrine = buildShrine(-1, -91.6);
+    for (const site of [this.gallery, this.shrine]) {
+      g.scene.add(site.root);
+      g.player.addCollider(site.collider);
+    }
+    g.addLights([
+      { x: this.gallery.root.position.x + 0.4, y: 2.3, z: -21, r: 1, g: 0.72, b: 0.42, k: 0.75, reach: 4.5 },
+      { x: this.shrine.root.position.x + 0.6, y: 1.6, z: -91.6, r: 1, g: 0.66, b: 0.38, k: 0.6, reach: 3.5 },
+    ]);
+    if (this.crowd.ok) {
+      const k = this.crowd.spawn("keeper", "keeper", this.gallery.keeper.x, this.gallery.keeper.z, Math.PI / 2);
+      this.crowd.play(k, "idle", 0);
+    }
+    this.items.push(
+      { pos: this.gallery.use, r: 1.5, label: () => (this.prog.count("gallery") ? "Have another go at the cork guns" : "Try the cork-gun gallery"), act: () => this.startMini(new Shooting(mkCtx(this.gallery), this.gallery, () => this.prog.count("gallery.best")), this.gallery) },
+      { pos: this.shrine.use, r: 1.5, label: () => (this.prog.count("omikuji") ? "Draw another fortune" : "Draw a fortune"), act: () => this.startMini(new Omikuji(mkCtx(this.shrine), this.shrine, () => this.prog.count("omikuji")), this.shrine) },
+    );
+    this.social = new Social(g, this.hud, this.audio, this.crowd, () => this.moments);
+    this.guide = new Guide(g, this.hud);
+    this.guide.on = !this.prog.data.guideOff;
     this.items.push({
       pos: this.cats.sleeper.pos, r: 1.8,
       label: () => (this.petT > 0 ? null : "Pet the sleeping cat"),
@@ -164,6 +225,7 @@ export class Play {
     this.hud.show();
     this.hud.controlsHint(true);
     this.hintT = 9;
+    this.g.input.lockEnabled = true;
     if (this.prog.taskCount === 0) setTimeout(() => this.hud.say("Five things to do at the festival tonight…", 4), 1800);
   }
 
@@ -171,6 +233,13 @@ export class Play {
   private startTask(s: Stall) {
     const g = this.g, task = s.spot.task!;
     const ctx: Ctx = { game: g, hud: this.hud, audio: this.audio, fx: this.fx, stall: s };
+    // Lighting it again: the old flame is pinched out first.
+    if (task === "lantern" && this.prog.has(task) && this.lantern) {
+      const L = this.lantern;
+      L.target = 0;
+      L.u.value = 0;
+      if (L.flame) L.flame.visible = false;
+    }
     let mg: MiniGame;
     if (task === "goldfish") {
       if (!this.tub) return;
@@ -179,10 +248,17 @@ export class Play {
     else if (task === "ringtoss") mg = new RingToss(ctx);
     else if (task === "masks") mg = new Masks(ctx, (i) => { this.prog.data.mask = i; wearMask(g, i); });
     else mg = new Lantern(ctx, this.lantern!, () => this.lightLantern(false));
+    this.startMini(mg, s);
+  }
+
+  /** Walks her to the spot, frames it, and hands over to the mini-game. */
+  startMini(mg: MiniGame, s: { use: THREE.Vector3; cam: THREE.Vector3; camTarget: THREE.Vector3 }): void {
+    const g = this.g;
     this.mg = mg;
-    this.mgStall = s;
+    this.mgStall = (s as Stall).spot ? (s as Stall) : null;
     this.mgWinT = 0;
     g.player.enabled = false;
+    this.emoteLock = false;
     const to = s.use.clone();
     to.y = g.her.position.y;
     const d = s.camTarget.clone().sub(to);
@@ -191,6 +267,37 @@ export class Play {
     this.hud.setPrompt(null);
     this.hud.controlsHint(false);
     this.hud.say("Esc to step away", 2.5);
+    this.social.clear();
+  }
+
+  /** A mini-game finished: counts and bests, and the task ticked off the first time. */
+  private onWin(mg: MiniGame) {
+    const p = this.prog;
+    const first = mg.task ? !p.has(mg.task) : false;
+    if (mg instanceof Goldfish) { const n = p.bump("goldfish"); if (!first) this.hud.say(`Another goldfish · ${n} scooped tonight`, 3.5); }
+    else if (mg instanceof RingToss) {
+      const before = p.count("ringtoss.best");
+      const b = p.best("ringtoss.best", mg.tosses, true);
+      if (!first) this.hud.say(!before || mg.tosses < before ? `Ringer on toss ${mg.tosses} · your best yet` : `Ringer on toss ${mg.tosses} · best is toss ${b}`, 3.5);
+    } else if (mg instanceof CandyApple) { const n = p.bump("candyapple"); if (!first) this.hud.say(`Candy apple number ${n}`, 3); }
+    else if (mg instanceof Lantern) { const n = p.bump("lantern"); if (!first) this.hud.say(`A wish on the lantern · lit ${n} times tonight`, 3.5); }
+    else if (mg instanceof Snack) p.bump(mg.kind);
+    else if (mg instanceof Shooting) { p.bump("gallery"); p.best("gallery.best", mg.hits); }
+    else if (mg instanceof Omikuji && mg.result >= 0) { p.bump("omikuji"); p.best("omikuji.best", mg.result, true); }
+    if (mg.task && first) this.completeTask(mg.task);
+    else this.audio.blip("coin");
+  }
+
+  private guideTarget(): GuideTarget | null {
+    const next = TASKS.find((t) => !this.prog.has(t.id));
+    if (next) {
+      const st = this.g.stalls.stalls.find((x) => x.spot.task === next.id);
+      if (!st) return null;
+      const top = this.markerTop.get(st.spot.kind) ?? 3.3;
+      return { pos: st.use, top: new THREE.Vector3(st.root.position.x * 0.5 + st.camTarget.x * 0.5, top, st.root.position.z), label: next.label };
+    }
+    if (!this.prog.data.fireworks && !this.fx.show) return { pos: new THREE.Vector3(0, 0, -108), top: new THREE.Vector3(0, -0.9, -108), label: "The fireworks, down at the shore" };
+    return null;
   }
 
   private endTask() {
@@ -202,8 +309,7 @@ export class Play {
     g.player.enabled = true;
     g.rig.setShot(null);
     this.hud.setGuide(null);
-    g.her.lookTarget = null;
-    g.her.smile = 0;
+    g.her.resetPose();
   }
 
   private completeTask(t: TaskId) {
@@ -310,8 +416,10 @@ export class Play {
     const w = g.wind.value;
     for (const f of this.furin) {
       if (Math.abs(f.o.position.z - her.z) > 30) continue;
-      f.o.rotation.x = Math.sin(g.time * 2.3 + f.ph) * 0.12 * w + w * 0.15;
-      f.o.rotation.z = Math.sin(g.time * 1.7 + f.ph * 1.3) * 0.08 * w;
+      // Gentle in the evening breeze, swinging hard in a gust.
+      const gust = Math.max(0, w - 0.4) * 2.5;
+      f.o.rotation.x = Math.sin(g.time * (2.3 + gust * 1.5) + f.ph) * (0.12 * w + 0.32 * gust) + w * 0.15 + gust * 0.25;
+      f.o.rotation.z = Math.sin(g.time * (1.7 + gust) + f.ph * 1.3) * (0.08 * w + 0.18 * gust);
     }
     if (this.lantern) updateLantern(this.lantern, dt);
     // Gates: lanterns light up one after another.
@@ -329,15 +437,27 @@ export class Play {
         g.her.speed = w.t < 1 ? 0.8 : 0;
       } else g.her.speed = 0;
       this.mg.update(dt);
+      this.updateMarkers(dt, true);
+      this.guide.update(dt, null, true);
+      this.social.update(dt, her, true, false);
       if (this.mg.won) {
-        if (this.mgWinT === 0) this.completeTask(this.mg.task);
+        if (this.mgWinT === 0) this.onWin(this.mg);
         this.mgWinT += dt;
         if (this.mgWinT > 1.6) this.endTask();
       } else if (input.hit("Escape") && this.mg.canQuit) this.endTask();
       this.levels(dt);
-      this.crowd.update(dt, her, g.camera.position, this.fx.show, g.player.circles);
+      this.moments?.update(dt, her, g.her.heading, g.her.speed, g.tod.preset === "night" || this.fx.show, this.fx.show, this.prog.has("masks"));
+    this.animals?.update(dt, her, g.her.heading, g.her.speed);
+    this.crowd.update(dt, her, g.camera.position, this.fx.show, g.player.circles);
       this.fx.update(dt, her, g.wind.dir, g.wind.value);
       return;
+    }
+
+    // T cycles the time of day.
+    if (input.hit("KeyT")) {
+      const p = PRESETS[(PRESETS.indexOf(g.tod.preset) + 1) % PRESETS.length];
+      g.setTod(p);
+      this.hud.setTod(p);
     }
 
     // Checkpoints: walking under a gate lights it and saves.
@@ -363,12 +483,27 @@ export class Play {
     this.hud.setPrompt(best ? best.label() : null);
     if (best && (input.hit("KeyE") || input.hit("Enter"))) best.act();
 
+    this.updateMarkers(dt);
+    // Emotes on 1-4 (she stands still for them); G turns the guide off and on.
+    if (this.began && this.petT <= 0) for (const e of EMOTES) if (input.hit(e.key)) this.social.emote(e.id);
+    if (this.social.busy && this.petT <= 0 && g.player.enabled) { g.player.enabled = false; this.emoteLock = true; }
+    else if (this.emoteLock && !this.social.busy) { this.emoteLock = false; if (this.petT <= 0) g.player.enabled = true; }
+    if (input.hit("KeyG")) {
+      const on = this.guide.toggle();
+      this.prog.data.guideOff = !on;
+      this.prog.save();
+      this.hud.say(on ? "Guide on" : "Guide off · press G to bring it back", 2.5);
+    }
+    this.guide.update(dt, this.guideTarget(), !this.began);
+    this.social.update(dt, her, false, this.prog.has("masks"));
     this.updateCats(dt);
     this.updateFinale(dt);
     this.updateGaze(dt);
     this.updateKeepers(dt);
     this.footsteps(dt);
     this.levels(dt);
+    this.moments?.update(dt, her, g.her.heading, g.her.speed, g.tod.preset === "night" || this.fx.show, this.fx.show, this.prog.has("masks"));
+    this.animals?.update(dt, her, g.her.heading, g.her.speed);
     this.crowd.update(dt, her, g.camera.position, this.fx.show, g.player.circles);
     this.fx.update(dt, her, g.wind.dir, g.wind.value);
   }
@@ -406,6 +541,29 @@ export class Play {
   }
 
   /** She looks at stalls, keepers and cats as she passes. */
+  /** A soft marker over each unfinished task stall, only when she's within ~10 m. */
+  private markerA = new Map<string, number>();
+  private markerTop = new Map<string, number>();
+  private updateMarkers(dt: number, hide = false) {
+    const g = this.g, her = g.her.position;
+    const v = new THREE.Vector3();
+    for (const s of g.stalls.stalls) {
+      const t = s.spot.task;
+      if (!t) continue;
+      const key = s.spot.kind;
+      let top = this.markerTop.get(key);
+      if (top === undefined) { top = new THREE.Box3().setFromObject(s.root).max.y + 0.75; this.markerTop.set(key, top); }
+      const d = Math.hypot(s.camTarget.x - her.x, s.camTarget.z - her.z);
+      // Full inside 8 m, gone past 10 m.
+      const want = hide || this.prog.has(t) ? 0 : THREE.MathUtils.clamp((10 - d) / 2, 0, 1);
+      const a = THREE.MathUtils.damp(this.markerA.get(key) ?? 0, want, 3, dt);
+      this.markerA.set(key, a);
+      v.set(s.root.position.x * 0.5 + s.camTarget.x * 0.5, top, s.root.position.z).project(g.camera);
+      const on = v.z < 1 && Math.abs(v.x) < 1.1 && Math.abs(v.y) < 1.1;
+      this.hud.marker(key, (v.x * 0.5 + 0.5) * innerWidth, (-v.y * 0.5 + 0.5) * innerHeight, on ? a : 0);
+    }
+  }
+
   private updateGaze(dt: number) {
     const g = this.g, her = g.her.position;
     if (this.petT > 0) return;
@@ -423,6 +581,7 @@ export class Play {
 
   private updateKeepers(dt: number) {
     const g = this.g, her = g.her.position;
+    let shown = 0;
     for (const s of g.stalls.stalls) {
       const d = Math.hypot(s.use.x - her.x, s.use.z - her.z);
       let t = (this.callT.get(s) ?? Math.random() * 4) - dt;
@@ -439,11 +598,14 @@ export class Play {
       this.callT.set(s, t);
       this.bubbleT.set(s, b);
       const key = `k${s.spot.z}`;
-      if (b > 0 && d < 9) {
-        const sc = toScreen(g, s.keeper.clone().setY(2.05));
-        this.hud.bubble(key, s.spot.call, sc.behind ? null : sc.x, sc.y);
+      const sc = b > 0 && d < 9 ? toScreen(g, s.keeper.clone().setY(2.05)) : null;
+      // Only a bubble that's actually on screen counts toward the two allowed.
+      if (sc && !sc.behind && sc.x > -80 && sc.x < innerWidth + 80 && shown < 2) {
+        shown++;
+        this.hud.bubble(key, s.spot.call, sc.x, sc.y);
       } else this.hud.bubble(key, "", null);
     }
+    this.social.keeperBubbles = shown;
   }
 
   private footsteps(dt: number) {

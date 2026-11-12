@@ -55,6 +55,7 @@ export class Lantern extends MiniGame {
   private litT = -1;
   private sway = new THREE.Vector3();
   private gust = 0;
+  private offGust: () => void;
 
   constructor(c: Ctx, private st: LanternState, private onLit: () => void) {
     super(c);
@@ -68,7 +69,7 @@ export class Lantern extends MiniGame {
     this.match.rotation.z = 0.5;
     c.game.scene.add(this.match);
     c.game.input.captureMouse = true;
-    c.game.wind.onGust((k) => { this.gust = Math.max(this.gust, k); });
+    this.offGust = c.game.wind.onGust((k) => { this.gust = Math.max(this.gust, k); });
   }
 
   update(dt: number): void {
@@ -128,6 +129,7 @@ export class Lantern extends MiniGame {
   }
 
   end(): void {
+    this.offGust();
     this.match.removeFromParent();
     this.c.game.input.captureMouse = false;
     this.c.game.her.lookTarget = null;

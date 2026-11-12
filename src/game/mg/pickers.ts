@@ -65,6 +65,9 @@ abstract class Picker extends MiniGame {
 
   protected abstract onChoose(o: THREE.Object3D): void;
 
+  /** The item's resting scale (not mid hover-grow). */
+  protected homeScale(o: THREE.Object3D): THREE.Vector3 { return this.home.get(o)?.s.clone() ?? o.scale.clone(); }
+
   end(): void {
     for (const [o, h] of this.home) { o.position.copy(h.p); o.scale.copy(h.s); }
     this.c.game.input.captureMouse = false;
@@ -95,9 +98,12 @@ export class CandyApple extends Picker {
   protected onChoose(o: THREE.Object3D): void {
     this.c.audio.blip("coin");
     this.c.hud.say("“Thank you, enjoy!”", 2.5);
+    // Buying another: the one she had is eaten by now.
+    const carry = this.c.game.carry;
+    for (const old of carry.filter((x) => x.name === "held_apple")) { old.removeFromParent(); carry.splice(carry.indexOf(old), 1); }
     const held = o.clone(true);
     held.name = "held_apple";
-    held.scale.copy(o.scale).multiplyScalar(1 / 1.1);
+    held.scale.copy(this.homeScale(o));
     held.position.set(0, 0, 0);
     o.visible = false;
     // Held by the stick, apple up.

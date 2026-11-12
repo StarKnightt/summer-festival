@@ -156,22 +156,7 @@ def woman(b):
         b.foot(side)
         b.geta(side, "cloth_accent")
     b.neck(0.041)
-    b.head()
-    b.face(dict(ex=0.040, ew=0.0118, eh=0.0160, iris=(0.36, 0.17, 0.12), blush=True))
-    b.hair_cap(hair_bound(-0.78, -0.42, 0.36, fringe=0.24, nfr=8.0),
-               lambda phi, t: 1.075 + 0.035 * frontness(phi) * t * t + 0.012 * (1 - t))
-    sidelocks(b, 0.10, 0.016)
-    bp = b.bun(np.array([0, 0.48, 0.88]), 1.0, (0.40, 0.40, 0.36))
-    # kanzashi hairpin through the bun with a small flower bead
-    a = bp + np.array([-0.075, 0.01, 0.03])
-    c2 = bp + np.array([0.07, -0.005, -0.015])
-    V, F, U, RI = sweep(np.array([a, lerp(a, c2, 0.5), c2]), 0.0032, 6)
-    b.mb.add(V, F, "wood_geta", {"head": 1.0}, tag="kanzashi")
-    for k in range(5):
-        ang = TAU * k / 5
-        q = a + np.array([-0.004, 0.014 * math.cos(ang), 0.014 * math.sin(ang)])
-        b.blob(q, (X, Y, Z), (0.006, 0.0085, 0.0085), "cloth_accent", {"head": 1.0}, nu=5, nv=3, C=np.array([1.0, 0.75, 0.8]), tag="flower")
-    b.blob(a + np.array([-0.006, 0, 0]), (X, Y, Z), (0.006, 0.006, 0.006), "cloth_accent", {"head": 1.0}, nu=6, nv=4, C=np.array([1.0, 0.95, 0.5]), tag="flower")
+    b.head_face("far")
 
 
 # ================================================================ man (dark yukata, narrow obi)
@@ -214,12 +199,7 @@ def man(b):
         b.foot(side)
         b.geta(side, "cloth_dark")
     b.neck(0.050)
-    b.head()
-    b.ears()
-    b.face(dict(ex=0.040, ew=0.0105, eh=0.0128, iris=(0.22, 0.14, 0.10), blush=False, brow_w=0.0048,
-                browh=1.85, mw=0.011))
-    b.hair_cap(hair_bound(-0.62, -0.05, 0.44, fringe=0.17, nfr=5.0),
-               lambda phi, t: 1.075 + 0.02 * frontness(phi) * t, spikes=spikes_fn(9, 0.07, 0.15))
+    b.head_face("far")
 
 
 # ================================================================ kid (jinbei + shorts)
@@ -282,19 +262,7 @@ def kid(b):
         b.foot(side)
         b.geta(side, "cloth_accent")
     b.neck(0.034)
-    b.head()
-    b.ears()
-    b.face(dict(ex=0.041, ew=0.0128, eh=0.0170, iris=(0.30, 0.18, 0.10), blush=True, open=True, mw=0.010,
-                browh=1.7))
-    b.hair_cap(hair_bound(-0.58, -0.18, 0.36, fringe=0.22, nfr=5.5),
-               lambda phi, t: 1.085 + 0.03 * frontness(phi) * t * t, spikes=spikes_fn(7, 0.05, 0.3))
-    # cowlick
-    c = b.head_center()
-    Rz = 0.56 * P["head"]
-    a = c + np.array([0.01, 0.02, Rz * 1.04])
-    path = np.array([a, a + [0.008, 0.012, 0.03], a + [0.02, 0.03, 0.045], a + [0.035, 0.04, 0.04]])
-    V, F, U, RI = sweep(path, np.array([0.016, 0.011, 0.006, 0.002]), 6)
-    b.mb.add(V, F, "hair", {"head": 1.0}, tag="cowlick")
+    b.head_face("far")
 
 
 # ================================================================ keeper (happi, pants, apron, headband, towel)
@@ -343,12 +311,7 @@ def keeper(b):
         b.hand(side)
         b.tabi(side)
     b.neck(0.050)
-    b.head()
-    b.ears()
-    b.face(dict(ex=0.040, ew=0.0108, eh=0.0135, iris=(0.24, 0.14, 0.09), blush=False, brow_w=0.0052,
-                browh=1.75, open=True, mw=0.012))
-    b.hair_cap(hair_bound(-0.55, -0.05, 0.48, fringe=0.08, nfr=7.0),
-               lambda phi, t: 1.05 + 0.0 * t, spikes=spikes_fn(11, 0.035, 0.2))
+    b.head_face("far")
     # twisted headband (hachimaki) + knot at the front right
     c = b.head_center()
     phi = np.linspace(0, TAU, 25)[:-1]
@@ -420,13 +383,7 @@ def elder(b):
         b.foot(side)
         b.geta(side, "cloth_dark")
     b.neck(0.037)
-    b.head()
-    b.ears()
-    b.face(dict(ex=0.039, ew=0.0110, eh=0.0140, closed=True, brow=(0.55, 0.52, 0.5), blush=True,
-                browh=1.9, mw=0.010))
-    comb = lambda phi, t: np.where((np.sin(phi * 30) > 0.55)[:, None], np.full(3, 0.86), np.ones(3)) * np.ones((len(phi), 3))
-    b.hair_cap(hair_bound(-0.70, -0.08, 0.62), lambda phi, t: 1.06 + 0.012 * (1 - t) + 0 * phi, colfn=comb)
-    b.bun(np.array([0, 0.80, 0.60]), 1.0, (0.34, 0.34, 0.30), band=True)
+    b.head_face("far")
     fan(b)
 
 

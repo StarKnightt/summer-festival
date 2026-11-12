@@ -1,28 +1,25 @@
-"""Her clips, generated procedurally at 30 fps, in place (root never moves):
+"""Her clips at 30 fps, in place (the root never moves).
 
-  idle    4.0 s loop   breathing, slow weight shift, hands lightly clasped in front
-  walk    0.7 s loop   small quick geta steps, 1.10 m/s
-  run     0.5 s loop   light trot, elbows bent holding the sleeves in, 2.80 m/s
+Retargeted from Mixamo motion (lib/mocap.py, tools/blender/mixamo/retarget.py):
+  idle, walk, run, talk, look (loops); wave, bow, eat, cheer, point (one-shots);
+  add_ref / add_nod / add_shake / add_look_l / add_look_r (additive layers).
+Hand-made here, generated procedurally (unchanged):
   crouch  3.0 s loop   squat on her heels, right hand stroking forward-low (cat / goldfish tub)
   reach   3.0 s loop   at a stall counter, right hand forward at ~1.0 m choosing, left hand holding
                        the right sleeve back
   throw   1.2 s once   soft underhand ring toss with the right hand, release at 0.62 s
   lookup  4.0 s loop   head and chest tilted up at fireworks, hands clasped at the chest, slow sway
-  wave    1.5 s once   small friendly wave with the right hand
 
-Legs are two-bone IK against explicit geta kinematics: a geta is rigid, so the foot rocks on the
-back edge of its rear tooth at heel strike and on the front edge of its front tooth at toe-off,
-and in stance the planted contact slides back at exactly the clip speed (no foot skate when the
-game plays the clip at speed / clipSpeed). Arms are IK to hand targets. Sleeves, hair, kanzashi
-dangles and obi tails hang under gravity (their rest orientation, turned with the body) plus a
-lagged sway; every motion term is periodic in the clip length, so loops are seamless.
+This module also has the shared machinery: forward kinematics with gravity-hung helper chains
+(sleeves, hair, kanzashi dangles, obi tails), two-bone IK for the hand-made clips, the skirt
+panels that follow the legs, the baker, and the gait checks.
 """
 import math
 import os
 
 import bpy
 import numpy as np
-from mathutils import Matrix, Quaternion
+from mathutils import Matrix, Quaternion, Vector
 
 from . import shape as S
 from .common import norm, smooth
@@ -228,7 +225,15 @@ class Body:
 
 
 def hand_local(sf, curl=25.0, thumb=10.0):
-    return {f"fingers_{sf}": rot(X, -curl), f"thumb_{sf}": rot(X, -thumb) @ rot(Z, thumb * 0.5 * (1 if sf == "L" else -1))}
+    """Extra finger curl on top of the relaxed rest curl (deg at the fingertip, as the old single
+    `fingers` bone had it), spread over the two bones of each finger."""
+    out = {}
+    for f in ("index", "middle", "ring", "pinky"):
+        out[f"finger_{f}_1_{sf}"] = rot(X, -curl * 0.6)
+        out[f"finger_{f}_2_{sf}"] = rot(X, -curl * 0.7)
+    out[f"finger_thumb_1_{sf}"] = rot(X, -thumb) @ rot(Z, thumb * 0.5 * (1 if sf == "L" else -1))
+    out[f"finger_thumb_2_{sf}"] = rot(X, -thumb * 0.6)
+    return out
 
 
 SWAY = ("sleeve_L", "sleeve_R", "hairSideL", "hairSideR", "hairBack", "hairBun", "kanzashi", "obiTailL", "obiTailR",
@@ -345,116 +350,6 @@ def idle_frame(fk, body, t, T=4.0):
     clasp_arms(fk, body, pose, absr, local, np.array([0.0, -0.150, 0.955 + 0.003 * br]))
     local.update(secondary(fk, t, T / 2, 1.2, 0.0))
     return delta, absr, local, loc, None
-
-
-LAST_DROP = [0.0]
-
-
-def gait_frame(fk, body, t, T, v, duty, run=False, drop=None):
-    delta, absr, local, loc = {}, {}, {}, {}
-    ph = (t / T) % 1.0
-    stance_len = v * T * duty
-    y_hs = -(0.42 if not run else 0.38) * stance_len
-    HS = 5.0 if not run else 3.0
-    TO = -16.0 if not run else -26.0
-    feet = {}
-    for sf, off in (("L", 0.0), ("R", 0.5)):
-        p = (ph + off) % 1.0
-        A0, heel, toe = body.foot_points(sf)
-        inward = 0.018 if not run else 0.010            # small steps close to the centre line
-        xg = heel[0] - (inward if sf == "L" else -inward)
-        ht = toe - heel
-        yaw = (-3.0 if sf == "L" else 3.0)               # a touch pigeon-toed, as in geta
-        if p < duty:
-            yg = y_hs + v * T * p
-            f = p / duty
-            if f < 0.12:
-                kind, pitch, pg = "heel", HS * (1 - smooth(0, 0.12, f)), np.array([xg, yg, 0])
-            elif f < 0.55:
-                kind, pitch, pg = "heel", 0.0, np.array([xg, yg, 0])
-            else:
-                g = (f - 0.55) / 0.45
-                kind, pitch = "toe", TO * smooth(0.0, 1.0, g) ** 1.2
-                pg = np.array([xg + ht[0], yg + ht[1], 0])
-            ankle, Rf = body.foot_pose(sf, kind, pg, pitch, yaw)
-            feet[sf] = (ankle, Rf, True)
-        else:
-            f = (p - duty) / (1 - duty)
-            y0 = y_hs + v * T * duty
-            a_off, R_off = body.foot_pose(sf, "toe", np.array([xg + ht[0], y0 + ht[1], 0]), TO, yaw)
-            a_on, R_on = body.foot_pose(sf, "heel", np.array([xg, y_hs, 0]), HS, yaw)
-            D = a_on[1] - a_off[1]
-            m = v * T * (1 - duty) / D if abs(D) > 1e-6 else 0.0
-            e = (-2 * f ** 3 + 3 * f ** 2) + m * ((f ** 3 - 2 * f ** 2 + f) + (f ** 3 - f ** 2))
-            ankle = a_off * (1 - e) + a_on * e
-            lift = (0.050 if not run else 0.13) * math.sin(math.pi * min(1.0, f * 1.1)) ** (1.2 if not run else 0.8)
-            back = (0.0 if not run else 0.06) * math.sin(math.pi * min(1.0, f * 1.4))
-            ankle = ankle + np.array([0, back * (1 - f), lift])
-            pitch = TO * (1 - smooth(0.0, 0.5, f)) + HS * smooth(0.5, 1.0, f) - 6.0 * math.sin(math.pi * f)
-            Rf = rot(Z, yaw) @ rot(X, -pitch)
-            feet[sf] = (ankle, Rf, False)
-    w = 2 * math.pi * ph
-    if not run:
-        z = -0.014 - 0.007 * math.cos(2 * w)
-        x = 0.010 * math.sin(w + 0.3)
-        yaw, roll, lean = 3.0 * math.sin(w), 2.0 * math.sin(2 * w - 0.6), 2.5
-    else:
-        z = -0.040 + 0.018 * math.cos(2 * w + 0.4)
-        x = 0.006 * math.sin(w)
-        yaw, roll, lean = 5.0 * math.sin(w), 2.5 * math.sin(2 * w - 0.5), 8.0
-    hips_loc = np.array([x, -0.006 if run else 0.0, z])
-    delta["hips"] = rot(Z, -yaw) @ rot(Y, roll) @ rot(X, lean * 0.3)
-    if drop is not None:
-        loc["hips"] = hips_loc - np.array([0, 0, drop])
-    else:
-        dz = 0.0
-        for _ in range(8):
-            loc["hips"] = hips_loc - np.array([0, 0, dz])
-            pose, _ = fk.solve(delta, absr, local, loc)
-            worst = 0.0
-            for sf, (ankle, Rf, planted) in feet.items():
-                if planted:
-                    H = fk.head_if(pose, f"thigh_{sf}")
-                    worst = max(worst, np.linalg.norm(ankle - H) / sum(body.L[sf]))
-            if worst <= 0.990:
-                break
-            dz += (worst - 0.988) * sum(body.L["L"])
-        LAST_DROP[0] = dz
-    delta["spine"] = rot(Z, yaw * 0.45) @ rot(X, lean * 0.3)
-    delta["spine1"] = rot(Z, yaw * 0.45) @ rot(X, lean * 0.25)
-    delta["spine2"] = rot(Z, yaw * 0.5) @ rot(Y, -roll * 0.6)
-    delta["neck"] = rot(Z, -yaw * 0.3) @ rot(X, -lean * 0.3)
-    delta["head"] = rot(Z, -yaw * 0.3) @ rot(X, -lean * 0.4 + 2.0) @ rot(Y, -roll * 0.3)
-    pose, _ = fk.solve(delta, absr, local, loc)
-    for sf, (ankle, Rf, planted) in feet.items():
-        absr.update(body.leg(pose, sf, ankle, Rf))
-    pose, _ = fk.solve(delta, absr, local, loc)
-    for sf, s in (("L", 1), ("R", -1)):
-        a = math.sin(w + (0.0 if sf == "L" else math.pi))     # arm swings with the opposite leg
-        H = fk.head_if(pose, f"upperarm_{sf}")
-        if not run:
-            wrist = H + np.array([s * 0.075, -0.045 - 0.075 * a, -0.40 + 0.01 * abs(a)])
-            hd = norm(np.array([-s * 0.15, -0.25 - 0.1 * a, -1.0]))
-            po = np.array([-s * 1.0, 0.25, 0.0])
-            pole = np.array([s * 0.5, 0.8, -0.2])
-            local.update(hand_local(sf, 26.0, 10.0))
-        else:
-            # Elbows bent, hands near the waist holding the sleeves in, swinging a little.
-            wrist = H + np.array([s * 0.015 - s * 0.01 * a, -0.17 - 0.07 * a, -0.27 + 0.03 * a])
-            hd = norm(np.array([-s * 0.65, -0.55, -0.25]))
-            po = np.array([-s * 0.4, 0.3, -0.8])
-            pole = np.array([s * 0.7, 0.7, -0.2])
-            local.update(hand_local(sf, 70.0, 30.0))
-        absr.update(body.arm(pose, sf, wrist, pole, hd, po))
-        delta[f"shoulder_{sf}"] = rot(X, 2.0 * a) @ rot(Y, s * -1.5)
-    if not run:
-        local.update(secondary(fk, t, T / 2, 2.0, -3.0, scale={"sleeve_L": 1.6, "sleeve_R": 1.6, "skirtF": 1.5,
-                                                               "skirtB": 1.5}))
-    else:
-        local.update(secondary(fk, t, T / 2, 4.0, -10.0, scale={"sleeve_L": 1.2, "sleeve_R": 1.2, "skirtF": 1.2,
-                                                                "skirtB": 1.2}))
-    grav = {"sleeve_L": 0.65, "sleeve_R": 0.65} if run else None
-    return delta, absr, local, loc, grav
 
 
 def crouch_frame(fk, body, t, T=3.0):
@@ -615,30 +510,6 @@ def lookup_frame(fk, body, t, T=4.0):
     return delta, absr, local, loc, None
 
 
-def wave_frame(fk, body, t, idle0):
-    delta, absr, local, loc, _ = idle0
-    delta, absr, local, loc = dict(delta), {}, dict(local), dict(loc)
-    k = smooth(0.0, 0.38, t) * (1 - smooth(1.12, 1.5, t))
-    delta["head"] = delta["head"] @ rot(Y, -5.0 * k) @ rot(Z, -4.0 * k)
-    delta["spine2"] = delta["spine2"] @ rot(Y, 2.0 * k)
-    pose, _ = fk.solve(delta, {}, local, loc)
-    planted_legs(fk, body, pose, absr, {"L": (0.004, -0.010, 4.0, None), "R": (-0.004, 0.012, -6.0, None)})
-    pose, _ = fk.solve(delta, absr, local, loc)
-    clasp_arms(fk, body, pose, absr, local, np.array([0.0, -0.150, 0.955]))
-    H = fk.head_if(pose, "upperarm_R")
-    wv = math.sin(2 * math.pi * (t - 0.38) / 0.36) * smooth(0.36, 0.48, t) * (1 - smooth(1.0, 1.14, t))
-    wr = H + np.array([-0.10 + 0.035 * wv, -0.10, 0.16])
-    hd = norm(np.array([-0.15 - 0.6 * wv * 0.5, -0.12, 1.0]))
-    po = norm(np.array([0.1, -1.0, 0.1]))
-    arm = body.arm(pose, "R", wr, np.array([-0.5, 0.2, -1.0]), hd, po)
-    for kk in arm:
-        absr[kk] = _slerp(absr[kk], arm[kk], k)
-    local.update(hand_local("R", 22.0 * (1 - k) + 6.0 * k, 12.0 * (1 - k) + 2.0 * k))
-    local.update(secondary(fk, t, 0.36, 1.5 * k + 0.8, 0.0))
-    return delta, absr, local, loc, {"sleeve_R": 1.0}
-
-
-
 def skirt_follow(fk, fr, mode):
     """Pose skirtF1 / skirtB1 as a rigid blend of the two shins' motion: in gaits the front panel
     follows the forward leg and the back panel the rear leg (no 'trouser' crease between the legs);
@@ -653,8 +524,8 @@ def skirt_follow(fk, fr, mode):
         mapped = {sf: (M[sf] @ np.r_[tail, 1.0])[:3] for sf in ("L", "R")}
         if mode == "gait":
             d = (mapped["L"][1] - mapped["R"][1]) * ysgn       # > 0: the left leg is further out
-            wl = 1.0 / (1.0 + math.exp(-d / 0.03))
-            wl = 0.15 + 0.7 * wl
+            wl = 1.0 / (1.0 + math.exp(-d / 0.02))
+            wl = 0.05 + 0.9 * wl
         else:
             wl = 0.5
         RL, RR = M["L"][:3, :3], M["R"][:3, :3]
@@ -685,10 +556,33 @@ def skirt_follow(fk, fr, mode):
 
 # ---------------------------------------------------------------- build
 
+LEG_BONES = tuple(f"{b}_{s}" for s in "LR" for b in ("thigh", "shin", "foot", "toe"))
+
+
+def rebase(fk, body, fr, ref, w):
+    """Blend a frame toward a reference frame (w = 1: the frame itself, 0: the reference): every
+    bone's world orientation and the hips offset are blended, then the legs are re-planted on the
+    standing stance and the skirt panels re-fitted, so the feet do not move."""
+    if w >= 1.0:
+        return skirt_follow(fk, fr, "avg")
+    pa, _ = fk.solve(*fr)
+    pb, _ = fk.solve(*ref)
+    absr = {b: _slerp(pb[b][:3, :3], pa[b][:3, :3], w) for b in fk.order
+            if b not in LEG_BONES and not b.startswith("skirt") and b != "root"}
+    loc = {"hips": np.asarray(ref[3]["hips"]) * (1 - w) + np.asarray(fr[3]["hips"]) * w}
+    pose, _ = fk.solve({}, absr, {}, loc)
+    planted_legs(fk, body, pose, absr, {"L": (0.004, -0.010, 4.0, None), "R": (-0.004, 0.012, -6.0, None)})
+    return skirt_follow(fk, ({}, absr, {}, loc, None), "avg")
+
+
 CLIPS = {}
+INFO = {}        # clip metadata of the last build (durations, speeds, frames)
 
 
 def build(arm):
+    """Hand-made task clips (crouch, reach, throw, lookup: authored here, unchanged) plus the
+    Mixamo-retargeted clips and additive layers (lib/mocap.py). Returns (clips, clipSpeed)."""
+    from . import mocap
     fk = FK(arm)
     body = Body(fk)
     clips = {}
@@ -698,48 +592,27 @@ def build(arm):
         return [skirt_follow(fk, fn(i / FPS), "avg") for i in range(n + 1)]
 
     once_frames = loop_frames
-
-    def gait_frames(T, v, duty, run):
-        n = int(round(T * FPS))
-        need = []
-        for i in range(n):
-            gait_frame(fk, body, i / FPS, T, v, duty, run)
-            need.append(LAST_DROP[0])
-        need = np.array(need)
-        k = 3
-        mx = np.array([max(need[(i + j) % n] for j in range(-k, k + 1)) for i in range(n)])
-        g = np.exp(-0.5 * (np.arange(-k, k + 1) / 1.5) ** 2)
-        g /= g.sum()
-        sm = np.array([sum(g[j + k] * mx[(i + j) % n] for j in range(-k, k + 1)) for i in range(n)])
-        sm = np.maximum(sm, need)
-        return [skirt_follow(fk, gait_frame(fk, body, i / FPS, T, v, duty, run, drop=float(sm[i % n])), "gait")
-                for i in range(n + 1)]
-
     acts = {}
-    acts["idle"] = bake(arm, fk, "idle", loop_frames(lambda t: idle_frame(fk, body, t), 4.0))
-    clips["idle"] = {"duration": 4.0, "loop": True}
-    T, v, duty = 0.7, 1.10, 0.60
-    acts["walk"] = bake(arm, fk, "walk", gait_frames(T, v, duty, False))
-    clips["walk"] = {"duration": T, "loop": True, "speed": v, "stride": round(v * T, 3), "step": round(v * T / 2, 3),
-                     "events": {"footDownL": 0.0, "footUpL": round(duty * T, 3), "footDownR": round(0.5 * T, 3),
-                                "footUpR": round((duty - 0.5) * T, 3)}}
-    T, v, duty = 14 / FPS, 2.70, 0.40
-    acts["run"] = bake(arm, fk, "run", gait_frames(T, v, duty, True))
-    clips["run"] = {"duration": round(T, 4), "loop": True, "speed": v, "stride": round(v * T, 3), "step": round(v * T / 2, 3),
-                    "events": {"footDownL": 0.0, "footUpL": round(duty * T, 3), "footDownR": round(0.5 * T, 3),
-                               "footUpR": round((0.5 + duty) * T, 3)}}
+    speed = mocap.build(arm, fk, acts, clips)
     n = int(round(3.0 * FPS))
     acts["crouch"] = bake(arm, fk, "crouch", [skirt_follow(fk, crouch_frame(fk, body, i / FPS), "hang") for i in range(n + 1)])
     clips["crouch"] = {"duration": 3.0, "loop": True, "events": {"strokeForward": [0.375, 1.875]}}
     acts["reach"] = bake(arm, fk, "reach", loop_frames(lambda t: reach_frame(fk, body, t), 3.0))
     clips["reach"] = {"duration": 3.0, "loop": True}
+    # The throw is authored on the hand-made standing pose (hands clasped in front); its first
+    # 0.25 s and last 0.25 s are eased from / to the idle clip's first pose (arms at her sides),
+    # so it starts and ends where the idle is. Between 0.25 s and 0.95 s it is exactly as authored.
     idle0 = idle_frame(fk, body, 0.0)
-    acts["throw"] = bake(arm, fk, "throw", once_frames(lambda t: throw_frame(fk, body, t, idle0), 1.2), loop=False)
+    ref = mocap.IDLE0[0]
+
+    def throw_rebased(t):
+        w = float(smooth(0.0, 0.25, t) * (1 - smooth(0.95, 1.2, t)))
+        return rebase(fk, body, throw_frame(fk, body, t, idle0), ref, w)
+
+    acts["throw"] = bake(arm, fk, "throw", [throw_rebased(i / FPS) for i in range(int(round(1.2 * FPS)) + 1)], loop=False)
     clips["throw"] = {"duration": 1.2, "loop": False, "events": {"release": THROW_RELEASE}}
     acts["lookup"] = bake(arm, fk, "lookup", loop_frames(lambda t: lookup_frame(fk, body, t), 4.0))
     clips["lookup"] = {"duration": 4.0, "loop": True}
-    acts["wave"] = bake(arm, fk, "wave", once_frames(lambda t: wave_frame(fk, body, t, idle0), 1.5), loop=False)
-    clips["wave"] = {"duration": 1.5, "loop": False}
     # Release point of the throw (right palm, glTF coordinates) for the game's ring spawn.
     rel = throw_frame(fk, body, THROW_RELEASE, idle0)
     pose, _ = fk.solve(*rel)
@@ -754,7 +627,22 @@ def build(arm):
     ad.action = None
     CLIPS.clear()
     CLIPS.update(acts)
-    return clips
+    INFO.clear()
+    INFO.update(clips)
+    return clips, speed
+
+
+def rest_pose(arm):
+    """Unassign the clip AND put every bone back to rest (clearing the action alone leaves the
+    last evaluated pose on the bones)."""
+    ad = arm.animation_data
+    if ad:
+        ad.action = None
+    for pb in arm.pose.bones:
+        pb.location = (0.0, 0.0, 0.0)
+        pb.rotation_quaternion = (1.0, 0.0, 0.0, 0.0)
+        pb.scale = (1.0, 1.0, 1.0)
+    bpy.context.scene.frame_set(1)
 
 
 def set_pose(arm, name, frame):
@@ -768,22 +656,154 @@ def set_pose(arm, name, frame):
     bpy.context.scene.frame_set(int(frame))
 
 
+def n_frames(name):
+    """Keys in the clip's action (the run is keyed at 60 Hz, everything else at 30)."""
+    return int(round(INFO[name]["duration"] * INFO[name].get("keyRate", FPS)))
+
+
 def preview_frames(arm, outdir):
     from . import preview
-    shots = [("walk", 1 + int(0.25 * 0.7 * FPS), (2.6, -1.2, 1.0), (0, 0, 0.8), 50, "walk_mid"),
-             ("walk", 1 + int(0.25 * 0.7 * FPS), (0.0, 3.0, 1.7), (0, 0, 1.05), 35, "walk_gamecam"),
-             ("run", 1 + int(0.25 * 14), (2.6, -1.2, 1.0), (0, 0, 0.8), 50, "run_mid"),
+    nw, nr = n_frames("walk"), n_frames("run")
+    mid = lambda name, k: 1 + int(round(k * n_frames(name)))
+    shots = [("walk", 1 + int(0.25 * nw), (2.6, -1.2, 1.0), (0, 0, 0.8), 50, "walk_mid"),
+             ("walk", 1 + int(0.25 * nw), (0.0, 3.0, 1.7), (0, 0, 1.05), 35, "walk_gamecam"),
+             ("run", 1 + int(0.25 * nr), (2.6, -1.2, 1.0), (0, 0, 0.8), 50, "run_mid"),
              ("crouch", 1, (1.9, -1.7, 1.1), (0, -0.15, 0.45), 50, "crouch"),
              ("crouch", 1, (2.6, 0.0, 0.7), (0, -0.1, 0.45), 50, "crouch_side"),
-             ("run", 1 + int(0.25 * 14), (0.0, -2.8, 1.0), (0, 0, 0.8), 50, "run_front"),
+             ("run", 1 + int(0.25 * nr), (0.0, -2.8, 1.0), (0, 0, 0.8), 50, "run_front"),
              ("reach", 1, (1.6, -2.2, 1.3), (0, -0.1, 0.85), 50, "reach"),
              ("throw", 1 + int(THROW_RELEASE * FPS), (2.2, -2.0, 1.2), (0, -0.1, 0.85), 50, "throw_release"),
              ("lookup", 1, (1.6, -2.4, 1.0), (0, 0, 0.9), 50, "lookup"),
-             ("wave", 1 + int(0.7 * FPS), (0.8, -2.6, 1.2), (0, 0, 0.95), 50, "wave"),
              ("idle", 1, (0.9, -2.6, 1.1), (0, 0, 0.85), 50, "idle")]
+    # One-shots at their mid pose, front-left and side; talk / look at a telling frame.
+    # look: the frame where her head is turned furthest.
+    yaws = []
+    for i in range(n_frames("look") + 1):
+        set_pose(arm, "look", 1 + i)
+        Rh = arm.pose.bones["head"].matrix.to_3x3() @ arm.data.bones["head"].matrix_local.to_3x3().inverted()
+        f = Rh @ Vector((0.0, -1.0, 0.0))
+        yaws.append(abs(math.atan2(f.x, -f.y)))
+    k_look = int(np.argmax(yaws)) / n_frames("look")
+    for name, k in (("wave", 0.5), ("bow", 0.42), ("eat", 0.55), ("cheer", 0.5), ("point", 0.4), ("talk", 0.45), ("look", k_look)):
+        shots.append((name, mid(name, k), (0.9, -2.6, 1.15), (0, 0, 0.9), 50, name))
+        shots.append((name, mid(name, k), (2.8, -0.2, 1.0), (0, 0, 0.9), 50, f"{name}_side"))
+    # Hands: the five fingers, at rest and holding (reach = left hand on the sleeve).
+    shots.append(("idle", 1, (0.75, -0.75, 0.95), (0.28, -0.02, 0.86), 85, "hand_idle"))
+    shots.append(("reach", 1, (0.45, -1.1, 1.25), (-0.05, -0.3, 1.02), 85, "hand_reach"))
+    shots.append(("cheer", mid("cheer", 0.5), (0.5, -1.3, 1.5), (0.0, -0.1, 1.45), 60, "hand_cheer"))
     for name, fr, loc, tgt, lens, tag in shots:
         set_pose(arm, name, fr)
         preview.shoot(os.path.join(outdir, f"pose_{tag}.png"), loc, tgt, lens, (800, 1000))
-    ad = arm.animation_data
-    ad.action = None
-    bpy.context.scene.frame_set(1)
+    rest_pose(arm)
+
+
+# ---------------------------------------------------------------- gait checks (foot slip, strips)
+
+
+def _seam(act):
+    seam = 0.0
+    for fc in act.layers[0].strips[0].channelbags[0].fcurves:
+        kp = fc.keyframe_points
+        seam = max(seam, abs(kp[0].co[1] - kp[len(kp) - 1].co[1]))
+    return seam
+
+
+def gait_report(arm, speed, sub=4):
+    """Measure walk and run on the baked, skinned result (retarget.slip_report: the skinned geta
+    mesh, `sub` samples per frame with the game's linear interpolation between keys; a geta is in
+    contact while its lowest vertex is within 3 mm of the floor; slip = its horizontal velocity
+    minus the ground's at the clip's speed). Adds head and arm facts and the loop seam, and for
+    every clip the root / hips travel and the head yaw at both ends."""
+    import retarget as rt
+    geta = bpy.data.objects["heroine_geta"]
+    rest = np.array([v.co[:] for v in geta.data.vertices])
+    side_idx = {"L": np.where(rest[:, 0] > 0)[0], "R": np.where(rest[:, 0] < 0)[0]}
+    sc = bpy.context.scene
+    report = {"clipSpeed": dict(speed)}
+    for name in ("walk", "run"):
+        n = n_frames(name)
+        act, slot = CLIPS[name]
+        T, kr = INFO[name]["duration"], INFO[name].get("keyRate", FPS)
+        out = {"source": INFO[name].get("source"), "cycle_s": round(T, 4), "keys": n, "key_rate": kr,
+               "steps_per_s": round(2 / T, 2), "step_m": round(speed[name] * T / 2, 3)}
+        out.update(rt.slip_report(arm, geta, side_idx, act, slot, speed[name], n, sub, fps=kr))
+        head, arm_ang, hips = [], [], []
+        for i in range(n * sub):
+            fr = i / sub
+            sc.frame_set(1 + int(fr), subframe=fr - int(fr))
+            pb = arm.pose.bones
+            hm = arm.matrix_world @ pb["head"].matrix
+            Rh = hm.to_3x3() @ arm.data.bones["head"].matrix_local.to_3x3().inverted()
+            fwd = Rh @ Vector((0.0, -1.0, 0.0))
+            head.append([hm.translation.z, math.degrees(math.atan2(fwd.x, -fwd.y))])
+            up = arm.matrix_world.to_3x3() @ (pb["upperarm_L"].tail - pb["upperarm_L"].head)
+            arm_ang.append(math.degrees(math.atan2(-up.y, -up.z)))
+            hips.append(list((arm.matrix_world @ pb["hips"].matrix).translation))
+        H, P = np.array(head), np.array(hips)
+        out.update({"head_bob_cm": round((H[:, 0].max() - H[:, 0].min()) * 100, 2),
+                    "head_yaw_range_deg": round(H[:, 1].max() - H[:, 1].min(), 2),
+                    "head_yaw_mean_deg": round(float(H[:, 1].mean()), 2),
+                    "upperarm_L_swing_deg": [round(min(arm_ang), 1), round(max(arm_ang), 1)],
+                    "hips_travel_cm_xyz": [round(float(v) * 100, 2) for v in (P.max(0) - P.min(0))]})
+        out["loop_seam_max_abs"] = round(_seam(act), 8)
+        report[name] = out
+        print(f"[gait] {name}: {out}")
+    allc = {}
+    for name, (act, slot) in CLIPS.items():
+        if name.startswith("add_"):
+            continue
+        n = n_frames(name)
+        set_pose(arm, name, 1)
+        P, yaw = [], []
+        for i in range(n + 1):
+            sc.frame_set(1 + i)
+            pb = arm.pose.bones
+            P.append(list(pb["hips"].matrix.translation) + list(pb["root"].matrix.translation))
+            Rh = pb["head"].matrix.to_3x3() @ arm.data.bones["head"].matrix_local.to_3x3().inverted()
+            f = Rh @ Vector((0.0, -1.0, 0.0))
+            yaw.append(math.degrees(math.atan2(f.x, -f.y)))
+        P = np.array(P)
+        allc[name] = {"hips_xy_range_cm": [round(float(v) * 100, 2) for v in (P[:, :2].max(0) - P[:, :2].min(0))],
+                      "hips_xy_end_minus_start_cm": [round(float(v) * 100, 3) for v in (P[-1, :2] - P[0, :2])],
+                      "root_travel_cm": round(float(np.abs(P[:, 3:] - P[0, 3:]).max()) * 100, 4),
+                      "head_yaw_start_end_deg": [round(yaw[0], 2), round(yaw[-1], 2)],
+                      "head_yaw_range_deg": [round(min(yaw), 1), round(max(yaw), 1)],
+                      "first_last_key_diff": round(_seam(act), 6)}
+    report["clips"] = allc
+    rest_pose(arm)
+    return report
+
+
+def gait_strips(arm, outdir, cols=8):
+    """idle, walk and run as frame strips, side and front: `cols` evenly spaced frames each."""
+    from . import preview
+    import tempfile
+    tmp = tempfile.mkdtemp(prefix="heroine_strip_")
+    sc = bpy.context.scene
+    for name in ("idle", "walk", "run"):
+        n = n_frames(name)
+        for view, loc, tgt in (("side", (3.2, 0.0, 0.85), (0, 0, 0.78)), ("front", (0.0, -3.2, 0.85), (0, 0, 0.78))):
+            tiles = []
+            for c in range(cols):
+                fr = c * n / cols
+                set_pose(arm, name, 1)
+                sc.frame_set(1 + int(fr), subframe=fr - int(fr))
+                p = os.path.join(tmp, f"{name}_{view}_{c}.png")
+                preview.shoot(p, loc, tgt, 50, (300, 560))
+                img = bpy.data.images.load(p)
+                a = np.array(img.pixels[:], dtype=np.float32).reshape(img.size[1], img.size[0], 4)
+                bpy.data.images.remove(img)
+                tiles.append(a)
+            strip = np.concatenate(tiles, axis=1)
+            H, W = strip.shape[:2]
+            im = bpy.data.images.new(f"strip_{name}_{view}", W, H, alpha=True)
+            im.pixels.foreach_set(strip.ravel())
+            im.filepath_raw = os.path.join(outdir, f"strip_{name}_{view}.png")
+            im.file_format = "PNG"
+            im.save()
+            bpy.data.images.remove(im)
+            print(f"[gait] wrote strip_{name}_{view}.png ({cols} frames over {n})")
+    for f in os.listdir(tmp):
+        os.remove(os.path.join(tmp, f))
+    os.rmdir(tmp)
+    rest_pose(arm)

@@ -1,3 +1,4 @@
+import { preloaded } from "../core/preload";
 import * as THREE from "three/webgpu";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { STALLS, stallX, STALL_W, STALL_D, type StallSpot } from "./layout";
@@ -37,7 +38,10 @@ export interface StallSet {
 
 export async function loadGLB(url: string): Promise<THREE.Group | null> {
   try {
-    const gltf = await new GLTFLoader().loadAsync(url);
+    const pre = preloaded(url);
+    const buf = pre ? await pre.catch(() => null) : null;
+    const loader = new GLTFLoader();
+    const gltf = buf ? await loader.parseAsync(buf, url.slice(0, url.lastIndexOf("/") + 1)) : await loader.loadAsync(url);
     (gltf.scene as any).userData.animations = gltf.animations;
     return gltf.scene;
   } catch (e) {

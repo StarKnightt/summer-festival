@@ -2,7 +2,7 @@
 
 heroine_hair (material `hair`):
   cap      shell over the skull, thickness tapering to the hairline (no cap gap)
-  bangs    9 wispy locks over the forehead, ending just above the eyes
+  bangs    10 short see-through locks + 2 wisps, tips above the brows (eyes always clear)
   sides    a long lock framing each side of the face to the jaw (+ a shorter one behind it)
   updo     8 broad locks swept from the nape and sides up into the bun
   bun      a soft twisted bun at the back of the head
@@ -28,9 +28,11 @@ def cap_thickness(P):
     return 0.0045 + 0.0060 * smooth(1.40, 1.50, z) + 0.0035 * smooth(0.0, 0.08, y)
 
 
-HAIRLINE = np.array([  # |azimuth| (deg, 0 = front), hairline height
-    [0, 1.452], [25, 1.446], [50, 1.425], [68, 1.398], [80, 1.384], [92, 1.398], [104, 1.392],
-    [125, 1.356], [150, 1.336], [180, 1.330]])
+HAIRLINE = np.array([  # |azimuth| (deg, 0 = front), hairline height (barefoot frame)
+    # forehead, temple, a soft sideburn in front of the ear (tip ~1.375), an arc over the ear
+    # (ear top 1.400), then down behind the ear to the nape under the bun.
+    [0, 1.444], [25, 1.439], [50, 1.421], [64, 1.403], [73, 1.384], [79, 1.376], [85, 1.390],
+    [91, 1.407], [99, 1.413], [107, 1.407], [115, 1.391], [126, 1.366], [150, 1.341], [180, 1.333]])
 
 
 def hair_mask(P):
@@ -53,18 +55,41 @@ def push_out(P, off):
     return P
 
 
-def cap_geo():
-    """Hair shell. Outside the hair region it sinks 2.5 mm under the skin, so the hairline is the
-    smooth line where the shell crosses the skin (no stair-stepped edge, no gap)."""
-    rows, cols = 34, 56
-    th = np.linspace(0, np.radians(150), rows + 1)[1:]
+def _hairline_theta(ph, zl):
+    """Polar angle (from straight up, about HEAD_C) where the head surface along azimuth ph
+    reaches height zl (bisection; surface height falls monotonically with the angle)."""
+    lo = np.full(len(ph), 0.05)
+    hi = np.full(len(ph), np.radians(165))
+    for _ in range(40):
+        mid = 0.5 * (lo + hi)
+        D = np.stack([np.sin(mid) * np.sin(ph), -np.sin(mid) * np.cos(ph), np.cos(mid)], -1)
+        z = S.HEAD_C[2] + D[:, 2] * S.head_radius(D)
+        above = z > zl
+        lo = np.where(above, mid, lo)
+        hi = np.where(above, hi, mid)
+    return 0.5 * (lo + hi)
+
+
+def cap_geo(cols=112, rows=16):
+    """Hair shell on a grid ALIGNED TO THE HAIRLINE: every column runs from the crown down to the
+    hairline at its azimuth, so the last ring of vertices lies exactly on the (smooth) hairline
+    curve, 1.2 mm under the skin, and the shell rises to full thickness within ~8 mm. Where it
+    crosses the skin is therefore a clean, densely sampled curve (sideburn in front of the ear,
+    over the ear, down behind it to the nape) instead of the stair-step a cut-out lat-long grid
+    leaves."""
     ph = np.linspace(0, 2 * np.pi, cols, endpoint=False)
-    TH, PH = np.meshgrid(th, ph, indexing="ij")
+    azd = np.degrees(np.abs(np.arctan2(np.sin(ph), np.cos(ph))))
+    zl = catmull(HAIRLINE, azd)[:, 0]
+    th_h = _hairline_theta(ph, zl)
+    u = np.linspace(0, 1, rows + 1)[1:]
+    s = 1 - (1 - u) ** 1.7                                  # rings crowd toward the hairline
+    TH = th_h[None, :] * s[:, None]
+    PH = np.broadcast_to(ph, TH.shape)
     D = np.stack([np.sin(TH) * np.sin(PH), -np.sin(TH) * np.cos(PH), np.cos(TH)], -1).reshape(-1, 3)
     r0 = S.head_radius(D)
     P0 = S.HEAD_C + D * r0[:, None]
-    m = hair_mask(P0)
-    t = -0.0025 + (cap_thickness(P0) + 0.0025) * smooth(0.0, 0.8, m)
+    dist = ((th_h[None, :] - TH) * 0.09).ravel()            # ~ metres up from the hairline
+    t = -0.0012 + (cap_thickness(P0) + 0.0012) * smooth(0.0, 0.009, dist)
     r = S.head_radius(D, off=t)
     V = S.HEAD_C + D * r[:, None]
     F = []
@@ -77,12 +102,6 @@ def cap_geo():
     V = np.vstack([V, S.HEAD_C + np.array([0, 0, S.head_radius(np.array([[0, 0, 1.0]]), off=0.0105)[0]])])
     for j in range(cols):
         F.append((top, (j + 1) % cols, j))
-    vis = np.r_[m > 1e-3, True]
-    F = [f for f in F if any(vis[i] for i in f)]
-    used = sorted({i for f in F for i in f})
-    remap = {o: k for k, o in enumerate(used)}
-    V = V[used]
-    F = [tuple(remap[i] for i in f) for f in F]
     F = orient(V, F, lambda C: np.tile(S.HEAD_C, (len(C), 1)))
     return V, F
 
@@ -120,14 +139,17 @@ def head_out(P):
 def bang_locks():
     """Wispy see-through bangs: tapered clumps that overlap at the root and part at the tips."""
     out = []
+    # Short see-through bangs (as in refs/heroine): the tips stop above the brows (brow tops
+    # ~1.419) so the brows and eyes are always visible; a little uneven, longer at the temples.
     spec = [  # root x, tip x, tip z, half width at the root
-        (-0.060, -0.070, 1.402, 0.015), (-0.042, -0.052, 1.392, 0.017), (-0.022, -0.034, 1.385, 0.016),
-        (-0.004, -0.012, 1.398, 0.017), (0.014, 0.008, 1.386, 0.015), (0.031, 0.030, 1.400, 0.017),
-        (0.047, 0.050, 1.390, 0.016), (0.063, 0.071, 1.404, 0.014)]
+        (-0.066, -0.072, 1.414, 0.013), (-0.052, -0.060, 1.426, 0.016), (-0.036, -0.044, 1.430, 0.017),
+        (-0.019, -0.027, 1.424, 0.016), (-0.003, -0.009, 1.431, 0.017), (0.012, 0.008, 1.425, 0.016),
+        (0.027, 0.026, 1.432, 0.017), (0.042, 0.044, 1.427, 0.016), (0.056, 0.061, 1.429, 0.015),
+        (0.068, 0.074, 1.413, 0.012)]
     for i, (xr, xt, zt, hw) in enumerate(spec):
         sweep = -0.006
         pts = []
-        for f, z, off in ((0.0, 1.490, 0.0080), (0.3, 1.466, 0.0128), (0.6, 1.440, 0.0128), (0.85, zt + 0.014, 0.0100),
+        for f, z, off in ((0.0, 1.492, 0.0080), (0.35, 1.474, 0.0122), (0.7, zt + 0.020, 0.0120), (0.88, zt + 0.008, 0.0095),
                           (1.0, zt, 0.0072)):
             x = xr + (xt - xr) * f + sweep * f * f
             p, _ = S.head_front([x], [z], off)
@@ -135,13 +157,14 @@ def bang_locks():
         V, F, P = lock(pts, 12, lambda t, hw=hw: hw * (1 - t ** 1.3) * (1 - 0.25 * t) + 0.0005,
                        lambda t: 0.0034 * (1 - 0.65 * t) + 0.0004, head_out, sides=6, sharp=0.7)
         out.append(("bang", V, F))
-    # Two fine wisps hanging a little lower between the eyes and at her left temple.
-    for (xr, xt, zt) in ((-0.016, -0.020, 1.372), (0.052, 0.060, 1.378)):
+    # Two fine wisps: one between the brows (above the nose bridge, clear of both eyes) and one at
+    # her left temple, outside the eye's outer corner.
+    for (xr, xt, zt) in ((-0.003, -0.005, 1.409), (0.056, 0.064, 1.388)):
         pts = []
-        for f, z, off in ((0.0, 1.47, 0.011), (0.5, 1.43, 0.0125), (1.0, zt, 0.0075)):
+        for f, z, off in ((0.0, 1.47, 0.011), (0.5, 1.44, 0.0115), (1.0, zt, 0.0070)):
             p, _ = S.head_front([xr + (xt - xr) * f], [z], off)
             pts.append(p[0])
-        V, F, P = lock(pts, 10, lambda t: 0.0035 * (1 - t ** 1.2) + 0.0004, lambda t: 0.0013, head_out, sides=6)
+        V, F, P = lock(pts, 10, lambda t: 0.0032 * (1 - t ** 1.2) + 0.0004, lambda t: 0.0013, head_out, sides=6)
         out.append(("bang", V, F))
     return out
 

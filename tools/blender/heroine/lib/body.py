@@ -73,24 +73,25 @@ def arm_geo():
     return V, F
 
 
-def _finger(p0, d, n, L, r0, curl=1.0):
-    p1 = p0 + d * L * 0.40 + n * L * 0.05 * curl
-    p2 = p1 + norm(d + n * 0.45 * curl) * L * 0.33
-    p3 = p2 + norm(d * 0.6 + n * 0.8 * curl) * L * 0.27
-    P = spline_points([p0 - d * 0.006, p0, p1, p2, p3], 10)
+def _digit(pts, r0, taper, n, k=8):
+    """A finger as a tube through pts (base .. tip) with a round tip."""
+    P = spline_points([pts[0] - norm(pts[1] - pts[0]) * 0.007] + list(pts), 11)
     T, N, B = frames_along(P, up_hint=n)
     t = np.linspace(0, 1, len(P))
-    rr = r0 * (1 - 0.22 * t)
-    a = np.linspace(0, 2 * np.pi, 8, endpoint=False)
-    rings = [P[i] + np.outer(np.cos(a), B[i]) * rr[i] + np.outer(np.sin(a), N[i]) * rr[i] * 0.85 for i in range(len(P))]
+    rr = r0 * (1 - taper * t)
+    rr[-1] *= 0.66                                # last ring pulled in: a round tip, not a cone
+    rr[-2] *= 0.93
+    a = np.linspace(0, 2 * np.pi, k, endpoint=False)
+    rings = [P[i] + np.outer(np.cos(a), B[i]) * rr[i] + np.outer(np.sin(a), N[i]) * rr[i] * 0.86 for i in range(len(P))]
     V, F = tube(np.array(rings), cap_start=True, cap_end=True)
-    V[-1] = P[-1] + T[-1] * rr[-1] * 0.8          # round fingertip
+    V[-1] = P[-1] + T[-1] * rr[-1] * 0.75         # round fingertip
     F = orient(V, F, lambda C: nearest_on_polyline(C, P))
-    return V, F, P
+    return V, F
 
 
 def hand_geo():
-    """Palm, four slender relaxed fingers and a thumb. Returns parts with their role."""
+    """Palm and five separate fingers in a relaxed curl (rig.finger_joints). Returns parts with
+    their role: "palm" or the finger's name."""
     hp = rig.hand_points()
     d, w, n = hp["d"], hp["w"], hp["n"]
     W0 = hp["wrist"]
@@ -110,26 +111,9 @@ def hand_geo():
     axis = np.array([W0 + d * t for t in ts])
     pf = orient(pv, pf, lambda C: nearest_on_polyline(C, axis))
     parts = [("palm", pv, pf)]
-    kn = hp["knuck"]
-    for off, L, r, c in ((0.0215, 0.062, 0.0070, 0.9), (0.0072, 0.069, 0.0073, 1.0),
-                         (-0.0075, 0.065, 0.0068, 1.1), (-0.0215, 0.052, 0.0060, 1.25)):
-        p0 = kn + w * off - d * 0.004 - n * 0.0005 * 0 - d * 0.0
-        dd = norm(d - w * off * 1.2)
-        fv, ff, _ = _finger(p0, dd, n, L, r, c)
-        parts.append(("finger", fv, ff))
-    t0 = hp["thumb0"]
-    tdir = norm(hp["thumb1"] - t0)
-    P = spline_points([t0 - tdir * 0.012, t0, t0 + tdir * 0.026, t0 + tdir * 0.044 + d * 0.008 + n * 0.006,
-                       t0 + tdir * 0.056 + d * 0.016 + n * 0.012], 10)
-    T, N, B = frames_along(P, up_hint=n)
-    tt = np.linspace(0, 1, len(P))
-    rr = 0.0098 - 0.0028 * tt
-    a8 = np.linspace(0, 2 * np.pi, 8, endpoint=False)
-    rings = [P[i] + np.outer(np.cos(a8), B[i]) * rr[i] + np.outer(np.sin(a8), N[i]) * rr[i] * 0.85 for i in range(len(P))]
-    tv, tf = tube(np.array(rings), cap_start=True, cap_end=True)
-    tv[-1] = P[-1] + T[-1] * rr[-1] * 0.8
-    tf = orient(tv, tf, lambda C: nearest_on_polyline(C, P))
-    parts.append(("thumb", tv, tf))
+    for f, (p0, p1, p2, p3, r) in rig.finger_joints().items():
+        fv, ff = _digit([p0, p1, p2, p3], r * (1.2 if f == "thumb" else 1.0), 0.30 if f == "thumb" else 0.20, n)
+        parts.append((f, fv, ff))
     return parts
 
 
@@ -138,13 +122,11 @@ def hand_weights(role, V):
     d = hp["d"]
     along = (V - hp["wrist"]) @ d
     wf = smooth(-0.012, 0.004, along)            # forearm -> hand across the wrist
-    W = {"forearm_L": 1 - wf, "hand_L": wf}
-    if role == "finger":
-        k = smooth(-0.004, 0.014, (V - hp["knuck"]) @ d)
-        W = {"hand_L": 1 - k, "fingers_L": k}
-    elif role == "thumb":
-        k = smooth(0.004, 0.022, (V - hp["thumb0"]) @ norm(hp["thumb1"] - hp["thumb0"]))
-        W = {"hand_L": 1 - k, "thumb_L": k}
+    if role == "palm":
+        return {"forearm_L": 1 - wf, "hand_L": wf}
+    p0, p1, p2, p3, r = rig.finger_joints()[role]
+    J = [p0 - norm(p1 - p0) * 0.02, p0, p1, p3]
+    W, _ = rig.chain(V, J, ["hand_L", f"finger_{role}_1_L", f"finger_{role}_2_L"], [0.005, 0.006])
     return W
 
 

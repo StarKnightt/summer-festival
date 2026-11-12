@@ -1,0 +1,3903 @@
+{
+ "method": [
+  "Checks on the exported GLB itself, the way the game plays it (pure numpy, no Blender).",
+  "",
+  "Every clip is evaluated on every variant exactly as three.js does: tracks are bound by bone NAME to",
+  "that variant's own nodes (rest transforms where a clip has no track), keys are interpolated",
+  "linearly (slerp for rotations), node matrices are composed down the hierarchy, and the shoe meshes",
+  "are skinned with the file's joints, weights and inverse bind matrices. Nothing is taken from the",
+  "Blender scene, so this also proves the leg-unit rest scales (glbtools.leg_units) do their job.",
+  "",
+  "feet      lowest point of each shoe over the clip (mm above the floor): right = npc_<v>_geta_R,",
+  "left = the foot_L vertices of npc_<v>_body",
+  "slip      locomotion clips: sampled at 240 Hz; whenever a shoe's lowest vertex is within 3 mm of",
+  "the floor its horizontal velocity is compared with the ground's. The ground speed",
+  "itself (clipSpeed) is the mean backward speed of those contact points, per variant.",
+  "seams     loops: last key equals first key on every track; one-shots: first and last pose equal",
+  "the idle's first pose",
+  "travel    horizontal range of the hips over the clip"
+ ],
+ "restSkinErr_mm": {
+  "woman": 0.0,
+  "man": 0.0,
+  "kid": 0.0,
+  "keeper": 0.0,
+  "elder": 0.0
+ },
+ "tracks": {
+  "bow": {
+   "rotation": 41,
+   "translation": [
+    "hips"
+   ],
+   "head": true,
+   "neck": true,
+   "keys": 1353
+  },
+  "call": {
+   "rotation": 41,
+   "translation": [
+    "hips"
+   ],
+   "head": true,
+   "neck": true,
+   "keys": 422
+  },
+  "cheer": {
+   "rotation": 41,
+   "translation": [
+    "hips"
+   ],
+   "head": true,
+   "neck": true,
+   "keys": 2191
+  },
+  "cry": {
+   "rotation": 41,
+   "translation": [
+    "hips"
+   ],
+   "head": true,
+   "neck": true,
+   "keys": 252
+  },
+  "eat": {
+   "rotation": 41,
+   "translation": [
+    "hips"
+   ],
+   "head": true,
+   "neck": true,
+   "keys": 1417
+  },
+  "fan": {
+   "rotation": 41,
+   "translation": [
+    "hips"
+   ],
+   "head": true,
+   "neck": true,
+   "keys": 487
+  },
+  "idle": {
+   "rotation": 41,
+   "translation": [
+    "hips"
+   ],
+   "head": true,
+   "neck": true,
+   "keys": 3877
+  },
+  "look": {
+   "rotation": 41,
+   "translation": [
+    "hips"
+   ],
+   "head": true,
+   "neck": true,
+   "keys": 4446
+  },
+  "lookup": {
+   "rotation": 41,
+   "translation": [
+    "hips"
+   ],
+   "head": true,
+   "neck": true,
+   "keys": 302
+  },
+  "peace": {
+   "rotation": 41,
+   "translation": [
+    "hips"
+   ],
+   "head": true,
+   "neck": true,
+   "keys": 653
+  },
+  "pick_up": {
+   "rotation": 41,
+   "translation": [
+    "hips"
+   ],
+   "head": true,
+   "neck": true,
+   "keys": 1337
+  },
+  "point": {
+   "rotation": 41,
+   "translation": [
+    "hips"
+   ],
+   "head": true,
+   "neck": true,
+   "keys": 1248
+  },
+  "run": {
+   "rotation": 41,
+   "translation": [
+    "hips"
+   ],
+   "head": true,
+   "neck": true,
+   "keys": 1050
+  },
+  "sit": {
+   "rotation": 41,
+   "translation": [
+    "hips"
+   ],
+   "head": true,
+   "neck": true,
+   "keys": 133
+  },
+  "sit_fan": {
+   "rotation": 41,
+   "translation": [
+    "hips"
+   ],
+   "head": true,
+   "neck": true,
+   "keys": 270
+  },
+  "sit_sleep": {
+   "rotation": 41,
+   "translation": [
+    "hips"
+   ],
+   "head": true,
+   "neck": true,
+   "keys": 138
+  },
+  "sparkler": {
+   "rotation": 41,
+   "translation": [
+    "hips"
+   ],
+   "head": true,
+   "neck": true,
+   "keys": 1218
+  },
+  "talk": {
+   "rotation": 41,
+   "translation": [
+    "hips"
+   ],
+   "head": true,
+   "neck": true,
+   "keys": 5101
+  },
+  "walk": {
+   "rotation": 41,
+   "translation": [
+    "hips"
+   ],
+   "head": true,
+   "neck": true,
+   "keys": 1218
+  },
+  "walk_f": {
+   "rotation": 41,
+   "translation": [
+    "hips"
+   ],
+   "head": true,
+   "neck": true,
+   "keys": 1134
+  },
+  "wave": {
+   "rotation": 41,
+   "translation": [
+    "hips"
+   ],
+   "head": true,
+   "neck": true,
+   "keys": 1465
+  },
+  "yawn": {
+   "rotation": 41,
+   "translation": [
+    "hips"
+   ],
+   "head": true,
+   "neck": true,
+   "keys": 1116
+  }
+ },
+ "seams": {
+  "bow": {
+   "kind": "one-shot",
+   "rot_deg": 0.0,
+   "pos_mm": 0.0
+  },
+  "call": {
+   "kind": "loop",
+   "rot_deg": 0.0,
+   "pos_mm": 0.0
+  },
+  "cheer": {
+   "kind": "one-shot",
+   "rot_deg": 0.0,
+   "pos_mm": 0.0
+  },
+  "cry": {
+   "kind": "loop",
+   "rot_deg": 0.0,
+   "pos_mm": 0.0
+  },
+  "eat": {
+   "kind": "one-shot",
+   "rot_deg": 0.0,
+   "pos_mm": 0.0
+  },
+  "fan": {
+   "kind": "loop",
+   "rot_deg": 0.0,
+   "pos_mm": 0.0
+  },
+  "idle": {
+   "kind": "loop",
+   "rot_deg": 0.0,
+   "pos_mm": 0.0
+  },
+  "look": {
+   "kind": "loop",
+   "rot_deg": 0.03,
+   "pos_mm": 0.0
+  },
+  "lookup": {
+   "kind": "loop",
+   "rot_deg": 0.0,
+   "pos_mm": 0.0
+  },
+  "peace": {
+   "kind": "one-shot",
+   "rot_deg": 0.0,
+   "pos_mm": 0.0
+  },
+  "pick_up": {
+   "kind": "one-shot",
+   "rot_deg": 0.0,
+   "pos_mm": 0.0
+  },
+  "point": {
+   "kind": "one-shot",
+   "rot_deg": 0.0,
+   "pos_mm": 0.0
+  },
+  "run": {
+   "kind": "loop",
+   "rot_deg": 0.0,
+   "pos_mm": 0.0
+  },
+  "sit": {
+   "kind": "loop",
+   "rot_deg": 0.0,
+   "pos_mm": 0.0
+  },
+  "sit_fan": {
+   "kind": "loop",
+   "rot_deg": 0.0,
+   "pos_mm": 0.0
+  },
+  "sit_sleep": {
+   "kind": "loop",
+   "rot_deg": 0.0,
+   "pos_mm": 0.0
+  },
+  "sparkler": {
+   "kind": "loop",
+   "rot_deg": 0.006,
+   "pos_mm": 0.0
+  },
+  "talk": {
+   "kind": "loop",
+   "rot_deg": 0.0,
+   "pos_mm": 0.0
+  },
+  "walk": {
+   "kind": "loop",
+   "rot_deg": 0.01,
+   "pos_mm": 0.0
+  },
+  "walk_f": {
+   "kind": "loop",
+   "rot_deg": 0.0,
+   "pos_mm": 0.0
+  },
+  "wave": {
+   "kind": "one-shot",
+   "rot_deg": 0.0,
+   "pos_mm": 0.0
+  },
+  "yawn": {
+   "kind": "one-shot",
+   "rot_deg": 0.0,
+   "pos_mm": 0.0
+  }
+ },
+ "clipSpeed": {
+  "walk": {
+   "woman": 0.901,
+   "man": 0.986,
+   "kid": 0.565,
+   "keeper": 0.958,
+   "elder": 0.856
+  },
+  "walk_f": {
+   "woman": 0.9,
+   "man": 0.985,
+   "kid": 0.564,
+   "keeper": 0.957,
+   "elder": 0.856
+  },
+  "run": {
+   "woman": 1.851,
+   "man": 2.023,
+   "kid": 1.154,
+   "keeper": 1.965,
+   "elder": 1.758
+  },
+  "sparkler": {
+   "woman": 0.901,
+   "man": 0.986,
+   "kid": 0.565,
+   "keeper": 0.958,
+   "elder": 0.856
+  }
+ },
+ "slip": {
+  "walk": {
+   "woman": {
+    "speed": 0.901,
+    "measuredSpeed": 0.9006,
+    "cycle_s": 0.9333,
+    "samples": 225,
+    "maxSlip_cm_s": 2.33,
+    "p95Slip_cm_s": 1.33,
+    "meanSlip_cm_s": 0.54,
+    "worstAt": "R t=0.671s",
+    "contactHeight_mm": [
+     -0.6,
+     3.0
+    ],
+    "lowestSole_mm": [
+     -0.6,
+     5.3
+    ]
+   },
+   "man": {
+    "speed": 0.986,
+    "measuredSpeed": 0.9857,
+    "cycle_s": 0.9333,
+    "samples": 224,
+    "maxSlip_cm_s": 2.61,
+    "p95Slip_cm_s": 1.47,
+    "meanSlip_cm_s": 0.59,
+    "worstAt": "R t=0.671s",
+    "contactHeight_mm": [
+     -0.7,
+     2.4
+    ],
+    "lowestSole_mm": [
+     -0.7,
+     5.8
+    ]
+   },
+   "kid": {
+    "speed": 0.565,
+    "measuredSpeed": 0.5654,
+    "cycle_s": 0.9333,
+    "samples": 230,
+    "maxSlip_cm_s": 1.76,
+    "p95Slip_cm_s": 0.89,
+    "meanSlip_cm_s": 0.41,
+    "worstAt": "R t=0.671s",
+    "contactHeight_mm": [
+     -0.6,
+     2.7
+    ],
+    "lowestSole_mm": [
+     -0.6,
+     3.1
+    ]
+   },
+   "keeper": {
+    "speed": 0.958,
+    "measuredSpeed": 0.9583,
+    "cycle_s": 0.9333,
+    "samples": 226,
+    "maxSlip_cm_s": 2.61,
+    "p95Slip_cm_s": 1.48,
+    "meanSlip_cm_s": 0.59,
+    "worstAt": "R t=0.671s",
+    "contactHeight_mm": [
+     -0.7,
+     2.9
+    ],
+    "lowestSole_mm": [
+     -0.7,
+     4.6
+    ]
+   },
+   "elder": {
+    "speed": 0.856,
+    "measuredSpeed": 0.8561,
+    "cycle_s": 0.9333,
+    "samples": 226,
+    "maxSlip_cm_s": 2.25,
+    "p95Slip_cm_s": 1.29,
+    "meanSlip_cm_s": 0.51,
+    "worstAt": "R t=0.671s",
+    "contactHeight_mm": [
+     -0.6,
+     2.9
+    ],
+    "lowestSole_mm": [
+     -0.6,
+     5.0
+    ]
+   }
+  },
+  "walk_f": {
+   "woman": {
+    "speed": 0.9,
+    "measuredSpeed": 0.9003,
+    "cycle_s": 0.8667,
+    "samples": 210,
+    "maxSlip_cm_s": 1.77,
+    "p95Slip_cm_s": 1.35,
+    "meanSlip_cm_s": 0.44,
+    "worstAt": "L t=0.229s",
+    "contactHeight_mm": [
+     -0.3,
+     2.2
+    ],
+    "lowestSole_mm": [
+     -0.3,
+     4.2
+    ]
+   },
+   "man": {
+    "speed": 0.985,
+    "measuredSpeed": 0.985,
+    "cycle_s": 0.8667,
+    "samples": 210,
+    "maxSlip_cm_s": 1.93,
+    "p95Slip_cm_s": 1.43,
+    "meanSlip_cm_s": 0.49,
+    "worstAt": "L t=0.229s",
+    "contactHeight_mm": [
+     -0.5,
+     2.5
+    ],
+    "lowestSole_mm": [
+     -0.5,
+     4.6
+    ]
+   },
+   "kid": {
+    "speed": 0.564,
+    "measuredSpeed": 0.5635,
+    "cycle_s": 0.8667,
+    "samples": 217,
+    "maxSlip_cm_s": 1.19,
+    "p95Slip_cm_s": 0.88,
+    "meanSlip_cm_s": 0.34,
+    "worstAt": "R t=0.671s",
+    "contactHeight_mm": [
+     -0.7,
+     3.0
+    ],
+    "lowestSole_mm": [
+     -0.7,
+     2.5
+    ]
+   },
+   "keeper": {
+    "speed": 0.957,
+    "measuredSpeed": 0.9571,
+    "cycle_s": 0.8667,
+    "samples": 211,
+    "maxSlip_cm_s": 1.88,
+    "p95Slip_cm_s": 1.41,
+    "meanSlip_cm_s": 0.49,
+    "worstAt": "L t=0.204s",
+    "contactHeight_mm": [
+     -0.6,
+     2.9
+    ],
+    "lowestSole_mm": [
+     -0.6,
+     4.1
+    ]
+   },
+   "elder": {
+    "speed": 0.856,
+    "measuredSpeed": 0.8555,
+    "cycle_s": 0.8667,
+    "samples": 211,
+    "maxSlip_cm_s": 1.7,
+    "p95Slip_cm_s": 1.21,
+    "meanSlip_cm_s": 0.43,
+    "worstAt": "L t=0.229s",
+    "contactHeight_mm": [
+     -0.4,
+     2.9
+    ],
+    "lowestSole_mm": [
+     -0.4,
+     4.0
+    ]
+   }
+  },
+  "run": {
+   "woman": {
+    "speed": 1.851,
+    "measuredSpeed": 1.8512,
+    "cycle_s": 0.4,
+    "samples": 59,
+    "maxSlip_cm_s": 2.52,
+    "p95Slip_cm_s": 2.19,
+    "meanSlip_cm_s": 0.91,
+    "worstAt": "R t=0.133s",
+    "contactHeight_mm": [
+     -0.4,
+     2.5
+    ],
+    "lowestSole_mm": [
+     -0.4,
+     29.7
+    ]
+   },
+   "man": {
+    "speed": 2.023,
+    "measuredSpeed": 2.0235,
+    "cycle_s": 0.4,
+    "samples": 59,
+    "maxSlip_cm_s": 2.82,
+    "p95Slip_cm_s": 2.4,
+    "meanSlip_cm_s": 1.01,
+    "worstAt": "R t=0.133s",
+    "contactHeight_mm": [
+     -0.5,
+     2.8
+    ],
+    "lowestSole_mm": [
+     -0.5,
+     32.4
+    ]
+   },
+   "kid": {
+    "speed": 1.154,
+    "measuredSpeed": 1.1537,
+    "cycle_s": 0.4,
+    "samples": 62,
+    "maxSlip_cm_s": 2.17,
+    "p95Slip_cm_s": 2.0,
+    "meanSlip_cm_s": 0.77,
+    "worstAt": "R t=0.138s",
+    "contactHeight_mm": [
+     -0.5,
+     2.0
+    ],
+    "lowestSole_mm": [
+     -0.5,
+     18.5
+    ]
+   },
+   "keeper": {
+    "speed": 1.965,
+    "measuredSpeed": 1.9647,
+    "cycle_s": 0.4,
+    "samples": 59,
+    "maxSlip_cm_s": 2.87,
+    "p95Slip_cm_s": 2.37,
+    "meanSlip_cm_s": 1.01,
+    "worstAt": "L t=0.288s",
+    "contactHeight_mm": [
+     -0.5,
+     2.9
+    ],
+    "lowestSole_mm": [
+     -0.5,
+     30.6
+    ]
+   },
+   "elder": {
+    "speed": 1.758,
+    "measuredSpeed": 1.7579,
+    "cycle_s": 0.4,
+    "samples": 60,
+    "maxSlip_cm_s": 3.03,
+    "p95Slip_cm_s": 2.14,
+    "meanSlip_cm_s": 0.92,
+    "worstAt": "R t=0.379s",
+    "contactHeight_mm": [
+     -0.4,
+     2.9
+    ],
+    "lowestSole_mm": [
+     -0.4,
+     28.2
+    ]
+   }
+  },
+  "sparkler": {
+   "woman": {
+    "speed": 0.901,
+    "measuredSpeed": 0.9006,
+    "cycle_s": 0.9333,
+    "samples": 225,
+    "maxSlip_cm_s": 2.33,
+    "p95Slip_cm_s": 1.33,
+    "meanSlip_cm_s": 0.54,
+    "worstAt": "R t=0.671s",
+    "contactHeight_mm": [
+     -0.6,
+     3.0
+    ],
+    "lowestSole_mm": [
+     -0.6,
+     5.3
+    ]
+   },
+   "man": {
+    "speed": 0.986,
+    "measuredSpeed": 0.9857,
+    "cycle_s": 0.9333,
+    "samples": 224,
+    "maxSlip_cm_s": 2.61,
+    "p95Slip_cm_s": 1.47,
+    "meanSlip_cm_s": 0.59,
+    "worstAt": "R t=0.671s",
+    "contactHeight_mm": [
+     -0.7,
+     2.4
+    ],
+    "lowestSole_mm": [
+     -0.7,
+     5.8
+    ]
+   },
+   "kid": {
+    "speed": 0.565,
+    "measuredSpeed": 0.5654,
+    "cycle_s": 0.9333,
+    "samples": 230,
+    "maxSlip_cm_s": 1.76,
+    "p95Slip_cm_s": 0.89,
+    "meanSlip_cm_s": 0.41,
+    "worstAt": "R t=0.671s",
+    "contactHeight_mm": [
+     -0.6,
+     2.7
+    ],
+    "lowestSole_mm": [
+     -0.6,
+     3.1
+    ]
+   },
+   "keeper": {
+    "speed": 0.958,
+    "measuredSpeed": 0.9583,
+    "cycle_s": 0.9333,
+    "samples": 226,
+    "maxSlip_cm_s": 2.61,
+    "p95Slip_cm_s": 1.48,
+    "meanSlip_cm_s": 0.59,
+    "worstAt": "R t=0.671s",
+    "contactHeight_mm": [
+     -0.7,
+     2.9
+    ],
+    "lowestSole_mm": [
+     -0.7,
+     4.6
+    ]
+   },
+   "elder": {
+    "speed": 0.856,
+    "measuredSpeed": 0.8561,
+    "cycle_s": 0.9333,
+    "samples": 226,
+    "maxSlip_cm_s": 2.25,
+    "p95Slip_cm_s": 1.29,
+    "meanSlip_cm_s": 0.51,
+    "worstAt": "R t=0.671s",
+    "contactHeight_mm": [
+     -0.6,
+     2.9
+    ],
+    "lowestSole_mm": [
+     -0.6,
+     5.0
+    ]
+   }
+  }
+ },
+ "feet": {
+  "idle": {
+   "woman": {
+    "soleL_mm": [
+     -0.5,
+     0.2
+    ],
+    "soleR_mm": [
+     -0.5,
+     0.1
+    ],
+    "lowestOfBoth_mm": [
+     -0.5,
+     0.1
+    ],
+    "hipsTravel_cm": [
+     2.7,
+     1.23
+    ],
+    "hipsHeight_m": [
+     0.8146,
+     0.8355
+    ]
+   },
+   "man": {
+    "soleL_mm": [
+     -0.5,
+     0.2
+    ],
+    "soleR_mm": [
+     -0.5,
+     0.2
+    ],
+    "lowestOfBoth_mm": [
+     -0.5,
+     0.1
+    ],
+    "hipsTravel_cm": [
+     2.95,
+     1.34
+    ],
+    "hipsHeight_m": [
+     0.8909,
+     0.9138
+    ]
+   },
+   "kid": {
+    "soleL_mm": [
+     -0.6,
+     0.3
+    ],
+    "soleR_mm": [
+     -0.4,
+     0.3
+    ],
+    "lowestOfBoth_mm": [
+     -0.6,
+     0.0
+    ],
+    "hipsTravel_cm": [
+     1.69,
+     0.77
+    ],
+    "hipsHeight_m": [
+     0.5091,
+     0.5222
+    ]
+   },
+   "keeper": {
+    "soleL_mm": [
+     -0.7,
+     0.2
+    ],
+    "soleR_mm": [
+     -0.5,
+     0.3
+    ],
+    "lowestOfBoth_mm": [
+     -0.7,
+     0.1
+    ],
+    "hipsTravel_cm": [
+     2.87,
+     1.3
+    ],
+    "hipsHeight_m": [
+     0.8655,
+     0.8877
+    ]
+   },
+   "elder": {
+    "soleL_mm": [
+     -0.5,
+     0.2
+    ],
+    "soleR_mm": [
+     -0.4,
+     0.2
+    ],
+    "lowestOfBoth_mm": [
+     -0.5,
+     0.1
+    ],
+    "hipsTravel_cm": [
+     2.56,
+     1.16
+    ],
+    "hipsHeight_m": [
+     0.7738,
+     0.7937
+    ]
+   }
+  },
+  "walk": {
+   "woman": {
+    "soleL_mm": [
+     -0.0,
+     27.6
+    ],
+    "soleR_mm": [
+     -0.0,
+     27.7
+    ],
+    "lowestOfBoth_mm": [
+     -0.0,
+     0.0
+    ],
+    "hipsTravel_cm": [
+     1.54,
+     2.78
+    ],
+    "hipsHeight_m": [
+     0.8015,
+     0.8326
+    ]
+   },
+   "man": {
+    "soleL_mm": [
+     0.1,
+     30.2
+    ],
+    "soleR_mm": [
+     -0.1,
+     30.3
+    ],
+    "lowestOfBoth_mm": [
+     -0.1,
+     0.1
+    ],
+    "hipsTravel_cm": [
+     1.69,
+     3.04
+    ],
+    "hipsHeight_m": [
+     0.8767,
+     0.9106
+    ]
+   },
+   "kid": {
+    "soleL_mm": [
+     0.2,
+     17.3
+    ],
+    "soleR_mm": [
+     -0.3,
+     17.1
+    ],
+    "lowestOfBoth_mm": [
+     -0.3,
+     0.4
+    ],
+    "hipsTravel_cm": [
+     0.96,
+     1.74
+    ],
+    "hipsHeight_m": [
+     0.5009,
+     0.5203
+    ]
+   },
+   "keeper": {
+    "soleL_mm": [
+     0.1,
+     27.0
+    ],
+    "soleR_mm": [
+     -0.1,
+     26.5
+    ],
+    "lowestOfBoth_mm": [
+     -0.1,
+     0.2
+    ],
+    "hipsTravel_cm": [
+     1.64,
+     2.95
+    ],
+    "hipsHeight_m": [
+     0.8516,
+     0.8846
+    ]
+   },
+   "elder": {
+    "soleL_mm": [
+     0.0,
+     26.2
+    ],
+    "soleR_mm": [
+     -0.1,
+     26.3
+    ],
+    "lowestOfBoth_mm": [
+     -0.1,
+     0.1
+    ],
+    "hipsTravel_cm": [
+     1.46,
+     2.64
+    ],
+    "hipsHeight_m": [
+     0.7614,
+     0.7909
+    ]
+   }
+  },
+  "walk_f": {
+   "woman": {
+    "soleL_mm": [
+     -0.0,
+     27.7
+    ],
+    "soleR_mm": [
+     -0.0,
+     27.6
+    ],
+    "lowestOfBoth_mm": [
+     -0.0,
+     0.0
+    ],
+    "hipsTravel_cm": [
+     1.84,
+     2.2
+    ],
+    "hipsHeight_m": [
+     0.8013,
+     0.8308
+    ]
+   },
+   "man": {
+    "soleL_mm": [
+     -0.0,
+     30.3
+    ],
+    "soleR_mm": [
+     -0.1,
+     30.1
+    ],
+    "lowestOfBoth_mm": [
+     -0.1,
+     0.2
+    ],
+    "hipsTravel_cm": [
+     2.01,
+     2.41
+    ],
+    "hipsHeight_m": [
+     0.8765,
+     0.9087
+    ]
+   },
+   "kid": {
+    "soleL_mm": [
+     -0.1,
+     17.2
+    ],
+    "soleR_mm": [
+     -0.5,
+     16.9
+    ],
+    "lowestOfBoth_mm": [
+     -0.5,
+     0.6
+    ],
+    "hipsTravel_cm": [
+     1.15,
+     1.38
+    ],
+    "hipsHeight_m": [
+     0.5008,
+     0.5192
+    ]
+   },
+   "keeper": {
+    "soleL_mm": [
+     -0.0,
+     25.9
+    ],
+    "soleR_mm": [
+     -0.3,
+     25.1
+    ],
+    "lowestOfBoth_mm": [
+     -0.3,
+     0.3
+    ],
+    "hipsTravel_cm": [
+     1.96,
+     2.34
+    ],
+    "hipsHeight_m": [
+     0.8514,
+     0.8827
+    ]
+   },
+   "elder": {
+    "soleL_mm": [
+     -0.0,
+     26.3
+    ],
+    "soleR_mm": [
+     -0.1,
+     26.1
+    ],
+    "lowestOfBoth_mm": [
+     -0.1,
+     0.1
+    ],
+    "hipsTravel_cm": [
+     1.75,
+     2.09
+    ],
+    "hipsHeight_m": [
+     0.7613,
+     0.7893
+    ]
+   }
+  },
+  "run": {
+   "woman": {
+    "soleL_mm": [
+     -0.0,
+     55.1
+    ],
+    "soleR_mm": [
+     -0.0,
+     46.2
+    ],
+    "lowestOfBoth_mm": [
+     -0.0,
+     24.2
+    ],
+    "hipsTravel_cm": [
+     2.19,
+     1.25
+    ],
+    "hipsHeight_m": [
+     0.7627,
+     0.8021
+    ]
+   },
+   "man": {
+    "soleL_mm": [
+     -0.1,
+     60.2
+    ],
+    "soleR_mm": [
+     -0.1,
+     50.4
+    ],
+    "lowestOfBoth_mm": [
+     -0.1,
+     26.6
+    ],
+    "hipsTravel_cm": [
+     2.4,
+     1.36
+    ],
+    "hipsHeight_m": [
+     0.8343,
+     0.8773
+    ]
+   },
+   "kid": {
+    "soleL_mm": [
+     -0.2,
+     34.1
+    ],
+    "soleR_mm": [
+     -0.2,
+     28.4
+    ],
+    "lowestOfBoth_mm": [
+     -0.2,
+     15.5
+    ],
+    "hipsTravel_cm": [
+     1.37,
+     0.78
+    ],
+    "hipsHeight_m": [
+     0.4767,
+     0.5013
+    ]
+   },
+   "keeper": {
+    "soleL_mm": [
+     -0.1,
+     54.0
+    ],
+    "soleR_mm": [
+     -0.1,
+     44.7
+    ],
+    "lowestOfBoth_mm": [
+     -0.1,
+     25.9
+    ],
+    "hipsTravel_cm": [
+     2.33,
+     1.32
+    ],
+    "hipsHeight_m": [
+     0.8104,
+     0.8523
+    ]
+   },
+   "elder": {
+    "soleL_mm": [
+     -0.0,
+     52.3
+    ],
+    "soleR_mm": [
+     -0.0,
+     43.8
+    ],
+    "lowestOfBoth_mm": [
+     -0.0,
+     23.1
+    ],
+    "hipsTravel_cm": [
+     2.08,
+     1.18
+    ],
+    "hipsHeight_m": [
+     0.7246,
+     0.762
+    ]
+   }
+  },
+  "sparkler": {
+   "woman": {
+    "soleL_mm": [
+     -0.0,
+     27.6
+    ],
+    "soleR_mm": [
+     -0.0,
+     27.7
+    ],
+    "lowestOfBoth_mm": [
+     -0.0,
+     0.0
+    ],
+    "hipsTravel_cm": [
+     1.54,
+     2.78
+    ],
+    "hipsHeight_m": [
+     0.8015,
+     0.8326
+    ]
+   },
+   "man": {
+    "soleL_mm": [
+     0.1,
+     30.2
+    ],
+    "soleR_mm": [
+     -0.1,
+     30.3
+    ],
+    "lowestOfBoth_mm": [
+     -0.1,
+     0.1
+    ],
+    "hipsTravel_cm": [
+     1.69,
+     3.04
+    ],
+    "hipsHeight_m": [
+     0.8767,
+     0.9106
+    ]
+   },
+   "kid": {
+    "soleL_mm": [
+     0.2,
+     17.3
+    ],
+    "soleR_mm": [
+     -0.3,
+     17.1
+    ],
+    "lowestOfBoth_mm": [
+     -0.3,
+     0.4
+    ],
+    "hipsTravel_cm": [
+     0.96,
+     1.74
+    ],
+    "hipsHeight_m": [
+     0.5009,
+     0.5203
+    ]
+   },
+   "keeper": {
+    "soleL_mm": [
+     0.1,
+     27.0
+    ],
+    "soleR_mm": [
+     -0.1,
+     26.5
+    ],
+    "lowestOfBoth_mm": [
+     -0.1,
+     0.2
+    ],
+    "hipsTravel_cm": [
+     1.64,
+     2.95
+    ],
+    "hipsHeight_m": [
+     0.8516,
+     0.8846
+    ]
+   },
+   "elder": {
+    "soleL_mm": [
+     0.0,
+     26.2
+    ],
+    "soleR_mm": [
+     -0.1,
+     26.3
+    ],
+    "lowestOfBoth_mm": [
+     -0.1,
+     0.1
+    ],
+    "hipsTravel_cm": [
+     1.46,
+     2.64
+    ],
+    "hipsHeight_m": [
+     0.7614,
+     0.7909
+    ]
+   }
+  },
+  "talk": {
+   "woman": {
+    "soleL_mm": [
+     -0.3,
+     0.1
+    ],
+    "soleR_mm": [
+     -0.4,
+     0.1
+    ],
+    "lowestOfBoth_mm": [
+     -0.4,
+     0.0
+    ],
+    "hipsTravel_cm": [
+     0.67,
+     3.05
+    ],
+    "hipsHeight_m": [
+     0.8168,
+     0.824
+    ]
+   },
+   "man": {
+    "soleL_mm": [
+     -0.5,
+     0.1
+    ],
+    "soleR_mm": [
+     -0.3,
+     0.2
+    ],
+    "lowestOfBoth_mm": [
+     -0.5,
+     -0.0
+    ],
+    "hipsTravel_cm": [
+     0.73,
+     3.34
+    ],
+    "hipsHeight_m": [
+     0.8934,
+     0.9012
+    ]
+   },
+   "kid": {
+    "soleL_mm": [
+     -0.6,
+     -0.2
+    ],
+    "soleR_mm": [
+     0.0,
+     0.4
+    ],
+    "lowestOfBoth_mm": [
+     -0.6,
+     -0.2
+    ],
+    "hipsTravel_cm": [
+     0.42,
+     1.91
+    ],
+    "hipsHeight_m": [
+     0.5105,
+     0.515
+    ]
+   },
+   "keeper": {
+    "soleL_mm": [
+     -0.6,
+     -0.0
+    ],
+    "soleR_mm": [
+     -0.3,
+     0.3
+    ],
+    "lowestOfBoth_mm": [
+     -0.6,
+     -0.1
+    ],
+    "hipsTravel_cm": [
+     0.71,
+     3.25
+    ],
+    "hipsHeight_m": [
+     0.8678,
+     0.8755
+    ]
+   },
+   "elder": {
+    "soleL_mm": [
+     -0.4,
+     0.1
+    ],
+    "soleR_mm": [
+     -0.3,
+     0.2
+    ],
+    "lowestOfBoth_mm": [
+     -0.4,
+     0.0
+    ],
+    "hipsTravel_cm": [
+     0.64,
+     2.9
+    ],
+    "hipsHeight_m": [
+     0.776,
+     0.7828
+    ]
+   }
+  },
+  "look": {
+   "woman": {
+    "soleL_mm": [
+     -0.5,
+     0.2
+    ],
+    "soleR_mm": [
+     -0.4,
+     0.2
+    ],
+    "lowestOfBoth_mm": [
+     -0.5,
+     0.1
+    ],
+    "hipsTravel_cm": [
+     1.42,
+     2.01
+    ],
+    "hipsHeight_m": [
+     0.7937,
+     0.8058
+    ]
+   },
+   "man": {
+    "soleL_mm": [
+     -0.6,
+     0.1
+    ],
+    "soleR_mm": [
+     -0.5,
+     0.3
+    ],
+    "lowestOfBoth_mm": [
+     -0.6,
+     0.1
+    ],
+    "hipsTravel_cm": [
+     1.56,
+     2.19
+    ],
+    "hipsHeight_m": [
+     0.8681,
+     0.8813
+    ]
+   },
+   "kid": {
+    "soleL_mm": [
+     -0.6,
+     0.1
+    ],
+    "soleR_mm": [
+     -0.3,
+     0.3
+    ],
+    "lowestOfBoth_mm": [
+     -0.6,
+     -0.0
+    ],
+    "hipsTravel_cm": [
+     0.89,
+     1.25
+    ],
+    "hipsHeight_m": [
+     0.4961,
+     0.5036
+    ]
+   },
+   "keeper": {
+    "soleL_mm": [
+     -0.7,
+     0.1
+    ],
+    "soleR_mm": [
+     -0.6,
+     0.3
+    ],
+    "lowestOfBoth_mm": [
+     -0.7,
+     0.0
+    ],
+    "hipsTravel_cm": [
+     1.51,
+     2.13
+    ],
+    "hipsHeight_m": [
+     0.8433,
+     0.8562
+    ]
+   },
+   "elder": {
+    "soleL_mm": [
+     -0.5,
+     0.1
+    ],
+    "soleR_mm": [
+     -0.4,
+     0.2
+    ],
+    "lowestOfBoth_mm": [
+     -0.5,
+     0.1
+    ],
+    "hipsTravel_cm": [
+     1.35,
+     1.91
+    ],
+    "hipsHeight_m": [
+     0.754,
+     0.7655
+    ]
+   }
+  },
+  "wave": {
+   "woman": {
+    "soleL_mm": [
+     -0.3,
+     0.1
+    ],
+    "soleR_mm": [
+     -0.3,
+     0.1
+    ],
+    "lowestOfBoth_mm": [
+     -0.3,
+     -0.0
+    ],
+    "hipsTravel_cm": [
+     0.89,
+     0.55
+    ],
+    "hipsHeight_m": [
+     0.8298,
+     0.8354
+    ]
+   },
+   "man": {
+    "soleL_mm": [
+     -0.4,
+     0.1
+    ],
+    "soleR_mm": [
+     -0.2,
+     0.1
+    ],
+    "lowestOfBoth_mm": [
+     -0.4,
+     -0.0
+    ],
+    "hipsTravel_cm": [
+     0.97,
+     0.6
+    ],
+    "hipsHeight_m": [
+     0.9076,
+     0.9138
+    ]
+   },
+   "kid": {
+    "soleL_mm": [
+     -0.3,
+     -0.0
+    ],
+    "soleR_mm": [
+     -0.1,
+     0.2
+    ],
+    "lowestOfBoth_mm": [
+     -0.3,
+     -0.0
+    ],
+    "hipsTravel_cm": [
+     0.55,
+     0.34
+    ],
+    "hipsHeight_m": [
+     0.5186,
+     0.5221
+    ]
+   },
+   "keeper": {
+    "soleL_mm": [
+     -0.4,
+     0.0
+    ],
+    "soleR_mm": [
+     -0.3,
+     0.2
+    ],
+    "lowestOfBoth_mm": [
+     -0.4,
+     -0.0
+    ],
+    "hipsTravel_cm": [
+     0.94,
+     0.58
+    ],
+    "hipsHeight_m": [
+     0.8817,
+     0.8876
+    ]
+   },
+   "elder": {
+    "soleL_mm": [
+     -0.3,
+     0.1
+    ],
+    "soleR_mm": [
+     -0.2,
+     0.1
+    ],
+    "lowestOfBoth_mm": [
+     -0.3,
+     -0.0
+    ],
+    "hipsTravel_cm": [
+     0.84,
+     0.52
+    ],
+    "hipsHeight_m": [
+     0.7883,
+     0.7937
+    ]
+   }
+  },
+  "bow": {
+   "woman": {
+    "soleL_mm": [
+     -0.5,
+     0.0
+    ],
+    "soleR_mm": [
+     -0.3,
+     0.0
+    ],
+    "lowestOfBoth_mm": [
+     -0.5,
+     0.0
+    ],
+    "hipsTravel_cm": [
+     1.31,
+     4.75
+    ],
+    "hipsHeight_m": [
+     0.8292,
+     0.835
+    ]
+   },
+   "man": {
+    "soleL_mm": [
+     -0.6,
+     -0.0
+    ],
+    "soleR_mm": [
+     -0.3,
+     0.2
+    ],
+    "lowestOfBoth_mm": [
+     -0.6,
+     -0.0
+    ],
+    "hipsTravel_cm": [
+     1.44,
+     5.19
+    ],
+    "hipsHeight_m": [
+     0.9069,
+     0.9133
+    ]
+   },
+   "kid": {
+    "soleL_mm": [
+     -0.6,
+     -0.1
+    ],
+    "soleR_mm": [
+     -0.0,
+     0.5
+    ],
+    "lowestOfBoth_mm": [
+     -0.6,
+     -0.1
+    ],
+    "hipsTravel_cm": [
+     0.82,
+     2.97
+    ],
+    "hipsHeight_m": [
+     0.5183,
+     0.5219
+    ]
+   },
+   "keeper": {
+    "soleL_mm": [
+     -0.8,
+     -0.1
+    ],
+    "soleR_mm": [
+     -0.3,
+     0.3
+    ],
+    "lowestOfBoth_mm": [
+     -0.8,
+     -0.1
+    ],
+    "hipsTravel_cm": [
+     1.39,
+     5.04
+    ],
+    "hipsHeight_m": [
+     0.881,
+     0.8872
+    ]
+   },
+   "elder": {
+    "soleL_mm": [
+     -0.5,
+     -0.0
+    ],
+    "soleR_mm": [
+     -0.2,
+     0.1
+    ],
+    "lowestOfBoth_mm": [
+     -0.5,
+     -0.0
+    ],
+    "hipsTravel_cm": [
+     1.25,
+     4.51
+    ],
+    "hipsHeight_m": [
+     0.7877,
+     0.7933
+    ]
+   }
+  },
+  "eat": {
+   "woman": {
+    "soleL_mm": [
+     -0.4,
+     0.1
+    ],
+    "soleR_mm": [
+     -0.4,
+     0.1
+    ],
+    "lowestOfBoth_mm": [
+     -0.4,
+     0.0
+    ],
+    "hipsTravel_cm": [
+     0.7,
+     0.53
+    ],
+    "hipsHeight_m": [
+     0.8291,
+     0.8361
+    ]
+   },
+   "man": {
+    "soleL_mm": [
+     -0.4,
+     0.1
+    ],
+    "soleR_mm": [
+     -0.4,
+     0.1
+    ],
+    "lowestOfBoth_mm": [
+     -0.4,
+     0.1
+    ],
+    "hipsTravel_cm": [
+     0.77,
+     0.58
+    ],
+    "hipsHeight_m": [
+     0.9068,
+     0.9145
+    ]
+   },
+   "kid": {
+    "soleL_mm": [
+     -0.4,
+     0.1
+    ],
+    "soleR_mm": [
+     -0.3,
+     0.2
+    ],
+    "lowestOfBoth_mm": [
+     -0.4,
+     -0.0
+    ],
+    "hipsTravel_cm": [
+     0.44,
+     0.33
+    ],
+    "hipsHeight_m": [
+     0.5182,
+     0.5225
+    ]
+   },
+   "keeper": {
+    "soleL_mm": [
+     -0.5,
+     0.0
+    ],
+    "soleR_mm": [
+     -0.5,
+     0.1
+    ],
+    "lowestOfBoth_mm": [
+     -0.5,
+     -0.0
+    ],
+    "hipsTravel_cm": [
+     0.75,
+     0.56
+    ],
+    "hipsHeight_m": [
+     0.8809,
+     0.8883
+    ]
+   },
+   "elder": {
+    "soleL_mm": [
+     -0.4,
+     0.1
+    ],
+    "soleR_mm": [
+     -0.4,
+     0.1
+    ],
+    "lowestOfBoth_mm": [
+     -0.4,
+     0.1
+    ],
+    "hipsTravel_cm": [
+     0.67,
+     0.5
+    ],
+    "hipsHeight_m": [
+     0.7876,
+     0.7943
+    ]
+   }
+  },
+  "cheer": {
+   "woman": {
+    "soleL_mm": [
+     -0.3,
+     0.1
+    ],
+    "soleR_mm": [
+     -0.2,
+     0.1
+    ],
+    "lowestOfBoth_mm": [
+     -0.3,
+     0.0
+    ],
+    "hipsTravel_cm": [
+     2.67,
+     1.67
+    ],
+    "hipsHeight_m": [
+     0.795,
+     0.83
+    ]
+   },
+   "man": {
+    "soleL_mm": [
+     -0.4,
+     0.1
+    ],
+    "soleR_mm": [
+     -0.3,
+     0.2
+    ],
+    "lowestOfBoth_mm": [
+     -0.4,
+     0.1
+    ],
+    "hipsTravel_cm": [
+     2.92,
+     1.82
+    ],
+    "hipsHeight_m": [
+     0.8695,
+     0.9078
+    ]
+   },
+   "kid": {
+    "soleL_mm": [
+     -0.8,
+     0.3
+    ],
+    "soleR_mm": [
+     -0.3,
+     0.8
+    ],
+    "lowestOfBoth_mm": [
+     -0.8,
+     -0.0
+    ],
+    "hipsTravel_cm": [
+     1.67,
+     1.04
+    ],
+    "hipsHeight_m": [
+     0.4969,
+     0.5187
+    ]
+   },
+   "keeper": {
+    "soleL_mm": [
+     -0.6,
+     0.2
+    ],
+    "soleR_mm": [
+     -0.3,
+     0.4
+    ],
+    "lowestOfBoth_mm": [
+     -0.6,
+     -0.0
+    ],
+    "hipsTravel_cm": [
+     2.84,
+     1.77
+    ],
+    "hipsHeight_m": [
+     0.8447,
+     0.8819
+    ]
+   },
+   "elder": {
+    "soleL_mm": [
+     -0.3,
+     0.1
+    ],
+    "soleR_mm": [
+     -0.2,
+     0.2
+    ],
+    "lowestOfBoth_mm": [
+     -0.3,
+     0.1
+    ],
+    "hipsTravel_cm": [
+     2.53,
+     1.58
+    ],
+    "hipsHeight_m": [
+     0.7552,
+     0.7885
+    ]
+   }
+  },
+  "point": {
+   "woman": {
+    "soleL_mm": [
+     -0.5,
+     0.0
+    ],
+    "soleR_mm": [
+     -0.3,
+     0.0
+    ],
+    "lowestOfBoth_mm": [
+     -0.5,
+     0.0
+    ],
+    "hipsTravel_cm": [
+     1.31,
+     1.11
+    ],
+    "hipsHeight_m": [
+     0.8296,
+     0.8356
+    ]
+   },
+   "man": {
+    "soleL_mm": [
+     -0.6,
+     -0.0
+    ],
+    "soleR_mm": [
+     -0.3,
+     0.1
+    ],
+    "lowestOfBoth_mm": [
+     -0.6,
+     -0.0
+    ],
+    "hipsTravel_cm": [
+     1.43,
+     1.21
+    ],
+    "hipsHeight_m": [
+     0.9074,
+     0.9139
+    ]
+   },
+   "kid": {
+    "soleL_mm": [
+     -0.4,
+     -0.1
+    ],
+    "soleR_mm": [
+     -0.1,
+     0.2
+    ],
+    "lowestOfBoth_mm": [
+     -0.4,
+     -0.1
+    ],
+    "hipsTravel_cm": [
+     0.82,
+     0.69
+    ],
+    "hipsHeight_m": [
+     0.5185,
+     0.5222
+    ]
+   },
+   "keeper": {
+    "soleL_mm": [
+     -0.7,
+     -0.0
+    ],
+    "soleR_mm": [
+     -0.3,
+     0.1
+    ],
+    "lowestOfBoth_mm": [
+     -0.7,
+     -0.0
+    ],
+    "hipsTravel_cm": [
+     1.39,
+     1.18
+    ],
+    "hipsHeight_m": [
+     0.8814,
+     0.8878
+    ]
+   },
+   "elder": {
+    "soleL_mm": [
+     -0.5,
+     0.0
+    ],
+    "soleR_mm": [
+     -0.2,
+     0.0
+    ],
+    "lowestOfBoth_mm": [
+     -0.5,
+     -0.0
+    ],
+    "hipsTravel_cm": [
+     1.24,
+     1.05
+    ],
+    "hipsHeight_m": [
+     0.7881,
+     0.7938
+    ]
+   }
+  },
+  "call": {
+   "woman": {
+    "soleL_mm": [
+     -0.2,
+     0.0
+    ],
+    "soleR_mm": [
+     -0.3,
+     0.1
+    ],
+    "lowestOfBoth_mm": [
+     -0.3,
+     0.0
+    ],
+    "hipsTravel_cm": [
+     1.38,
+     0.28
+    ],
+    "hipsHeight_m": [
+     0.8289,
+     0.8289
+    ]
+   },
+   "man": {
+    "soleL_mm": [
+     -0.3,
+     0.1
+    ],
+    "soleR_mm": [
+     -0.4,
+     0.2
+    ],
+    "lowestOfBoth_mm": [
+     -0.4,
+     -0.0
+    ],
+    "hipsTravel_cm": [
+     1.51,
+     0.31
+    ],
+    "hipsHeight_m": [
+     0.9066,
+     0.9066
+    ]
+   },
+   "kid": {
+    "soleL_mm": [
+     -0.5,
+     0.4
+    ],
+    "soleR_mm": [
+     -0.5,
+     0.4
+    ],
+    "lowestOfBoth_mm": [
+     -0.5,
+     0.0
+    ],
+    "hipsTravel_cm": [
+     0.86,
+     0.18
+    ],
+    "hipsHeight_m": [
+     0.5181,
+     0.5181
+    ]
+   },
+   "keeper": {
+    "soleL_mm": [
+     -0.4,
+     0.2
+    ],
+    "soleR_mm": [
+     -0.5,
+     0.3
+    ],
+    "lowestOfBoth_mm": [
+     -0.5,
+     0.0
+    ],
+    "hipsTravel_cm": [
+     1.46,
+     0.3
+    ],
+    "hipsHeight_m": [
+     0.8807,
+     0.8807
+    ]
+   },
+   "elder": {
+    "soleL_mm": [
+     -0.2,
+     0.1
+    ],
+    "soleR_mm": [
+     -0.3,
+     0.2
+    ],
+    "lowestOfBoth_mm": [
+     -0.3,
+     0.0
+    ],
+    "hipsTravel_cm": [
+     1.31,
+     0.27
+    ],
+    "hipsHeight_m": [
+     0.7875,
+     0.7875
+    ]
+   }
+  },
+  "fan": {
+   "woman": {
+    "soleL_mm": [
+     -0.3,
+     0.0
+    ],
+    "soleR_mm": [
+     -0.2,
+     0.1
+    ],
+    "lowestOfBoth_mm": [
+     -0.3,
+     -0.0
+    ],
+    "hipsTravel_cm": [
+     2.77,
+     0.6
+    ],
+    "hipsHeight_m": [
+     0.8288,
+     0.8288
+    ]
+   },
+   "man": {
+    "soleL_mm": [
+     -0.3,
+     0.1
+    ],
+    "soleR_mm": [
+     -0.4,
+     0.2
+    ],
+    "lowestOfBoth_mm": [
+     -0.4,
+     -0.0
+    ],
+    "hipsTravel_cm": [
+     3.02,
+     0.66
+    ],
+    "hipsHeight_m": [
+     0.9065,
+     0.9065
+    ]
+   },
+   "kid": {
+    "soleL_mm": [
+     -0.5,
+     0.4
+    ],
+    "soleR_mm": [
+     -0.5,
+     0.4
+    ],
+    "lowestOfBoth_mm": [
+     -0.5,
+     0.0
+    ],
+    "hipsTravel_cm": [
+     1.73,
+     0.38
+    ],
+    "hipsHeight_m": [
+     0.518,
+     0.518
+    ]
+   },
+   "keeper": {
+    "soleL_mm": [
+     -0.4,
+     0.2
+    ],
+    "soleR_mm": [
+     -0.4,
+     0.2
+    ],
+    "lowestOfBoth_mm": [
+     -0.4,
+     0.0
+    ],
+    "hipsTravel_cm": [
+     2.94,
+     0.64
+    ],
+    "hipsHeight_m": [
+     0.8806,
+     0.8806
+    ]
+   },
+   "elder": {
+    "soleL_mm": [
+     -0.3,
+     0.1
+    ],
+    "soleR_mm": [
+     -0.3,
+     0.1
+    ],
+    "lowestOfBoth_mm": [
+     -0.3,
+     -0.0
+    ],
+    "hipsTravel_cm": [
+     2.63,
+     0.57
+    ],
+    "hipsHeight_m": [
+     0.7874,
+     0.7874
+    ]
+   }
+  },
+  "lookup": {
+   "woman": {
+    "soleL_mm": [
+     -0.3,
+     0.0
+    ],
+    "soleR_mm": [
+     -0.3,
+     0.1
+    ],
+    "lowestOfBoth_mm": [
+     -0.3,
+     0.0
+    ],
+    "hipsTravel_cm": [
+     1.66,
+     0.35
+    ],
+    "hipsHeight_m": [
+     0.8289,
+     0.8289
+    ]
+   },
+   "man": {
+    "soleL_mm": [
+     -0.3,
+     0.1
+    ],
+    "soleR_mm": [
+     -0.4,
+     0.2
+    ],
+    "lowestOfBoth_mm": [
+     -0.4,
+     -0.0
+    ],
+    "hipsTravel_cm": [
+     1.81,
+     0.38
+    ],
+    "hipsHeight_m": [
+     0.9066,
+     0.9066
+    ]
+   },
+   "kid": {
+    "soleL_mm": [
+     -0.5,
+     0.4
+    ],
+    "soleR_mm": [
+     -0.5,
+     0.4
+    ],
+    "lowestOfBoth_mm": [
+     -0.5,
+     0.0
+    ],
+    "hipsTravel_cm": [
+     1.04,
+     0.22
+    ],
+    "hipsHeight_m": [
+     0.5181,
+     0.5181
+    ]
+   },
+   "keeper": {
+    "soleL_mm": [
+     -0.4,
+     0.2
+    ],
+    "soleR_mm": [
+     -0.5,
+     0.3
+    ],
+    "lowestOfBoth_mm": [
+     -0.5,
+     0.0
+    ],
+    "hipsTravel_cm": [
+     1.76,
+     0.37
+    ],
+    "hipsHeight_m": [
+     0.8807,
+     0.8807
+    ]
+   },
+   "elder": {
+    "soleL_mm": [
+     -0.3,
+     0.1
+    ],
+    "soleR_mm": [
+     -0.4,
+     0.2
+    ],
+    "lowestOfBoth_mm": [
+     -0.4,
+     0.0
+    ],
+    "hipsTravel_cm": [
+     1.58,
+     0.33
+    ],
+    "hipsHeight_m": [
+     0.7875,
+     0.7875
+    ]
+   }
+  },
+  "sit": {
+   "woman": {
+    "soleL_mm": [
+     0.0,
+     0.0
+    ],
+    "soleR_mm": [
+     0.0,
+     0.0
+    ],
+    "lowestOfBoth_mm": [
+     0.0,
+     0.0
+    ],
+    "hipsTravel_cm": [
+     0.0,
+     0.0
+    ],
+    "hipsHeight_m": [
+     0.5731,
+     0.5731
+    ]
+   },
+   "man": {
+    "soleL_mm": [
+     -0.0,
+     -0.0
+    ],
+    "soleR_mm": [
+     -0.0,
+     -0.0
+    ],
+    "lowestOfBoth_mm": [
+     -0.0,
+     -0.0
+    ],
+    "hipsTravel_cm": [
+     0.0,
+     0.0
+    ],
+    "hipsHeight_m": [
+     0.6268,
+     0.6268
+    ]
+   },
+   "kid": {
+    "soleL_mm": [
+     -0.0,
+     -0.0
+    ],
+    "soleR_mm": [
+     -0.0,
+     -0.0
+    ],
+    "lowestOfBoth_mm": [
+     -0.0,
+     -0.0
+    ],
+    "hipsTravel_cm": [
+     0.0,
+     0.0
+    ],
+    "hipsHeight_m": [
+     0.3582,
+     0.3582
+    ]
+   },
+   "keeper": {
+    "soleL_mm": [
+     0.0,
+     0.0
+    ],
+    "soleR_mm": [
+     0.0,
+     0.0
+    ],
+    "lowestOfBoth_mm": [
+     0.0,
+     0.0
+    ],
+    "hipsTravel_cm": [
+     0.0,
+     0.0
+    ],
+    "hipsHeight_m": [
+     0.6089,
+     0.6089
+    ]
+   },
+   "elder": {
+    "soleL_mm": [
+     -0.0,
+     -0.0
+    ],
+    "soleR_mm": [
+     -0.0,
+     -0.0
+    ],
+    "lowestOfBoth_mm": [
+     -0.0,
+     -0.0
+    ],
+    "hipsTravel_cm": [
+     0.0,
+     0.0
+    ],
+    "hipsHeight_m": [
+     0.5444,
+     0.5444
+    ]
+   }
+  },
+  "sit_fan": {
+   "woman": {
+    "soleL_mm": [
+     0.0,
+     0.0
+    ],
+    "soleR_mm": [
+     0.0,
+     0.0
+    ],
+    "lowestOfBoth_mm": [
+     0.0,
+     0.0
+    ],
+    "hipsTravel_cm": [
+     0.0,
+     0.0
+    ],
+    "hipsHeight_m": [
+     0.5731,
+     0.5731
+    ]
+   },
+   "man": {
+    "soleL_mm": [
+     -0.0,
+     -0.0
+    ],
+    "soleR_mm": [
+     -0.0,
+     -0.0
+    ],
+    "lowestOfBoth_mm": [
+     -0.0,
+     -0.0
+    ],
+    "hipsTravel_cm": [
+     0.0,
+     0.0
+    ],
+    "hipsHeight_m": [
+     0.6268,
+     0.6268
+    ]
+   },
+   "kid": {
+    "soleL_mm": [
+     -0.0,
+     -0.0
+    ],
+    "soleR_mm": [
+     -0.0,
+     -0.0
+    ],
+    "lowestOfBoth_mm": [
+     -0.0,
+     -0.0
+    ],
+    "hipsTravel_cm": [
+     0.0,
+     0.0
+    ],
+    "hipsHeight_m": [
+     0.3582,
+     0.3582
+    ]
+   },
+   "keeper": {
+    "soleL_mm": [
+     0.0,
+     0.0
+    ],
+    "soleR_mm": [
+     0.0,
+     0.0
+    ],
+    "lowestOfBoth_mm": [
+     0.0,
+     0.0
+    ],
+    "hipsTravel_cm": [
+     0.0,
+     0.0
+    ],
+    "hipsHeight_m": [
+     0.6089,
+     0.6089
+    ]
+   },
+   "elder": {
+    "soleL_mm": [
+     -0.0,
+     -0.0
+    ],
+    "soleR_mm": [
+     -0.0,
+     -0.0
+    ],
+    "lowestOfBoth_mm": [
+     -0.0,
+     -0.0
+    ],
+    "hipsTravel_cm": [
+     0.0,
+     0.0
+    ],
+    "hipsHeight_m": [
+     0.5444,
+     0.5444
+    ]
+   }
+  },
+  "sit_sleep": {
+   "woman": {
+    "soleL_mm": [
+     0.0,
+     0.0
+    ],
+    "soleR_mm": [
+     0.0,
+     0.0
+    ],
+    "lowestOfBoth_mm": [
+     0.0,
+     0.0
+    ],
+    "hipsTravel_cm": [
+     0.0,
+     0.0
+    ],
+    "hipsHeight_m": [
+     0.5731,
+     0.5731
+    ]
+   },
+   "man": {
+    "soleL_mm": [
+     -0.0,
+     -0.0
+    ],
+    "soleR_mm": [
+     -0.0,
+     -0.0
+    ],
+    "lowestOfBoth_mm": [
+     -0.0,
+     -0.0
+    ],
+    "hipsTravel_cm": [
+     0.0,
+     0.0
+    ],
+    "hipsHeight_m": [
+     0.6268,
+     0.6268
+    ]
+   },
+   "kid": {
+    "soleL_mm": [
+     -0.0,
+     -0.0
+    ],
+    "soleR_mm": [
+     -0.0,
+     -0.0
+    ],
+    "lowestOfBoth_mm": [
+     -0.0,
+     -0.0
+    ],
+    "hipsTravel_cm": [
+     0.0,
+     0.0
+    ],
+    "hipsHeight_m": [
+     0.3582,
+     0.3582
+    ]
+   },
+   "keeper": {
+    "soleL_mm": [
+     0.0,
+     0.0
+    ],
+    "soleR_mm": [
+     0.0,
+     0.0
+    ],
+    "lowestOfBoth_mm": [
+     0.0,
+     0.0
+    ],
+    "hipsTravel_cm": [
+     0.0,
+     0.0
+    ],
+    "hipsHeight_m": [
+     0.6089,
+     0.6089
+    ]
+   },
+   "elder": {
+    "soleL_mm": [
+     -0.0,
+     -0.0
+    ],
+    "soleR_mm": [
+     -0.0,
+     -0.0
+    ],
+    "lowestOfBoth_mm": [
+     -0.0,
+     -0.0
+    ],
+    "hipsTravel_cm": [
+     0.0,
+     0.0
+    ],
+    "hipsHeight_m": [
+     0.5444,
+     0.5444
+    ]
+   }
+  },
+  "yawn": {
+   "woman": {
+    "soleL_mm": [
+     -0.0,
+     -0.0
+    ],
+    "soleR_mm": [
+     -0.0,
+     -0.0
+    ],
+    "lowestOfBoth_mm": [
+     -0.0,
+     -0.0
+    ],
+    "hipsTravel_cm": [
+     0.0,
+     0.0
+    ],
+    "hipsHeight_m": [
+     0.83,
+     0.83
+    ]
+   },
+   "man": {
+    "soleL_mm": [
+     -0.0,
+     -0.0
+    ],
+    "soleR_mm": [
+     0.0,
+     0.0
+    ],
+    "lowestOfBoth_mm": [
+     -0.0,
+     -0.0
+    ],
+    "hipsTravel_cm": [
+     0.0,
+     0.0
+    ],
+    "hipsHeight_m": [
+     0.9078,
+     0.9078
+    ]
+   },
+   "kid": {
+    "soleL_mm": [
+     -0.1,
+     -0.1
+    ],
+    "soleR_mm": [
+     0.1,
+     0.1
+    ],
+    "lowestOfBoth_mm": [
+     -0.1,
+     -0.1
+    ],
+    "hipsTravel_cm": [
+     0.0,
+     0.0
+    ],
+    "hipsHeight_m": [
+     0.5187,
+     0.5187
+    ]
+   },
+   "keeper": {
+    "soleL_mm": [
+     -0.1,
+     -0.1
+    ],
+    "soleR_mm": [
+     0.1,
+     0.1
+    ],
+    "lowestOfBoth_mm": [
+     -0.1,
+     -0.1
+    ],
+    "hipsTravel_cm": [
+     0.0,
+     0.0
+    ],
+    "hipsHeight_m": [
+     0.8819,
+     0.8819
+    ]
+   },
+   "elder": {
+    "soleL_mm": [
+     -0.0,
+     -0.0
+    ],
+    "soleR_mm": [
+     0.0,
+     0.0
+    ],
+    "lowestOfBoth_mm": [
+     -0.0,
+     -0.0
+    ],
+    "hipsTravel_cm": [
+     0.0,
+     0.0
+    ],
+    "hipsHeight_m": [
+     0.7885,
+     0.7885
+    ]
+   }
+  },
+  "cry": {
+   "woman": {
+    "soleL_mm": [
+     -0.0,
+     -0.0
+    ],
+    "soleR_mm": [
+     -0.0,
+     -0.0
+    ],
+    "lowestOfBoth_mm": [
+     -0.0,
+     -0.0
+    ],
+    "hipsTravel_cm": [
+     0.0,
+     0.0
+    ],
+    "hipsHeight_m": [
+     0.83,
+     0.83
+    ]
+   },
+   "man": {
+    "soleL_mm": [
+     -0.0,
+     -0.0
+    ],
+    "soleR_mm": [
+     0.0,
+     0.0
+    ],
+    "lowestOfBoth_mm": [
+     -0.0,
+     -0.0
+    ],
+    "hipsTravel_cm": [
+     0.0,
+     0.0
+    ],
+    "hipsHeight_m": [
+     0.9078,
+     0.9078
+    ]
+   },
+   "kid": {
+    "soleL_mm": [
+     -0.1,
+     -0.1
+    ],
+    "soleR_mm": [
+     0.1,
+     0.1
+    ],
+    "lowestOfBoth_mm": [
+     -0.1,
+     -0.1
+    ],
+    "hipsTravel_cm": [
+     0.0,
+     0.0
+    ],
+    "hipsHeight_m": [
+     0.5187,
+     0.5187
+    ]
+   },
+   "keeper": {
+    "soleL_mm": [
+     -0.1,
+     -0.1
+    ],
+    "soleR_mm": [
+     0.1,
+     0.1
+    ],
+    "lowestOfBoth_mm": [
+     -0.1,
+     -0.1
+    ],
+    "hipsTravel_cm": [
+     0.0,
+     0.0
+    ],
+    "hipsHeight_m": [
+     0.8819,
+     0.8819
+    ]
+   },
+   "elder": {
+    "soleL_mm": [
+     -0.0,
+     -0.0
+    ],
+    "soleR_mm": [
+     0.0,
+     0.0
+    ],
+    "lowestOfBoth_mm": [
+     -0.0,
+     -0.0
+    ],
+    "hipsTravel_cm": [
+     0.0,
+     0.0
+    ],
+    "hipsHeight_m": [
+     0.7885,
+     0.7885
+    ]
+   }
+  },
+  "pick_up": {
+   "woman": {
+    "soleL_mm": [
+     -0.7,
+     0.2
+    ],
+    "soleR_mm": [
+     -0.5,
+     0.1
+    ],
+    "lowestOfBoth_mm": [
+     -0.7,
+     0.1
+    ],
+    "hipsTravel_cm": [
+     0.0,
+     13.0
+    ],
+    "hipsHeight_m": [
+     0.38,
+     0.83
+    ]
+   },
+   "man": {
+    "soleL_mm": [
+     -0.8,
+     0.2
+    ],
+    "soleR_mm": [
+     -0.5,
+     0.2
+    ],
+    "lowestOfBoth_mm": [
+     -0.8,
+     0.1
+    ],
+    "hipsTravel_cm": [
+     0.0,
+     14.22
+    ],
+    "hipsHeight_m": [
+     0.4156,
+     0.9078
+    ]
+   },
+   "kid": {
+    "soleL_mm": [
+     -0.5,
+     0.0
+    ],
+    "soleR_mm": [
+     -0.2,
+     0.2
+    ],
+    "lowestOfBoth_mm": [
+     -0.5,
+     0.0
+    ],
+    "hipsTravel_cm": [
+     0.0,
+     8.13
+    ],
+    "hipsHeight_m": [
+     0.2375,
+     0.5187
+    ]
+   },
+   "keeper": {
+    "soleL_mm": [
+     -0.9,
+     0.1
+    ],
+    "soleR_mm": [
+     -0.5,
+     0.2
+    ],
+    "lowestOfBoth_mm": [
+     -0.9,
+     0.1
+    ],
+    "hipsTravel_cm": [
+     0.0,
+     13.81
+    ],
+    "hipsHeight_m": [
+     0.4037,
+     0.8819
+    ]
+   },
+   "elder": {
+    "soleL_mm": [
+     -0.7,
+     0.2
+    ],
+    "soleR_mm": [
+     -0.4,
+     0.2
+    ],
+    "lowestOfBoth_mm": [
+     -0.7,
+     0.1
+    ],
+    "hipsTravel_cm": [
+     0.0,
+     12.35
+    ],
+    "hipsHeight_m": [
+     0.361,
+     0.7885
+    ]
+   }
+  },
+  "peace": {
+   "woman": {
+    "soleL_mm": [
+     -0.0,
+     -0.0
+    ],
+    "soleR_mm": [
+     -0.0,
+     -0.0
+    ],
+    "lowestOfBoth_mm": [
+     -0.0,
+     -0.0
+    ],
+    "hipsTravel_cm": [
+     0.0,
+     0.0
+    ],
+    "hipsHeight_m": [
+     0.83,
+     0.83
+    ]
+   },
+   "man": {
+    "soleL_mm": [
+     -0.0,
+     -0.0
+    ],
+    "soleR_mm": [
+     0.0,
+     0.0
+    ],
+    "lowestOfBoth_mm": [
+     -0.0,
+     -0.0
+    ],
+    "hipsTravel_cm": [
+     0.0,
+     0.0
+    ],
+    "hipsHeight_m": [
+     0.9078,
+     0.9078
+    ]
+   },
+   "kid": {
+    "soleL_mm": [
+     -0.1,
+     -0.1
+    ],
+    "soleR_mm": [
+     0.1,
+     0.1
+    ],
+    "lowestOfBoth_mm": [
+     -0.1,
+     -0.1
+    ],
+    "hipsTravel_cm": [
+     0.0,
+     0.0
+    ],
+    "hipsHeight_m": [
+     0.5187,
+     0.5187
+    ]
+   },
+   "keeper": {
+    "soleL_mm": [
+     -0.1,
+     -0.1
+    ],
+    "soleR_mm": [
+     0.1,
+     0.1
+    ],
+    "lowestOfBoth_mm": [
+     -0.1,
+     -0.1
+    ],
+    "hipsTravel_cm": [
+     0.0,
+     0.0
+    ],
+    "hipsHeight_m": [
+     0.8819,
+     0.8819
+    ]
+   },
+   "elder": {
+    "soleL_mm": [
+     -0.0,
+     -0.0
+    ],
+    "soleR_mm": [
+     0.0,
+     0.0
+    ],
+    "lowestOfBoth_mm": [
+     -0.0,
+     -0.0
+    ],
+    "hipsTravel_cm": [
+     0.0,
+     0.0
+    ],
+    "hipsHeight_m": [
+     0.7885,
+     0.7885
+    ]
+   }
+  }
+ },
+ "keys": {
+  "bow": [
+   2898,
+   1353
+  ],
+  "call": [
+   3822,
+   422
+  ],
+  "cheer": [
+   3696,
+   2191
+  ],
+  "cry": [
+   2562,
+   252
+  ],
+  "eat": [
+   4998,
+   1417
+  ],
+  "fan": [
+   5082,
+   487
+  ],
+  "idle": [
+   12558,
+   3877
+  ],
+  "look": [
+   8022,
+   4446
+  ],
+  "lookup": [
+   5082,
+   302
+  ],
+  "peace": [
+   3066,
+   653
+  ],
+  "pick_up": [
+   3066,
+   1337
+  ],
+  "point": [
+   2898,
+   1248
+  ],
+  "run": [
+   1050,
+   1050
+  ],
+  "sit": [
+   5082,
+   133
+  ],
+  "sit_fan": [
+   5082,
+   270
+  ],
+  "sit_sleep": [
+   7602,
+   138
+  ],
+  "sparkler": [
+   1218,
+   1218
+  ],
+  "talk": [
+   8652,
+   5101
+  ],
+  "walk": [
+   1218,
+   1218
+  ],
+  "walk_f": [
+   1134,
+   1134
+  ],
+  "wave": [
+   2394,
+   1465
+  ],
+  "yawn": [
+   4074,
+   1116
+  ]
+ },
+ "lookTurnDeg": {
+  "woman": {
+   "chest": 28.0,
+   "head": 69.0
+  },
+  "man": {
+   "chest": 28.0,
+   "head": 69.0
+  },
+  "kid": {
+   "chest": 28.0,
+   "head": 69.0
+  },
+  "keeper": {
+   "chest": 28.0,
+   "head": 69.0
+  },
+  "elder": {
+   "chest": 28.0,
+   "head": 69.0
+  }
+ },
+ "seat": {
+  "woman": {
+   "seatHeight": 0.366,
+   "hipsBack": 0.347,
+   "hipJointHeight": 0.529
+  },
+  "man": {
+   "seatHeight": 0.407,
+   "hipsBack": 0.379,
+   "hipJointHeight": 0.578
+  },
+  "kid": {
+   "seatHeight": 0.195,
+   "hipsBack": 0.217,
+   "hipJointHeight": 0.33
+  },
+  "keeper": {
+   "seatHeight": 0.43,
+   "hipsBack": 0.368,
+   "hipJointHeight": 0.562
+  },
+  "elder": {
+   "seatHeight": 0.344,
+   "hipsBack": 0.329,
+   "hipJointHeight": 0.502
+  }
+ },
+ "reachMissCm": {
+  "yawn hand to mouth": {
+   "woman": 1.7,
+   "man": 3.2,
+   "kid": 2.8,
+   "keeper": 3.2,
+   "elder": 3.3
+  },
+  "cry fist to eye L": {
+   "woman": 1.8,
+   "man": 3.1,
+   "kid": 3.0,
+   "keeper": 3.2,
+   "elder": 2.9
+  },
+  "cry fist to eye R": {
+   "woman": 1.8,
+   "man": 3.3,
+   "kid": 3.1,
+   "keeper": 3.4,
+   "elder": 3.1
+  },
+  "peace hand beside face": {
+   "woman": 2.5,
+   "man": 3.5,
+   "kid": 3.7,
+   "keeper": 3.6,
+   "elder": 2.5
+  },
+  "pick_up hand to ground": {
+   "woman": 7.5,
+   "man": 6.8,
+   "kid": 6.3,
+   "keeper": 5.7,
+   "elder": 3.9
+  },
+  "sit hand on knee L": {
+   "woman": 3.7,
+   "man": 3.1,
+   "kid": 6.6,
+   "keeper": 2.9,
+   "elder": 2.4
+  },
+  "sit hand on knee R": {
+   "woman": 3.7,
+   "man": 3.1,
+   "kid": 6.6,
+   "keeper": 2.9,
+   "elder": 2.4
+  },
+  "sit_fan hand on knee L": {
+   "woman": 3.7,
+   "man": 3.1,
+   "kid": 6.6,
+   "keeper": 2.9,
+   "elder": 2.4
+  },
+  "sit_sleep hand in lap L": {
+   "woman": 1.5,
+   "man": 2.3,
+   "kid": 4.9,
+   "keeper": 2.0,
+   "elder": 2.3
+  },
+  "sit_sleep hand in lap R": {
+   "woman": 1.5,
+   "man": 2.3,
+   "kid": 4.9,
+   "keeper": 2.0,
+   "elder": 2.3
+  }
+ },
+ "armClearance": {
+  "idle": {
+   "woman": {
+    "body_cm": 2.2,
+    "head_cm": 57.8
+   },
+   "man": {
+    "body_cm": 3.1,
+    "head_cm": 65.4
+   },
+   "kid": {
+    "body_cm": 3.8,
+    "head_cm": 40.3
+   },
+   "keeper": {
+    "body_cm": 5.8,
+    "head_cm": 64.3
+   },
+   "elder": {
+    "body_cm": 1.5,
+    "head_cm": 54.3
+   }
+  },
+  "walk": {
+   "woman": {
+    "body_cm": 6.2,
+    "head_cm": 60.3
+   },
+   "man": {
+    "body_cm": 0.7,
+    "head_cm": 68.9
+   },
+   "kid": {
+    "body_cm": 1.8,
+    "head_cm": 42.1
+   },
+   "keeper": {
+    "body_cm": 2.6,
+    "head_cm": 67.8
+   },
+   "elder": {
+    "body_cm": 4.8,
+    "head_cm": 55.7
+   }
+  },
+  "walk_f": {
+   "woman": {
+    "body_cm": 1.1,
+    "head_cm": 60.6
+   },
+   "man": {
+    "body_cm": 3.7,
+    "head_cm": 69.2
+   },
+   "kid": {
+    "body_cm": 2.1,
+    "head_cm": 42.5
+   },
+   "keeper": {
+    "body_cm": 3.8,
+    "head_cm": 68.0
+   },
+   "elder": {
+    "body_cm": 0.8,
+    "head_cm": 56.7
+   }
+  },
+  "run": {
+   "woman": {
+    "body_cm": 3.0,
+    "head_cm": 35.1
+   },
+   "man": {
+    "body_cm": 9.0,
+    "head_cm": 40.7
+   },
+   "kid": {
+    "body_cm": 1.2,
+    "head_cm": 24.2
+   },
+   "keeper": {
+    "body_cm": 6.7,
+    "head_cm": 40.0
+   },
+   "elder": {
+    "body_cm": 6.8,
+    "head_cm": 31.0
+   }
+  },
+  "sparkler": {
+   "woman": {
+    "body_cm": 6.8,
+    "head_cm": 37.3
+   },
+   "man": {
+    "body_cm": 5.6,
+    "head_cm": 42.7
+   },
+   "kid": {
+    "body_cm": 1.8,
+    "head_cm": 24.9
+   },
+   "keeper": {
+    "body_cm": 6.4,
+    "head_cm": 42.1
+   },
+   "elder": {
+    "body_cm": 4.8,
+    "head_cm": 31.7
+   }
+  },
+  "talk": {
+   "woman": {
+    "body_cm": 4.5,
+    "head_cm": 30.6
+   },
+   "man": {
+    "body_cm": 2.7,
+    "head_cm": 35.1
+   },
+   "kid": {
+    "body_cm": 2.0,
+    "head_cm": 20.9
+   },
+   "keeper": {
+    "body_cm": 3.1,
+    "head_cm": 34.6
+   },
+   "elder": {
+    "body_cm": 6.8,
+    "head_cm": 25.7
+   }
+  },
+  "look": {
+   "woman": {
+    "body_cm": 1.1,
+    "head_cm": 55.3
+   },
+   "man": {
+    "body_cm": 0.7,
+    "head_cm": 62.7
+   },
+   "kid": {
+    "body_cm": 1.9,
+    "head_cm": 38.9
+   },
+   "keeper": {
+    "body_cm": 2.1,
+    "head_cm": 61.6
+   },
+   "elder": {
+    "body_cm": 0.5,
+    "head_cm": 53.1
+   }
+  },
+  "wave": {
+   "woman": {
+    "body_cm": 3.8,
+    "head_cm": 33.4
+   },
+   "man": {
+    "body_cm": 5.1,
+    "head_cm": 38.8
+   },
+   "kid": {
+    "body_cm": 4.8,
+    "head_cm": 22.5
+   },
+   "keeper": {
+    "body_cm": 9.0,
+    "head_cm": 38.3
+   },
+   "elder": {
+    "body_cm": 2.8,
+    "head_cm": 28.4
+   }
+  },
+  "bow": {
+   "woman": {
+    "body_cm": 0.5,
+    "head_cm": 58.3
+   },
+   "man": {
+    "body_cm": 0.9,
+    "head_cm": 66.2
+   },
+   "kid": {
+    "body_cm": 1.2,
+    "head_cm": 40.8
+   },
+   "keeper": {
+    "body_cm": 1.2,
+    "head_cm": 65.1
+   },
+   "elder": {
+    "body_cm": 0.6,
+    "head_cm": 55.0
+   }
+  },
+  "eat": {
+   "woman": {
+    "body_cm": 3.2,
+    "head_cm": 6.9
+   },
+   "man": {
+    "body_cm": 0.7,
+    "head_cm": 8.3
+   },
+   "kid": {
+    "body_cm": 4.4,
+    "head_cm": 3.6
+   },
+   "keeper": {
+    "body_cm": 3.2,
+    "head_cm": 8.2
+   },
+   "elder": {
+    "body_cm": 0.8,
+    "head_cm": 2.3
+   }
+  },
+  "cheer": {
+   "woman": {
+    "body_cm": 7.2,
+    "head_cm": 9.1
+   },
+   "man": {
+    "body_cm": 8.4,
+    "head_cm": 12.3
+   },
+   "kid": {
+    "body_cm": 4.8,
+    "head_cm": 4.7
+   },
+   "keeper": {
+    "body_cm": 5.7,
+    "head_cm": 12.3
+   },
+   "elder": {
+    "body_cm": 6.2,
+    "head_cm": 7.2
+   }
+  },
+  "point": {
+   "woman": {
+    "body_cm": 7.5,
+    "head_cm": 37.2
+   },
+   "man": {
+    "body_cm": 5.6,
+    "head_cm": 42.7
+   },
+   "kid": {
+    "body_cm": 4.6,
+    "head_cm": 24.9
+   },
+   "keeper": {
+    "body_cm": 8.4,
+    "head_cm": 42.0
+   },
+   "elder": {
+    "body_cm": 5.3,
+    "head_cm": 32.0
+   }
+  },
+  "call": {
+   "woman": {
+    "body_cm": 8.5,
+    "head_cm": 7.1
+   },
+   "man": {
+    "body_cm": 5.1,
+    "head_cm": 8.9
+   },
+   "kid": {
+    "body_cm": 2.3,
+    "head_cm": 3.8
+   },
+   "keeper": {
+    "body_cm": 4.7,
+    "head_cm": 8.8
+   },
+   "elder": {
+    "body_cm": 5.6,
+    "head_cm": 3.6
+   }
+  },
+  "fan": {
+   "woman": {
+    "body_cm": 9.2,
+    "head_cm": 26.6
+   },
+   "man": {
+    "body_cm": 5.0,
+    "head_cm": 30.9
+   },
+   "kid": {
+    "body_cm": 2.1,
+    "head_cm": 17.5
+   },
+   "keeper": {
+    "body_cm": 4.2,
+    "head_cm": 30.5
+   },
+   "elder": {
+    "body_cm": 5.5,
+    "head_cm": 22.2
+   }
+  },
+  "lookup": {
+   "woman": {
+    "body_cm": 9.8,
+    "head_cm": 59.4
+   },
+   "man": {
+    "body_cm": 4.7,
+    "head_cm": 67.3
+   },
+   "kid": {
+    "body_cm": 1.9,
+    "head_cm": 41.6
+   },
+   "keeper": {
+    "body_cm": 4.1,
+    "head_cm": 66.2
+   },
+   "elder": {
+    "body_cm": 5.0,
+    "head_cm": 56.1
+   }
+  },
+  "sit": {
+   "woman": {
+    "body_cm": 3.9,
+    "head_cm": 56.1
+   },
+   "man": {
+    "body_cm": 14.1,
+    "head_cm": 63.3
+   },
+   "kid": {
+    "body_cm": 0.3,
+    "head_cm": 39.2
+   },
+   "keeper": {
+    "body_cm": 8.2,
+    "head_cm": 62.2
+   },
+   "elder": {
+    "body_cm": 0.3,
+    "head_cm": 52.5
+   }
+  },
+  "sit_fan": {
+   "woman": {
+    "body_cm": 2.0,
+    "head_cm": 37.2
+   },
+   "man": {
+    "body_cm": 1.6,
+    "head_cm": 42.8
+   },
+   "kid": {
+    "body_cm": 0.3,
+    "head_cm": 25.3
+   },
+   "keeper": {
+    "body_cm": 0.4,
+    "head_cm": 42.2
+   },
+   "elder": {
+    "body_cm": 0.3,
+    "head_cm": 32.8
+   }
+  },
+  "sit_sleep": {
+   "woman": {
+    "body_cm": 0.8,
+    "head_cm": 46.3
+   },
+   "man": {
+    "body_cm": 1.3,
+    "head_cm": 52.5
+   },
+   "kid": {
+    "body_cm": -1.6,
+    "head_cm": 31.4
+   },
+   "keeper": {
+    "body_cm": 5.8,
+    "head_cm": 51.6
+   },
+   "elder": {
+    "body_cm": -2.6,
+    "head_cm": 42.3
+   }
+  },
+  "yawn": {
+   "woman": {
+    "body_cm": 7.7,
+    "head_cm": 2.1
+   },
+   "man": {
+    "body_cm": 2.6,
+    "head_cm": 3.0
+   },
+   "kid": {
+    "body_cm": 4.0,
+    "head_cm": -0.1
+   },
+   "keeper": {
+    "body_cm": 7.8,
+    "head_cm": 3.0
+   },
+   "elder": {
+    "body_cm": 1.0,
+    "head_cm": -1.9
+   }
+  },
+  "cry": {
+   "woman": {
+    "body_cm": 17.1,
+    "head_cm": 1.6
+   },
+   "man": {
+    "body_cm": 18.8,
+    "head_cm": 2.9
+   },
+   "kid": {
+    "body_cm": 11.6,
+    "head_cm": -0.9
+   },
+   "keeper": {
+    "body_cm": 13.0,
+    "head_cm": 2.9
+   },
+   "elder": {
+    "body_cm": 18.8,
+    "head_cm": -1.6
+   }
+  },
+  "pick_up": {
+   "woman": {
+    "body_cm": 7.8,
+    "head_cm": 27.4
+   },
+   "man": {
+    "body_cm": 6.3,
+    "head_cm": 31.5
+   },
+   "kid": {
+    "body_cm": 2.0,
+    "head_cm": 17.5
+   },
+   "keeper": {
+    "body_cm": 8.2,
+    "head_cm": 31.1
+   },
+   "elder": {
+    "body_cm": 6.2,
+    "head_cm": 22.0
+   }
+  },
+  "peace": {
+   "woman": {
+    "body_cm": 7.4,
+    "head_cm": 7.1
+   },
+   "man": {
+    "body_cm": 6.7,
+    "head_cm": 10.1
+   },
+   "kid": {
+    "body_cm": 4.8,
+    "head_cm": 4.1
+   },
+   "keeper": {
+    "body_cm": 9.0,
+    "head_cm": 10.0
+   },
+   "elder": {
+    "body_cm": 6.2,
+    "head_cm": 6.2
+   }
+  }
+ },
+ "problems": []
+}

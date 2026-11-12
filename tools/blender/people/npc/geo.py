@@ -191,16 +191,31 @@ class MB:
     """Accumulates one skinned mesh: vertices, faces (material slot per face), per-vertex UV, colour
     and bone weights (dict per vertex)."""
 
-    def __init__(self, name):
+    def __init__(self, name, normal_fn=None):
         self.name = name
         self.V, self.F, self.FM, self.FS = [], [], [], []
         self.UV, self.C, self.W = [], [], []
+        self.Vb = []          # alternative positions (morph target `face_b`); == V where unchanged
+        self.NF = []          # True: normal from normal_fn (the analytic head surface)
+        self.A = []           # vertex alpha (COLOR_0.a), 1 by default
+        self.normal_fn = normal_fn
         self.parts = []
+        self.M = {}           # extra morph targets: name -> list of positions (== V where unchanged)
 
-    def add(self, V, F, mat, W, UV=None, C=None, smooth_shade=True, tag=None):
+    def add(self, V, F, mat, W, UV=None, C=None, smooth_shade=True, tag=None, Vb=None, analytic=False, alpha=None,
+            morphs=None):
         V = np.asarray(V, float)
         base = len(self.V)
+        morphs = morphs or {}
+        for name in morphs:
+            if name not in self.M:
+                self.M[name] = list(np.asarray(self.V, float).reshape(-1, 3))
+        for name, L in self.M.items():
+            L.extend(np.asarray(morphs[name], float) if name in morphs else V)
         self.V.extend(V)
+        self.Vb.extend(V if Vb is None else np.asarray(Vb, float))
+        self.NF.extend([bool(analytic)] * len(V))
+        self.A.extend(np.ones(len(V)) if alpha is None else np.broadcast_to(np.asarray(alpha, float), (len(V),)))
         for f in F:
             self.F.append([int(i) + base for i in f])
             self.FM.append(mat)
@@ -223,6 +238,12 @@ class MB:
 
     def tri_count(self):
         return sum(len(f) - 2 for f in self.F)
+
+    def morph_names(self):
+        return [n for n, L in self.M.items() if float(np.abs(np.asarray(self.V) - np.asarray(L)).max()) > 1e-7]
+
+    def has_morph(self):
+        return len(self.V) > 0 and float(np.abs(np.asarray(self.V) - np.asarray(self.Vb)).max()) > 1e-7
 
 
 def clean_weights(w, maxn=4):

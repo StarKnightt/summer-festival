@@ -20,7 +20,8 @@ export interface Ctx {
  */
 export abstract class MiniGame {
   won = false;
-  abstract readonly task: TaskId;
+  /** The checklist task this completes, or null for things that are just for fun. */
+  abstract readonly task: TaskId | null;
   constructor(protected c: Ctx) {}
   abstract update(dt: number): void;
   /** Called when leaving (won or Esc). Clean up props that should not stay. */

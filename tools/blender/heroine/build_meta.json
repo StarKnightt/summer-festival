@@ -2,34 +2,114 @@
  "sole": 0.05,
  "clips": {
   "idle": {
-   "duration": 4.0,
-   "loop": true
+   "duration": 10.0,
+   "loop": true,
+   "source": "idle_f.fbx"
   },
   "walk": {
-   "duration": 0.7,
+   "duration": 0.8667,
    "loop": true,
-   "speed": 1.1,
-   "stride": 0.77,
-   "step": 0.385,
+   "source": "walk_f.fbx",
+   "speed": 0.956,
+   "stride": 0.828,
+   "step": 0.414,
    "events": {
-    "footDownL": 0.0,
-    "footUpL": 0.42,
-    "footDownR": 0.35,
-    "footUpR": 0.07
-   }
+    "footDownL": 0.2,
+    "footUpL": 0.6,
+    "footDownR": 0.6,
+    "footUpR": 0.1667
+   },
+   "keys": 26,
+   "keyRate": 30
   },
   "run": {
-   "duration": 0.4667,
+   "duration": 0.4,
    "loop": true,
-   "speed": 2.7,
-   "stride": 1.26,
-   "step": 0.63,
+   "source": "run_f.fbx",
+   "speed": 2.295,
+   "stride": 0.918,
+   "step": 0.459,
    "events": {
-    "footDownL": 0.0,
-    "footUpL": 0.187,
-    "footDownR": 0.233,
-    "footUpR": 0.42
-   }
+    "footDownL": 0.1333,
+    "footUpL": 0.2333,
+    "footDownR": 0.35,
+    "footUpR": 0.0667
+   },
+   "keys": 24,
+   "keyRate": 60
+  },
+  "talk": {
+   "duration": 6.8333,
+   "loop": true,
+   "source": "talk.fbx"
+  },
+  "look": {
+   "duration": 6.3333,
+   "loop": true,
+   "source": "look.fbx"
+  },
+  "wave": {
+   "duration": 1.8667,
+   "loop": false,
+   "source": "wave.fbx"
+  },
+  "bow": {
+   "duration": 2.2667,
+   "loop": false,
+   "source": "bow.fbx"
+  },
+  "eat": {
+   "duration": 3.9333,
+   "loop": false,
+   "source": "eat.fbx"
+  },
+  "cheer": {
+   "duration": 2.9,
+   "loop": false,
+   "source": "cheer.fbx"
+  },
+  "point": {
+   "duration": 2.2667,
+   "loop": false,
+   "source": "point.fbx"
+  },
+  "add_ref": {
+   "duration": 0.0,
+   "loop": false,
+   "additive": "reference",
+   "bones": [
+    "spine",
+    "spine1",
+    "spine2",
+    "neck",
+    "head"
+   ]
+  },
+  "add_nod": {
+   "duration": 0.6,
+   "loop": false,
+   "additive": true,
+   "peakDeg": 12.0
+  },
+  "add_shake": {
+   "duration": 0.8,
+   "loop": false,
+   "additive": true,
+   "peakDeg": 11.0
+  },
+  "add_look_l": {
+   "duration": 0.4,
+   "loop": false,
+   "additive": true,
+   "turnDeg": 35.0,
+   "note": "eases from the reference to the full turn and ends there: clamp it and fade its weight"
+  },
+  "add_look_r": {
+   "duration": 0.4,
+   "loop": false,
+   "additive": true,
+   "turnDeg": 35.0,
+   "note": "eases from the reference to the full turn and ends there: clamp it and fade its weight"
   },
   "crouch": {
    "duration": 3.0,
@@ -65,10 +145,10 @@
   "lookup": {
    "duration": 4.0,
    "loop": true
-  },
-  "wave": {
-   "duration": 1.5,
-   "loop": false
   }
+ },
+ "clipSpeed": {
+  "walk": 0.956,
+  "run": 2.295
  }
 }

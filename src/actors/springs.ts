@@ -57,6 +57,7 @@ export class Springs {
   }
 
   get count(): number { return this.links.length; }
+  get bones(): THREE.Bone[] { return this.links.map((l) => l.bone); }
 
   /** wind: world xz direction × strength (0…1). */
   update(dt: number, wind: THREE.Vector2, windK: number): void {
