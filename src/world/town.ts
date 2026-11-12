@@ -4,7 +4,7 @@ import { Builder, rng, range, pick, vary, solid, sagCurve } from "./geo";
 import { STREET, SHORE, GATES, STALLS, stallX, STALL_W } from "./layout";
 import { ToonMaterial, lanternSwing, paperGlow, windCloth, type LightSpot } from "../render/toon";
 import { pavingMaterial, stoneMaterial, roofMaterial, sandMaterial, plasterMaterial, woodMaterial, latticeMaterial } from "../render/surfaces";
-import { windowGlow, lanternPaper, noOutline, norenMaterial } from "../render/townMats";
+import { windowGlow, lanternPaper, noOutline, norenMaterial, shopInterior } from "../render/townMats";
 
 /**
  * The street, its houses, the shore, and everything strung overhead. Static geometry is merged
@@ -32,18 +32,57 @@ const TIN = ["#6d98a3", "#8eb3ae", "#b7c9c2", "#9a8f86"];
 const ROOF = ["#4e5868", "#5a6374", "#6c5650", "#435062", "#5f6b6b"];
 const NOREN = ["#2f4a7a", "#7a2f3a", "#3f6a5a", "#a8562a", "#2b2b3a", "#5a3a7a"];
 
+/** What a shop sells: wall colours and the palette of its goods. */
+const SHOPS = [
+  { back: "#e8c896", side: "#c99a66", goods: ["#d84b3a", "#f0c040", "#f4efe6", "#e88aa0", "#7ab0d8"], shape: "box" }, // sweets & toys
+  { back: "#e2c9a0", side: "#b88a5a", goods: ["#5f7fa8", "#c9b89a", "#8a5a3a", "#e9e2d2", "#3f5f5a"], shape: "pot" }, // pottery
+  { back: "#ecd2a4", side: "#c8955c", goods: ["#a8322a", "#2f4a7a", "#e0a040", "#5a8a5a", "#f2e6cc"], shape: "cloth" }, // fabric & fans
+  { back: "#e6cfa0", side: "#b98c5e", goods: ["#6a8a3a", "#c8562a", "#e8c050", "#8a3a4a", "#d8d0b0"], shape: "jar" }, // pickles & tea
+] as const;
+type Shop = (typeof SHOPS)[number];
+
+/** One item of stock sitting on a surface at y (centre x, z; footprint ~sz). */
+function goods(b: Builder, r: () => number, k: Shop, x: number, y: number, z: number, sz: number) {
+  const c = vary(pick(r, k.goods as unknown as string[]), r, 0.08);
+  const roll = r();
+  if (k.shape === "pot" || (roll < 0.3 && k.shape !== "cloth")) {
+    const h = sz * range(r, 0.7, 1.3);
+    b.cyl(sz * 0.38, sz * 0.48, h, c, x, y + h / 2, z, 10);
+    if (r() < 0.5) b.cyl(sz * 0.2, sz * 0.36, h * 0.25, c, x, y + h + h * 0.12, z, 10);
+  } else if (k.shape === "jar" || roll < 0.5) {
+    const h = sz * range(r, 1.0, 1.6);
+    b.cyl(sz * 0.32, sz * 0.32, h, c, x, y + h / 2, z, 8);
+    b.cyl(sz * 0.34, sz * 0.34, h * 0.12, "#3a2a20", x, y + h + h * 0.06, z, 8);
+  } else if (k.shape === "cloth") {
+    // Folded cloth stacks.
+    let yy = y;
+    for (let i = 0, n = 2 + Math.floor(r() * 3); i < n; i++) {
+      const hh = sz * 0.18;
+      b.box(sz, hh, sz * 0.8, vary(pick(r, k.goods as unknown as string[]), r, 0.08), x, yy + hh / 2, z);
+      yy += hh;
+    }
+  } else {
+    const h = sz * range(r, 0.6, 1.1);
+    b.box(sz * 0.9, h, sz * 0.8, c, x, y + h / 2, z, range(r, -0.2, 0.2));
+    if (r() < 0.4) b.box(sz * 0.92, h * 0.12, sz * 0.82, "#f4efe6", x, y + h * 0.7, z);
+  }
+}
+
 /** Local frame of a house: facade plane at z = 0 facing +z, width along +x from 0 to w. */
-interface HouseOut { wood: Builder; plaster: Builder; roof: Builder; paper: Builder; lattice: Builder; noren: { x: number; w: number; color: string }[]; lanterns: THREE.Vector3[]; chimes: THREE.Vector3[] }
+interface HouseOut { wood: Builder; plaster: Builder; roof: Builder; paper: Builder; lattice: Builder; shop: Builder; noren: { x: number; w: number; color: string }[]; lanterns: THREE.Vector3[]; chimes: THREE.Vector3[] }
 
 function house(w: number, r: () => number, o: HouseOut, depth = 7.5, tall = false): void {
-  const { wood, plaster, roof, paper, lattice } = o;
+  const { wood, plaster, roof, paper, shop } = o;
   const H1 = 3.0, H2 = tall ? 2.9 : 2.5, H = H1 + H2;
   const wd = pick(r, WOOD), dk = pick(r, DARKWOOD);
   const seaside = r() < 0.3;
   const wall = seaside ? pick(r, TIN) : pick(r, PLASTER);
   const roofC = pick(r, ROOF);
-  // Body.
-  plaster.box(w, H, depth, vary(wall, r), w / 2, H / 2, -depth / 2);
+  // Body: the upper floor over the full depth; the ground floor set back behind the open shop.
+  const D = 1.7;
+  const wc = vary(wall, r);
+  plaster.box(w, H - H1, depth, wc, w / 2, H1 + (H - H1) / 2, -depth / 2);
+  plaster.box(w, H1, depth - D, wc, w / 2, H1 / 2, -D - (depth - D) / 2);
   // Plinth.
   wood.box(w + 0.02, 0.22, 0.12, "#5c5a58", w / 2, 0.11, 0.03);
   // Posts and beams.
@@ -55,31 +94,44 @@ function house(w: number, r: () => number, o: HouseOut, depth = 7.5, tall = fals
   wood.box(w, 0.2, 0.2, wd, w / 2, H1, 0.08);
   wood.box(w, 0.16, 0.18, wd, w / 2, H - 0.08, 0.06);
 
-  // Ground floor: shop front with a noren, or a lattice front.
-  const shop = r() < 0.55;
-  if (shop) {
-    const dw = Math.min(w - 1.0, range(r, 1.8, 2.6));
-    const dx = range(r, 0.5, w - dw - 0.5);
-    // Dark interior recess with a warm-lit back (glows at night).
-    wood.box(dw, H1 - 0.25, 0.05, dk, dx + dw / 2, (H1 - 0.25) / 2 + 0.12, -0.75);
-    paper.box(dw * 0.8, 1.2, 0.04, "#f5e2c0", dx + dw / 2, 1.5, -0.72);
-    wood.box(dw, 0.04, 0.8, "#6e5a48", dx + dw / 2, 0.14, -0.35);
-    for (const s of [dx, dx + dw]) wood.box(0.06, H1, 0.8, dk, s, H1 / 2, -0.38);
-    o.noren.push({ x: dx + dw / 2, w: dw, color: pick(r, NOREN) });
-    // Lattice on the rest.
-    // Lattice either side of the door (slats drawn by the lattice shader).
-    if (dx > 0.35) lattice.box(dx - 0.25, H1 - 0.5, 0.04, dk, 0.15 + (dx - 0.25) / 2, (H1 - 0.5) / 2 + 0.25, 0.1);
-    const rw = w - (dx + dw) - 0.25;
-    if (rw > 0.2) lattice.box(rw, H1 - 0.5, 0.04, dk, dx + dw + 0.1 + rw / 2, (H1 - 0.5) / 2 + 0.25, 0.1);
-    // Signboard over the door.
-    wood.box(Math.min(dw, 1.6), 0.38, 0.06, pick(r, ["#2b2018", "#7a5a32", "#efe2c6"]), dx + dw / 2, H1 + 0.38, 0.17);
-    if (r() < 0.7) o.lanterns.push(new THREE.Vector3(dx - 0.25, H1 - 0.2, 0.45));
-  } else {
-    lattice.box(w - 0.24, H1 - 0.4, 0.04, dk, w / 2, (H1 - 0.4) / 2 + 0.22, 0.1);
-    wood.box(w - 0.2, 0.06, 0.07, dk, w / 2, 0.25, 0.1);
-    wood.box(w - 0.2, 0.06, 0.07, dk, w / 2, H1 - 0.18, 0.1);
-    paper.box(w - 0.4, H1 - 0.7, 0.02, "#f2e6cc", w / 2, H1 / 2 + 0.05, 0.02);
+  // Ground floor: an open shop. A lamp-lit recess with shelves of goods, a display platform at
+  // the front, a noren across the top of the opening and a signboard over the beam.
+  const o0 = 0.3, o1 = w - 0.3, ow = o1 - o0, oh = H1 - 0.3, cx = w / 2;
+  for (const x of [0.15, w - 0.15]) wood.box(0.3, H1, D, wd, x, H1 / 2, -D / 2);
+  wood.box(w, 0.32, 0.12, wd, cx, H1 - 0.16, 0.03);
+  const kind = pick(r, SHOPS);
+  shop.box(ow, oh, 0.05, kind.back, cx, oh / 2, -D + 0.03);
+  for (const x of [o0 + 0.03, o1 - 0.03]) shop.box(0.05, oh, D, kind.side, x, oh / 2, -D / 2);
+  shop.box(ow, 0.05, D, "#9a6e48", cx, oh, -D / 2);
+  shop.box(ow, 0.14, D, "#b08860", cx, 0.07, -D / 2);
+  // Shelves along the back wall, stocked.
+  const shelves = [0.7, 1.22, 1.74, 2.2].filter((y) => y < oh - 0.3);
+  for (const y of shelves) {
+    shop.box(ow - 0.2, 0.04, 0.34, "#8a5e3a", cx, y, -D + 0.22);
+    let x = o0 + 0.18;
+    while (x < o1 - 0.25) {
+      const sz = range(r, 0.12, 0.24);
+      goods(shop, r, kind, x + sz / 2, y + 0.02, -D + 0.22 + range(r, -0.05, 0.05), sz);
+      x += sz + range(r, 0.03, 0.1);
+    }
   }
+  // Display platform out front with goods on it, leaving a way in.
+  const pw = Math.min(ow * 0.42, 2.2);
+  for (const px of [o0 + pw / 2 + 0.1, o1 - pw / 2 - 0.1]) {
+    if (r() < 0.25) continue;
+    wood.box(pw, 0.42, 0.6, "#8a6444", px, 0.21, -0.42);
+    let x = px - pw / 2 + 0.12;
+    while (x < px + pw / 2 - 0.18) {
+      const sz = range(r, 0.16, 0.3);
+      goods(shop, r, kind, x + sz / 2, 0.42, -0.42 + range(r, -0.12, 0.12), sz);
+      x += sz + range(r, 0.04, 0.12);
+    }
+  }
+  // A paper lamp inside lights it; sometimes one at the door too.
+  o.lanterns.push(new THREE.Vector3(cx + range(r, -0.6, 0.6), oh - 0.32, -D / 2 - 0.1));
+  if (r() < 0.5) o.lanterns.push(new THREE.Vector3(o0 + 0.15, H1 - 0.55, 0.45));
+  o.noren.push({ x: cx, w: Math.min(ow - 0.2, range(r, 2.2, 3.4)), color: pick(r, NOREN) });
+  wood.box(Math.min(ow, 1.6), 0.38, 0.06, pick(r, ["#2b2018", "#7a5a32", "#efe2c6"]), cx, H1 + 0.38, 0.17);
   // Upper floor windows with lattice over shoji paper.
   const nw = w > 5 ? 2 : 1;
   for (let k = 0; k < nw; k++) {
@@ -126,15 +178,15 @@ export function buildTown(): Town {
   const chimes: THREE.Vector3[] = [];
   const r = rng(20260712);
 
-  const wood = new Builder(), plaster = new Builder(), roof = new Builder(), paper = new Builder(), lattice = new Builder();
+  const wood = new Builder(), plaster = new Builder(), roof = new Builder(), paper = new Builder(), lattice = new Builder(), shop = new Builder();
   const houseLanterns: THREE.Vector3[] = [];
   const noren: { m: THREE.Matrix4; x: number; w: number; color: string }[] = [];
 
   /** Places a house built in its local frame. */
   const place = (m: THREE.Matrix4, w: number, tall = false, depth = 7.5) => {
-    const o: HouseOut = { wood: new Builder(), plaster: new Builder(), roof: new Builder(), paper: new Builder(), lattice: new Builder(), noren: [], lanterns: [], chimes: [] };
+    const o: HouseOut = { wood: new Builder(), plaster: new Builder(), roof: new Builder(), paper: new Builder(), lattice: new Builder(), shop: new Builder(), noren: [], lanterns: [], chimes: [] };
     house(w, r, o, depth, tall);
-    for (const [src, dst] of [[o.wood, wood], [o.plaster, plaster], [o.roof, roof], [o.paper, paper], [o.lattice, lattice]] as const) {
+    for (const [src, dst] of [[o.wood, wood], [o.plaster, plaster], [o.roof, roof], [o.paper, paper], [o.lattice, lattice], [o.shop, shop]] as const) {
       if (src.empty) continue;
       const g = src.build();
       g.applyMatrix4(m);
@@ -323,7 +375,8 @@ export function buildTown(): Town {
   group.add(solid(wood.build(), woodMaterial()));
   group.add(solid(plaster.build(), plasterMaterial()));
   group.add(solid(roof.build(), roofMaterial()));
-  group.add(solid(lattice.build(), latticeMaterial()));
+  if (!lattice.empty) group.add(solid(lattice.build(), latticeMaterial()));
+  group.add(solid(shop.build(), shopInterior()));
   const pm = windowGlow();
   group.add(solid(paper.build(), pm, false));
 

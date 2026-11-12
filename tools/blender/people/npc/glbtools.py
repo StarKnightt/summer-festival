@@ -156,6 +156,65 @@ def compact(js, binc):
     return newbin
 
 
+def _as_unit_float(js, binc, i):
+    a = js["accessors"][i]
+    arr = accessor(js, binc, i).astype(np.float64)
+    if a["componentType"] == 5121:
+        arr /= 255.0
+    elif a["componentType"] == 5123:
+        arr /= 65535.0
+    return arr
+
+
+def quantize_attributes(js, binc):
+    """Store WEIGHTS_0 and COLOR_0 as normalized UNSIGNED_BYTE (core glTF 2.0, no extension needed).
+    Weights are rounded so every vertex still sums to exactly 255. Returns the new binary chunk;
+    the old accessors become unreferenced (run compact() afterwards)."""
+    out = bytearray(binc)
+    done = {}
+
+    def add_view(raw):
+        pad = (4 - len(out) % 4) % 4
+        out.extend(b"\0" * pad)
+        off = len(out)
+        out.extend(raw)
+        js["bufferViews"].append({"buffer": 0, "byteOffset": off, "byteLength": len(raw), "target": 34962})
+        return len(js["bufferViews"]) - 1
+
+    for m in js.get("meshes", []):
+        for p in m["primitives"]:
+            for key in ("WEIGHTS_0", "COLOR_0"):
+                ai = p["attributes"].get(key)
+                if ai is None or js["accessors"][ai]["componentType"] == 5121:
+                    continue
+                if ai in done:
+                    p["attributes"][key] = done[ai]
+                    continue
+                a = js["accessors"][ai]
+                f = np.clip(_as_unit_float(js, binc, ai), 0.0, 1.0)
+                if a["type"] == "VEC3":       # pad colour to RGBA so each element stays 4-byte aligned
+                    f = np.hstack([f, np.ones((len(f), 1))])
+                q = np.rint(f * 255.0).astype(np.int64)
+                if key == "WEIGHTS_0":
+                    s = f.sum(1, keepdims=True)
+                    f = f / np.where(s > 0, s, 1.0)
+                    q = np.floor(f * 255.0).astype(np.int64)
+                    rem = 255 - q.sum(1)
+                    frac = f * 255.0 - q
+                    order = np.argsort(-frac, axis=1)
+                    for r in range(4):
+                        sel = rem > r
+                        q[np.where(sel)[0], order[sel, r]] += 1
+                q = np.clip(q, 0, 255).astype(np.uint8)
+                bv = add_view(q.tobytes())
+                js["accessors"].append({"bufferView": bv, "componentType": 5121, "normalized": True,
+                                        "count": int(len(q)), "type": "VEC4"})
+                done[ai] = len(js["accessors"]) - 1
+                p["attributes"][key] = done[ai]
+    js["buffers"][0]["byteLength"] = len(out)
+    return bytes(out)
+
+
 # ---------------------------------------------------------------- transforms
 
 def quat_mat(q):

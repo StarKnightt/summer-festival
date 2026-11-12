@@ -60,8 +60,11 @@ def preview_material(base, v):
         nt.links.new(tex.outputs["Color"], mul2.inputs[7])
         out = mul2.outputs[2]
     if base.name == "face":
+        # the game draws face features unlit-ish: show them at their albedo
         nt.links.new(out, bsdf.inputs["Emission Color"])
-        bsdf.inputs["Emission Strength"].default_value = 0.6
+        bsdf.inputs["Emission Strength"].default_value = 1.0
+        bsdf.inputs["Base Color"].default_value = (0, 0, 0, 1)
+        return m
     nt.links.new(out, bsdf.inputs["Base Color"])
     return m
 
@@ -182,40 +185,111 @@ def lineup(arms, order, yaw=0.0, action=None, frame=0, slot=None, spacing=SPACIN
     bpy.context.view_layer.update()
 
 
-def run_all(arms, meshes, order, outdir, actions, root_scale=None):
+def show_lod(meshes, nears, which, only=None):
+    """which: 'near' | 'far'; only: a variant to show alone (others hidden)."""
+    for v in meshes:
+        vis = only is None or v == only
+        meshes[v].hide_render = not (vis and which == "far")
+        nears[v].hide_render = not (vis and which == "near")
+
+
+def side_by_side(paths, out, gap=8):
+    ims = [bpy.data.images.load(p, check_existing=False) for p in paths]
+    arrs = []
+    for im in ims:
+        a = np.empty(im.size[0] * im.size[1] * 4, dtype=np.float32)
+        im.pixels.foreach_get(a)
+        arrs.append(a.reshape(im.size[1], im.size[0], 4))
+    h = max(a.shape[0] for a in arrs)
+    sep = np.ones((h, gap, 4), dtype=np.float32)
+    parts = []
+    for k, a in enumerate(arrs):
+        if k:
+            parts.append(sep)
+        parts.append(a)
+    img = np.concatenate(parts, 1)
+    o = bpy.data.images.new("prev_sbs", img.shape[1], img.shape[0], alpha=False)
+    o.pixels.foreach_set(img.ravel())
+    o.filepath_raw = out
+    o.file_format = "PNG"
+    o.save()
+    for im in ims + [o]:
+        bpy.data.images.remove(im)
+    for p in paths:
+        try:
+            os.remove(p)
+        except OSError:
+            pass
+    return out
+
+
+def solo(arms, order, v, action, frame, yaw=0.0):
+    """Put variant v alone at the origin, the others parked far away."""
+    for i, w in enumerate(order):
+        lineup({w: arms[w]}, [w], yaw, action, frame)
+        if w != v:
+            arms[w].location = (50 + 3 * i, 50, 0)
+    arms[v].location = (0, 0, 0)
+    bpy.context.scene.frame_set(frame)
+    bpy.context.view_layer.update()
+
+
+def run_all(arms, meshes, nears, order, outdir, actions, root_scale=None):
     ROOT_SCALE.clear()
     ROOT_SCALE.update(root_scale or {})
-    setup(meshes)
+    setup({v: meshes[v] for v in order})
+    setup({v: nears[v] for v in order})
+    sc = bpy.context.scene
     shots = []
     gpu_r = None
-    # lineups at the first idle frame: front, 3/4, back
+    # near lineups at the first idle frame: front, 3/4, back; far 3/4 for reference
+    show_lod(meshes, nears, "near")
     for tag, yaw in (("front", 0.0), ("threequarter", -38.0), ("back", 180.0)):
         lineup(arms, order, yaw, actions.get("idle"), 0)
         camera((0, -6.2, 1.0), (0, 0, 0.85), lens=45)
         shots.append(render(os.path.join(outdir, f"lineup_{tag}.png")))
         if gpu_r is None:
             gpu_r = gpu_check()
-    # game camera: 3 m back, 1.7 m up, slightly down, behind the lineup looking at their faces
-    lineup(arms, order, 0.0, actions.get("idle"), 0)
-    camera((0.4, -3.4, 1.7), (0, 0, 1.0), lens=30)
-    shots.append(render(os.path.join(outdir, "gamecam_idle.png")))
-    # clip frames from a street-level camera ~4 m away (3/4 side so legs read)
-    for clip, frame in (("walk", 7), ("walk", 22), ("run", 4), ("run", 11), ("wave", 15), ("call", 20), ("call", 60),
-                        ("talk", 25), ("fan", 22), ("lookup", 30), ("sparkler", 9)):
+    show_lod(meshes, nears, "far")
+    lineup(arms, order, -38.0, actions.get("idle"), 0)
+    shots.append(render(os.path.join(outdir, "lineup_threequarter_far.png")))
+    # game-camera close-ups, near | far side by side: ~1.5 m high, ~2.7 m away, 3/4 front
+    sc.render.resolution_x, sc.render.resolution_y = 900, 1000
+    for v, clip, frame, yaw in (("man", "idle", 30, -25.0), ("woman", "idle", 30, -25.0), ("woman", "walk", 7, -40.0),
+                                ("woman", "walk", 22, -40.0), ("woman", "sparkler", 9, -40.0), ("woman", "wave", 15, -25.0),
+                                ("man", "call", 20, -30.0), ("elder", "fan", 22, -30.0), ("man", "talk", 25, -25.0)):
+        act = actions.get(clip)
+        tmp = []
+        for which in ("near", "far"):
+            solo(arms, order, v, act, frame, yaw)
+            show_lod(meshes, nears, which, only=v)
+            camera((0.9, -2.55, 1.5), (0, 0, 1.0), lens=38)
+            tmp.append(render(os.path.join(outdir, f"_tmp_{which}.png")))
+        shots.append(side_by_side(tmp, os.path.join(outdir, f"closeup_{v}_{clip}_{frame:02d}_near_vs_far.png")))
+    sc.render.resolution_x, sc.render.resolution_y = 1600, 900
+    # clip frames of the near LODs from a street-level camera ~4 m away
+    show_lod(meshes, nears, "near")
+    for clip, frame in (("idle", 60), ("walk", 7), ("walk", 22), ("run", 4), ("run", 11), ("wave", 15), ("call", 20),
+                        ("call", 60), ("talk", 25), ("fan", 22), ("lookup", 30), ("sparkler", 9)):
         act = actions.get(clip)
         if act is None:
             continue
         lineup(arms, order, 70.0, act, frame)
         camera((2.2, -4.2, 1.15), (0, 0, 0.8), lens=32)
         shots.append(render(os.path.join(outdir, f"clip_{clip}_{frame:02d}.png")))
-    # face close-ups
-    bpy.context.scene.render.resolution_x = bpy.context.scene.render.resolution_y = 600
-    for i, v in enumerate(order):
-        lineup(arms, order, 0.0, None, 0)
-        a = arms[v]
-        top = max((a.matrix_world @ b.tail_local).z for b in a.data.bones if b.name == "head")
-        x = a.location.x
-        camera((x + 0.25, -1.05, top - 0.10), (x, 0, top - 0.13), lens=85)
-        shots.append(render(os.path.join(outdir, f"face_{v}.png")))
-    bpy.context.scene.render.resolution_x, bpy.context.scene.render.resolution_y = 1600, 900
+    # face close-ups, near | far
+    sc.render.resolution_x = sc.render.resolution_y = 600
+    for v in order:
+        tmp = []
+        for which in ("near", "far"):
+            solo(arms, order, v, actions.get("idle"), 0)
+            show_lod(meshes, nears, which, only=v)
+            a = arms[v]
+            pb = a.pose.bones["head"]
+            hp = a.matrix_world @ pb.head
+            camera((hp.x + 0.14, hp.y - 0.62, hp.z + 0.07), (hp.x, hp.y, hp.z + 0.06), lens=85)
+            tmp.append(render(os.path.join(outdir, f"_tmp_{which}.png")))
+        shots.append(side_by_side(tmp, os.path.join(outdir, f"face_{v}.png")))
+    sc.render.resolution_x, sc.render.resolution_y = 1600, 900
+    show_lod(meshes, nears, "near")
     return shots, gpu_r

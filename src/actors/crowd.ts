@@ -30,6 +30,9 @@ interface Npc {
   next: number;
   look: THREE.Vector3 | null;
   head: THREE.Bone | null;
+  /** Detailed mesh for close range (npc_X_near) and the simple one (npc_X_body). */
+  near: THREE.Object3D | null;
+  far: THREE.Object3D | null;
 }
 
 /** Per-variant palettes for cloth_main / cloth_accent (yukata colours). */
@@ -112,7 +115,9 @@ export class Crowd {
     for (const c of this.clips) acts.set(c.name, mixer.clipAction(c));
     const hand = root.getObjectByName("hand_R") ?? null;
     const head = (root.getObjectByName("head") as THREE.Bone) ?? null;
-    const npc: Npc = { root, v, mode, mixer, acts, cur: null, pos: root.position, heading, speed: 0, lane: x, dir: -1, side: 0, hand, oneShot: 0, acc: Math.random(), next: rand(2, 8), look: null, head };
+    let near: THREE.Object3D | null = null, far: THREE.Object3D | null = null;
+    root.traverse((o) => { if (/_near$/.test(o.name)) near = o; else if (/_body$/.test(o.name)) far = o; });
+    const npc: Npc = { root, v, mode, mixer, acts, cur: null, pos: root.position, heading, speed: 0, lane: x, dir: -1, side: 0, hand, oneShot: 0, acc: Math.random(), next: rand(2, 8), look: null, head, near, far };
     this.npcs.push(npc);
     return npc;
   }
@@ -216,6 +221,12 @@ export class Crowd {
       // Hidden when far, and when someone brushes right past the lens.
       n.root.visible = dc < 70 && dc > 0.75;
       if (!n.root.visible) continue;
+      // Level of detail: the soft, detailed body up close, the simple one further off.
+      if (n.near && n.far) {
+        const close = dc < (n.near.visible ? 13 : 11);
+        n.near.visible = close;
+        n.far.visible = !close;
+      }
       n.acc += dt;
       const step = dc < 18 ? 0 : dc < 35 ? 1 / 30 : 1 / 12;
       if (n.acc >= step) { n.mixer.update(n.acc); n.acc = 0; }

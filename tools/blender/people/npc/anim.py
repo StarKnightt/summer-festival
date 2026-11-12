@@ -210,7 +210,10 @@ def sleeves(fk, frames_pose, frames_absq, frames_ps, loop=True):
     for side in ("L", "R"):
         P = np.array([fk.head(frames_pose[i], f"sleeve_{side}1") for i in range(n)])
         if loop:
-            vel = (np.roll(P, -1, 0) - np.roll(P, 1, 0)) * FPS / 2
+            # frames hold n+1 keys with the last == the first: difference the n unique ones cyclically
+            P0 = P[:-1]
+            vel = (np.roll(P0, -1, 0) - np.roll(P0, 1, 0)) * FPS / 2
+            vel = np.vstack([vel, vel[:1]])
         else:
             vel = np.gradient(P, axis=0) * FPS
         for i in range(n):
@@ -289,10 +292,29 @@ class Gait:
 
 # ---------------------------------------------------------------- clip builders
 
-def relaxed(side, swing=0.0, e=14.0, out=9.0, fwd=3.0):
+# Relaxed arm (all clips): the upper arm hangs a little away from the body (out, deg from vertical) and a
+# little forward (fwd), the elbow is softly bent (e, 15-35 deg), the wrist flexes slightly toward the
+# palm with a touch of ulnar deviation. Positive swing = upper arm back.
+ARM_E, ARM_OUT, ARM_FWD = 24.0, 13.0, 7.0
+WRIST_RELAXED = (12.0, -4.0, 0.0)
+
+
+def relaxed(side, swing=0.0, e=ARM_E, out=ARM_OUT, fwd=ARM_FWD, wrist=WRIST_RELAXED, pro=0.0):
     sg = 1.0 if side == "L" else -1.0
     u = Rx(swing) @ rot(Y, -sg * out) @ Rx(-fwd) @ DOWN
-    return dict(u=u, e=e, hint=FWD, wrist=(4.0, 0.0, 0.0))
+    a = dict(u=u, e=e, hint=FWD, wrist=tuple(wrist))
+    if pro:
+        a["pro"] = pro
+    return a
+
+
+def swing_arm(side, phi, ph0, amp, lag, e0, follow=0.07, gain=1.15, fwd_bend=6.0, e_lim=(15.0, 36.0)):
+    """Pendular arm swing with follow-through: the forearm's own swing lags the upper arm's by
+    `follow` of a cycle, so the elbow opens on the back-swing and closes on the forward swing."""
+    sw = -amp * math.cos(2 * math.pi * (phi - ph0 - lag))                  # upper arm (+ = back)
+    swf = -amp * gain * math.cos(2 * math.pi * (phi - ph0 - lag - follow))  # forearm, lagging
+    e = e0 + (sw - swf) + fwd_bend * max(0.0, -sw) / amp
+    return sw, float(np.clip(e, *e_lim))
 
 
 def frames(fn, n, fk, loop=True):
@@ -347,12 +369,11 @@ def walk_pose(fk, g, phi, sparkler=False):
     for side in ("L", "R"):
         A, pitch = g.foot(side, phi)
         ps.feet[side] = (A, pitch, 0.0)
-    lag = 0.04
-    swL = -15.0 * math.cos(2 * math.pi * (phi - 0.5 - lag))
-    swR = -15.0 * math.cos(2 * math.pi * (phi - lag))
-    for side, sw in (("L", swL), ("R", swR)):
-        a = relaxed(side, sw, e=14.0 + 10.0 * max(0.0, -sw) / 15.0)
-        ps.arms[side] = a
+    for side, ph0 in (("L", 0.5), ("R", 0.0)):
+        sw, e = swing_arm(side, phi, ph0, 17.0, 0.04, ARM_E - 2.0)
+        # wrist trails the forearm a little more (flicks back at the end of the forward swing)
+        wl = 12.0 + 6.0 * math.sin(2 * math.pi * (phi - ph0 - 0.18))
+        ps.arms[side] = relaxed(side, sw, e=e, wrist=(wl, -4.0, 0.0))
     if sparkler:
         w = 2 * math.pi * 2 * phi
         u = Rz(-6 * math.cos(w)) @ Rx(5 * math.sin(w)) @ norm(np.array([-0.18, -0.86, -0.30]))
@@ -380,10 +401,10 @@ def run_pose(fk, g, phi):
         ps.feet[side] = (A, pitch, 0.0)
     for side, ph0 in (("L", 0.5), ("R", 0.0)):
         sg = 1.0 if side == "L" else -1.0
-        sw = -38.0 * math.cos(2 * math.pi * (phi - ph0 - 0.03))
+        sw, e = swing_arm(side, phi, ph0, 38.0, 0.03, 82.0, follow=0.06, gain=1.08, fwd_bend=14.0, e_lim=(70.0, 104.0))
         u = Rx(sw) @ rot(Y, -sg * 18) @ DOWN
-        e = 80.0 + 18.0 * max(0.0, -sw) / 38.0
-        ps.arms[side] = dict(u=u, e=e, hint=norm(FWD + np.array([-sg * 0.25, 0, 0.0])), wrist=(10.0, 0.0, 0.0))
+        wl = 10.0 + 8.0 * math.sin(2 * math.pi * (phi - ph0 - 0.2))
+        ps.arms[side] = dict(u=u, e=e, hint=norm(FWD + np.array([-sg * 0.25, 0, 0.0])), wrist=(wl, -3.0, 0.0))
         ps.delta[f"shoulder_{side}"] = Rz(sg * 3.0 * math.sin(2 * math.pi * (phi - ph0)))
     ps.sleeve_g = 0.7
     return ps
@@ -411,9 +432,13 @@ def idle_pose(fk, t, T):
     ps.delta["head"] = Rz(9.0 * math.sin(w + 1.2)) @ Rx(2.5 * math.sin(2 * w + 0.8)) @ Ry(2.0 * math.sin(w + 2.0))
     for side in ("L", "R"):
         sg = 1.0 if side == "L" else -1.0
+        ph = 0.0 if side == "L" else 1.7
         ps.delta[f"shoulder_{side}"] = Rx(0.0) @ Ry(-sg * 0.8 * (br + 1))
-        a = relaxed(side, swing=2.0 * math.sin(w + (0 if side == "L" else 1.5)), e=16.0)
-        ps.arms[side] = a
+        # slow sway and weight-shift drift: never two identical arms, never a locked elbow
+        ps.arms[side] = relaxed(side, swing=-1.0 + 2.5 * math.sin(w + ph),
+                                e=ARM_E + 1.5 * sg + 4.0 * math.sin(w + ph + 0.8),
+                                out=ARM_OUT + 1.5 * math.sin(w + ph + 2.0) + 1.2 * sg * math.sin(w),
+                                wrist=(12.0 + 4.0 * math.sin(2 * w + ph), -4.0 + 2.0 * math.sin(w + ph), 3.0 * math.sin(w + ph + 1.0)))
     stance(fk, ps, 1.0, 7.0, (-0.03, 0.03))
     return ps
 
@@ -467,7 +492,7 @@ def call_pose(fk, t, T, cupped_cache):
     e = lerp(28.0 + 6 * gB, eA, k)
     hint = norm(lerp(np.array([0.0, -0.3, 1.0]), hA, k))
     ps.arms["R"] = dict(u=u, e=e, hint=hint, wrist=(lerp(-20.0, 0.0, k), 0.0, 0.0), pro=lerp(-80.0, 0.0, k))
-    ps.arms["L"] = relaxed("L", swing=-4.0 * k, e=lerp(18.0, 30.0, k))
+    ps.arms["L"] = relaxed("L", swing=-4.0 * k, e=lerp(ARM_E, 32.0, k))
     ps.delta["shoulder_R"] = Ry(6.0 * k) @ Rx(-4.0 * k)
     ps.sleeve_g = 0.85
     return ps
@@ -483,7 +508,7 @@ def talk_pose(fk, t, T):
     for side, g, tw in (("R", gR[0], gR[1]), ("L", gL[0], 0.0)):
         sg = 1.0 if side == "L" else -1.0
         u = Rx(-12.0 - 14.0 * g) @ rot(Y, -sg * (10.0 + 6 * g)) @ DOWN
-        ps.arms[side] = dict(u=u, e=55.0 + 35.0 * g, hint=FWD, wrist=(-10.0 * g, 0.0, 0.0), pro=-50.0 * g - 30 * tw)
+        ps.arms[side] = dict(u=u, e=55.0 + 35.0 * g, hint=FWD, wrist=(8.0 - 18.0 * g, -3.0, 0.0), pro=-50.0 * g - 30 * tw)
     ps.delta["head"] = ps.delta["head"] @ Rx(nod)
     return ps
 
@@ -507,7 +532,10 @@ def lookup_pose(fk, t, T):
     ps.delta["neck"] = Rx(-12.0)
     ps.delta["head"] = Rx(-22.0 + 2.0 * math.sin(2 * w)) @ Rz(8.0 * math.sin(w + 0.5)) @ Ry(2.5 * math.sin(w))
     for side in ("L", "R"):
-        ps.arms[side] = relaxed(side, swing=1.5 * math.sin(w), e=14.0, out=7.0)
+        sg = 1.0 if side == "L" else -1.0
+        ph = 0.0 if side == "L" else 2.1
+        ps.arms[side] = relaxed(side, swing=-0.5 + 2.0 * math.sin(w + ph), e=ARM_E - 2.0 + 3.0 * math.sin(w + ph + 1.1),
+                                out=ARM_OUT - 1.0 + 1.0 * math.sin(w + ph), wrist=(12.0 + 3.0 * math.sin(2 * w + ph), -4.0, 0.0))
     return ps
 
 

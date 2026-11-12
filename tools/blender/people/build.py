@@ -14,6 +14,8 @@ import sys
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+NEAR_BUDGET = int(os.environ.get("PEOPLE_NEAR_BUDGET", 12000))   # triangles per near-LOD mesh
+SIZE_BUDGET = 4 * 1024 * 1024
 REPO = os.path.abspath(os.path.join(HERE, "..", "..", ".."))
 if HERE not in sys.path:
     sys.path.insert(0, HERE)
@@ -73,8 +75,8 @@ def export_glb(path, col, carrier):
 def main(out, do_previews):
     import bpy
     import numpy as np
-    from npc import anim, bl, body, geo, glbtools, outfits, preview, rig
-    for m in (geo, rig, body, outfits, bl, anim, glbtools, preview):
+    from npc import anim, bl, body, geo, glbtools, near, outfits, preview, rig
+    for m in (geo, rig, body, outfits, near, bl, anim, glbtools, preview):
         importlib.reload(m)
     t0 = time.time()
     np.random.seed(7)
@@ -82,7 +84,7 @@ def main(out, do_previews):
     col = bl.fresh_collection()
     img = bl.pattern_image()
     mats = {n: bl.material(n, img if n == "cloth_main" else None) for n in bl.MAT_ORDER}
-    arms, meshes, bodies, stats = {}, {}, {}, {}
+    arms, meshes, nears, bodies, stats = {}, {}, {}, {}, {}
     for v in rig.ORDER:
         b = body.Body(v)
         outfits.BUILDERS[v](b)
@@ -108,6 +110,23 @@ def main(out, do_previews):
             print("[parts]", v, sorted(cnt.items(), key=lambda kv: -kv[1]))
         print(f"[build] {v}: {stats[v]['tris']} tris, {stats[v]['verts']} verts, materials "
               f"{[m.name for m in ob.data.materials]}")
+        # near LOD: same skeleton, same joints, its own skinned mesh next to the far one
+        nb_ = near.NearBody(v)
+        near.BUILDERS[v](nb_)
+        obn = bl.make_mesh(nb_.mb, arm, col, mats)
+        nears[v] = obn
+        stats[v].update(near_tris=bl.tri_count(obn), near_verts=len(obn.data.vertices))
+        if os.environ.get("PEOPLE_PARTS"):
+            cnt = {}
+            tagof = [(a, z, tg) for tg, a, z in nb_.mb.parts]
+            for f in nb_.mb.F:
+                t = next(tg for a, z, tg in tagof if a <= f[0] < z)
+                cnt[t] = cnt.get(t, 0) + len(f) - 2
+            print("[parts-near]", v, sorted(cnt.items(), key=lambda kv: -kv[1]))
+        print(f"[build] {v} near: {stats[v]['near_tris']} tris, {stats[v]['near_verts']} verts, materials "
+              f"{[m.name for m in obn.data.materials]}")
+        assert stats[v]["near_tris"] <= NEAR_BUDGET, (v, stats[v]["near_tris"])
+        assert {m.name for m in obn.data.materials} >= {m.name for m in ob.data.materials} - {"cloth_shoe"}, v
     # identical rest rotations across variants (what makes the shared clips valid)
     R0 = {b.name: np.array(b.matrix_local)[:3, :3] for b in arms["woman"].data.bones}
     for v in rig.ORDER:
@@ -147,6 +166,8 @@ def main(out, do_previews):
     carrier_nodes = set(glbtools.subtree(js, idx["npc_woman"]))
     removed = glbtools.prune_animations(js, carrier_nodes)
     binc = glbtools.compact(js, binc)
+    binc = glbtools.quantize_attributes(js, binc)
+    binc = glbtools.compact(js, binc)
     W, parent = glbtools.world_mats(js)
     variants = {}
     for v in rig.ORDER:
@@ -169,12 +190,16 @@ def main(out, do_previews):
         hair_top = Vb[:, 2].max()
         top_pt = [0.0, J["top"][1], hair_top]
         tl = local("head", top_pt)
-        mesh_node = next(i for i in sub if "mesh" in js["nodes"][i])
-        tris = next(m for m in glbtools.summarize(js, binc, 0)["meshes"] if m["name"] == js["meshes"][js["nodes"][mesh_node]["mesh"]]["name"])["tris"]
+        mesh_node = next(i for i in sub if "mesh" in js["nodes"][i] and js["nodes"][i]["name"] == f"npc_{v}_body")
+        near_node = next(i for i in sub if "mesh" in js["nodes"][i] and js["nodes"][i]["name"] == f"npc_{v}_near")
+        msum = {m["name"]: m for m in glbtools.summarize(js, binc, 0)["meshes"]}
+        tris = msum[js["meshes"][js["nodes"][mesh_node]["mesh"]]["name"]]["tris"]
+        near_tris = msum[js["meshes"][js["nodes"][near_node]["mesh"]]["name"]]["tris"]
         leg = P["hip"]
         variants[v] = dict(
-            node=f"npc_{v}", mesh=js["nodes"][mesh_node]["name"], height=round(float(hair_top), 3),
-            headTop=round(float(J["top"][2]), 3), hipHeight=leg, tris=tris,
+            node=f"npc_{v}", mesh=js["nodes"][mesh_node]["name"], nearMesh=js["nodes"][near_node]["name"],
+            height=round(float(hair_top), 3),
+            headTop=round(float(J["top"][2]), 3), hipHeight=leg, tris=tris, nearTris=near_tris,
             walkSpeed=round(anim.WALK_V * leg / rig.VARIANTS["woman"]["hip"], 3),
             runSpeed=round(anim.RUN_V * leg / rig.VARIANTS["kid"]["hip"], 3),
             rootScale={c: round(leg / clips[c]["refHip"], 4) for c in clips},
@@ -188,7 +213,9 @@ def main(out, do_previews):
         )
         js["nodes"][idx[f"npc_{v}"]].setdefault("extras", {})["npc"] = variants[v]
     js.setdefault("scenes", [{}])[0].setdefault("extras", {})["people"] = dict(
-        version=1, variants=list(rig.ORDER), clips=clips, clipCarrier="npc_woman",
+        version=2, variants=list(rig.ORDER), clips=clips, clipCarrier="npc_woman",
+        lod=dict(near="npc_X_near", far="npc_X_body", swapDistance=12.0, hysteresis=1.0,
+                 note="same skeleton; show _near within swapDistance of the camera, _body beyond"),
         bones=[b for b, _ in rig.BONES],
         materials=["skin", "face", "hair", "cloth_main", "cloth_accent", "cloth_dark", "wood_geta", "cloth_shoe"],
         clothMainPattern=dict(texture="people_cloth_pattern", columns=list(body.COLUMNS.keys()), note="greyscale; multiply by tint"),
@@ -197,6 +224,7 @@ def main(out, do_previews):
     js2, bin2 = glbtools.read(out)
     summ = glbtools.summarize(js2, bin2, size)
     print(f"[build] wrote {out} ({size / 1024:.0f} KiB), pruned {removed} channels")
+    assert size <= SIZE_BUDGET, size
     for m in summ["meshes"]:
         print(f"[glb] mesh {m['name']}: {m['tris']} tris, {m['materials']} {m['attributes']}")
     for a in summ["animations"]:
@@ -209,7 +237,7 @@ def main(out, do_previews):
         json.dump(summary, f, indent=1)
     if do_previews:
         rs = {(c, v): variants[v]["rootScale"][c] for v in rig.ORDER for c in clips}
-        shots, gpu_r = preview.run_all(arms, meshes, rig.ORDER, os.path.join(HERE, "previews"), actions, rs)
+        shots, gpu_r = preview.run_all(arms, meshes, nears, rig.ORDER, os.path.join(HERE, "previews"), actions, rs)
         summary["previews"] = [os.path.relpath(s, HERE) for s in shots]
         summary["gpu"] = gpu_r
         with open(os.path.join(HERE, "people_summary.json"), "w") as f:

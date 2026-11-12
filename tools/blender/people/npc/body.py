@@ -92,8 +92,7 @@ class Body:
                 F.append([a, a + 1, a + 1 + w, a + w])
         return F
 
-    def head(self):
-        nlon, nlat = 22, 14
+    def head(self, nlon=22, nlat=14):
         lats = np.linspace(-math.pi / 2 + 0.12, math.pi / 2 - 0.12, nlat)
         D = self.sphere_dirs(nlon, lats)
         Pts = self.head_point(D).reshape(-1, 3)
@@ -283,20 +282,20 @@ class Body:
         self.mb.add(V, Fo, mat, {"head": 1.0}, C=C, tag="hair")
         return V
 
-    def bun(self, dirv, dist, radii, mat="hair", band=True):
+    def bun(self, dirv, dist, radii, mat="hair", band=True, nu=12, nv=8, band_n=6):
         c = self.head_center()
         Rz = 0.56 * self.P["head"]
         d = norm(dirv)
         p = c + d * dist * Rz
         a, b = norm(np.cross(d, X)), X
-        V, F, U = ellipsoid(p, (X, norm(np.cross(d, X)), d), np.array(radii) * Rz, 12, 8)
+        V, F, U = ellipsoid(p, (X, norm(np.cross(d, X)), d), np.array(radii) * Rz, nu, nv)
         self.mb.add(V, F, mat, {"head": 1.0}, tag="bun")
         if band:
             q = p - d * radii[2] * Rz * 0.55
             ang = np.linspace(0, TAU, 13)[:-1]
             e1, e2 = X, norm(np.cross(d, X))
             path = [q + (e1 * math.cos(t) * radii[0] + e2 * math.sin(t) * radii[1]) * Rz * 0.86 for t in ang]
-            V, F, U, RI = sweep(path, 0.006 * self.lk, 6, closed_path=True)
+            V, F, U, RI = sweep(path, 0.006 * self.lk, band_n, closed_path=True)
             self.mb.add(V, F, "cloth_accent", {"head": 1.0}, tag="hairband")
         return p
 

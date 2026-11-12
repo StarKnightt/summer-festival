@@ -1,5 +1,5 @@
-// Proof screenshots on the production build (1920×1080): the street at sunset, day and night,
-// a task being played, and the fireworks finale. Output: shots/proof_*.png
+// Proof screenshots on the production build (1920×1080): the street at noon and at night,
+// a task being played, and three frames of the fireworks finale. Output: shots/proof_*.png
 import { openGame, waitReady } from "./lib/harness.mjs";
 import fs from "node:fs";
 
@@ -8,10 +8,10 @@ fs.mkdirSync("shots", { recursive: true });
 let fail = 0;
 const shot = (n) => page.screenshot({ path: `shots/proof_${n}.png` });
 try {
-  for (const tod of ["sunset", "day", "night"]) {
+  for (const tod of ["day", "night"]) {
     await page.goto(`${url}?play&fresh&tod=${tod}`);
     await waitReady(page);
-    await page.evaluate(() => { __play.debugTeleport(0.6, -33); __game.rig.yaw = Math.PI + 0.25; });
+    await page.evaluate(() => { __play.debugTeleport(0.6, -33); __game.rig.yaw = 0.25; /* behind her, looking down the street */ });
     // Hold the title card's controls hint out of frame; let the crowd settle in.
     await page.waitForTimeout(6000);
     await shot(tod);
@@ -29,19 +29,15 @@ try {
   await page.waitForTimeout(380);
   await shot("task");
   console.log("[proof] task");
-  // Fireworks: wait for a big burst, catch it blooming.
+  // Fireworks finale: three frames across the final barrage (show seconds 50-61).
   await page.goto(`${url}?play&fresh&tod=sunset`);
   await waitReady(page);
   await page.evaluate(() => { __play.debugComplete(); __play.debugTeleport(0.5, -110); });
-  await page.waitForTimeout(6000);
-  let got = false;
-  for (let i = 0; i < 300 && !got; i++) {
-    await page.waitForTimeout(100);
-    got = await page.evaluate(() => __play.fx.flashLevel > 0.9 && __play.fx.glow.list.length > 400);
+  for (const [i, at] of [[1, 54.5], [2, 58.5], [3, 61.6]]) {
+    for (let k = 0; k < 900 && (await page.evaluate(() => __play.fx.showTime)) < at; k++) await page.waitForTimeout(100);
+    await shot(`finale_${i}`);
+    console.log("[proof] finale", i, await page.evaluate(() => ({ t: __play.fx.showTime.toFixed(1), stars: __play.fx.glow.list.length })));
   }
-  await page.waitForTimeout(650);
-  await shot("fireworks");
-  console.log("[proof] fireworks", got ? "" : "(no burst caught)");
 } catch (e) { console.error(String(e?.stack ?? e)); fail++; }
 const fatal = await page.evaluate(() => window.__fatal).catch(() => null);
 if (fatal) { console.error("[fatal]", fatal); fail++; }

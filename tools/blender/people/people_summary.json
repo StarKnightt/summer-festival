@@ -1,10 +1,31 @@
 {
  "glb": {
-  "fileBytes": 1607000,
+  "fileBytes": 3167868,
   "meshes": [
    {
     "name": "npc_woman_body",
     "tris": 6298,
+    "materials": [
+     "skin",
+     "face",
+     "hair",
+     "cloth_main",
+     "cloth_accent",
+     "cloth_dark",
+     "wood_geta"
+    ],
+    "attributes": [
+     "COLOR_0",
+     "JOINTS_0",
+     "NORMAL",
+     "POSITION",
+     "TEXCOORD_0",
+     "WEIGHTS_0"
+    ]
+   },
+   {
+    "name": "npc_woman_near",
+    "tris": 11938,
     "materials": [
      "skin",
      "face",
@@ -45,8 +66,50 @@
     ]
    },
    {
+    "name": "npc_man_near",
+    "tris": 10610,
+    "materials": [
+     "skin",
+     "face",
+     "hair",
+     "cloth_main",
+     "cloth_accent",
+     "cloth_dark",
+     "wood_geta"
+    ],
+    "attributes": [
+     "COLOR_0",
+     "JOINTS_0",
+     "NORMAL",
+     "POSITION",
+     "TEXCOORD_0",
+     "WEIGHTS_0"
+    ]
+   },
+   {
     "name": "npc_kid_body",
     "tris": 4696,
+    "materials": [
+     "skin",
+     "face",
+     "hair",
+     "cloth_main",
+     "cloth_accent",
+     "cloth_dark",
+     "wood_geta"
+    ],
+    "attributes": [
+     "COLOR_0",
+     "JOINTS_0",
+     "NORMAL",
+     "POSITION",
+     "TEXCOORD_0",
+     "WEIGHTS_0"
+    ]
+   },
+   {
+    "name": "npc_kid_near",
+    "tris": 10456,
     "materials": [
      "skin",
      "face",
@@ -87,8 +150,50 @@
     ]
    },
    {
+    "name": "npc_keeper_near",
+    "tris": 11360,
+    "materials": [
+     "skin",
+     "face",
+     "hair",
+     "cloth_main",
+     "cloth_accent",
+     "cloth_dark",
+     "cloth_shoe"
+    ],
+    "attributes": [
+     "COLOR_0",
+     "JOINTS_0",
+     "NORMAL",
+     "POSITION",
+     "TEXCOORD_0",
+     "WEIGHTS_0"
+    ]
+   },
+   {
     "name": "npc_elder_body",
     "tris": 5748,
+    "materials": [
+     "skin",
+     "face",
+     "hair",
+     "cloth_main",
+     "cloth_accent",
+     "cloth_dark",
+     "wood_geta"
+    ],
+    "attributes": [
+     "COLOR_0",
+     "JOINTS_0",
+     "NORMAL",
+     "POSITION",
+     "TEXCOORD_0",
+     "WEIGHTS_0"
+    ]
+   },
+   {
+    "name": "npc_elder_near",
+    "tris": 11598,
     "materials": [
      "skin",
      "face",
@@ -243,10 +348,12 @@
   "woman": {
    "node": "npc_woman",
    "mesh": "npc_woman_body",
+   "nearMesh": "npc_woman_near",
    "height": 1.636,
    "headTop": 1.6,
    "hipHeight": 0.8,
    "tris": 6298,
+   "nearTris": 11938,
    "walkSpeed": 0.9,
    "runSpeed": 4.16,
    "rootScale": {
@@ -311,10 +418,12 @@
   "man": {
    "node": "npc_man",
    "mesh": "npc_man_body",
+   "nearMesh": "npc_man_near",
    "height": 1.75,
    "headTop": 1.74,
    "hipHeight": 0.875,
    "tris": 5356,
+   "nearTris": 10610,
    "walkSpeed": 0.984,
    "runSpeed": 4.55,
    "rootScale": {
@@ -379,10 +488,12 @@
   "kid": {
    "node": "npc_kid",
    "mesh": "npc_kid_body",
+   "nearMesh": "npc_kid_near",
    "height": 1.206,
    "headTop": 1.15,
    "hipHeight": 0.5,
    "tris": 4696,
+   "nearTris": 10456,
    "walkSpeed": 0.562,
    "runSpeed": 2.6,
    "rootScale": {
@@ -447,10 +558,12 @@
   "keeper": {
    "node": "npc_keeper",
    "mesh": "npc_keeper_body",
+   "nearMesh": "npc_keeper_near",
    "height": 1.707,
    "headTop": 1.7,
    "hipHeight": 0.85,
    "tris": 5204,
+   "nearTris": 11360,
    "walkSpeed": 0.956,
    "runSpeed": 4.42,
    "rootScale": {
@@ -515,10 +628,12 @@
   "elder": {
    "node": "npc_elder",
    "mesh": "npc_elder_body",
+   "nearMesh": "npc_elder_near",
    "height": 1.529,
    "headTop": 1.52,
    "hipHeight": 0.76,
    "tris": 5748,
+   "nearTris": 11598,
    "walkSpeed": 0.855,
    "runSpeed": 3.952,
    "rootScale": {
@@ -842,7 +957,7 @@
   }
  },
  "reimport": {
-  "objects": 15,
+  "objects": 20,
   "meshes": [
    {
     "name": "Icosphere",
@@ -883,8 +998,34 @@
     ]
    },
    {
+    "name": "npc_elder_near.001",
+    "tris": 11598,
+    "materials": [
+     "skin.001",
+     "face.001",
+     "hair.001",
+     "cloth_main.001",
+     "cloth_accent.001",
+     "cloth_dark.001",
+     "wood_geta.001"
+    ]
+   },
+   {
     "name": "npc_keeper_body.001",
     "tris": 5204,
+    "materials": [
+     "skin.001",
+     "face.001",
+     "hair.001",
+     "cloth_main.001",
+     "cloth_accent.001",
+     "cloth_dark.001",
+     "cloth_shoe.001"
+    ]
+   },
+   {
+    "name": "npc_keeper_near.001",
+    "tris": 11360,
     "materials": [
      "skin.001",
      "face.001",
@@ -909,6 +1050,19 @@
     ]
    },
    {
+    "name": "npc_kid_near.001",
+    "tris": 10456,
+    "materials": [
+     "skin.001",
+     "face.001",
+     "hair.001",
+     "cloth_main.001",
+     "cloth_accent.001",
+     "cloth_dark.001",
+     "wood_geta.001"
+    ]
+   },
+   {
     "name": "npc_man_body.001",
     "tris": 5356,
     "materials": [
@@ -922,8 +1076,34 @@
     ]
    },
    {
+    "name": "npc_man_near.001",
+    "tris": 10610,
+    "materials": [
+     "skin.001",
+     "face.001",
+     "hair.001",
+     "cloth_main.001",
+     "cloth_accent.001",
+     "cloth_dark.001",
+     "wood_geta.001"
+    ]
+   },
+   {
     "name": "npc_woman_body.001",
     "tris": 6298,
+    "materials": [
+     "skin.001",
+     "face.001",
+     "hair.001",
+     "cloth_main.001",
+     "cloth_accent.001",
+     "cloth_dark.001",
+     "wood_geta.001"
+    ]
+   },
+   {
+    "name": "npc_woman_near.001",
+    "tris": 11938,
     "materials": [
      "skin.001",
      "face.001",
@@ -969,5 +1149,38 @@
    "wave.001"
   ]
  },
- "buildSeconds": 5.1
+ "buildSeconds": 6.9,
+ "previews": [
+  "previews\\lineup_front.png",
+  "previews\\lineup_threequarter.png",
+  "previews\\lineup_back.png",
+  "previews\\lineup_threequarter_far.png",
+  "previews\\closeup_man_idle_30_near_vs_far.png",
+  "previews\\closeup_woman_idle_30_near_vs_far.png",
+  "previews\\closeup_woman_walk_07_near_vs_far.png",
+  "previews\\closeup_woman_walk_22_near_vs_far.png",
+  "previews\\closeup_woman_sparkler_09_near_vs_far.png",
+  "previews\\closeup_woman_wave_15_near_vs_far.png",
+  "previews\\closeup_man_call_20_near_vs_far.png",
+  "previews\\closeup_elder_fan_22_near_vs_far.png",
+  "previews\\closeup_man_talk_25_near_vs_far.png",
+  "previews\\clip_idle_60.png",
+  "previews\\clip_walk_07.png",
+  "previews\\clip_walk_22.png",
+  "previews\\clip_run_04.png",
+  "previews\\clip_run_11.png",
+  "previews\\clip_wave_15.png",
+  "previews\\clip_call_20.png",
+  "previews\\clip_call_60.png",
+  "previews\\clip_talk_25.png",
+  "previews\\clip_fan_22.png",
+  "previews\\clip_lookup_30.png",
+  "previews\\clip_sparkler_09.png",
+  "previews\\face_woman.png",
+  "previews\\face_man.png",
+  "previews\\face_kid.png",
+  "previews\\face_keeper.png",
+  "previews\\face_elder.png"
+ ],
+ "gpu": "NVIDIA GeForce RTX 4060/PCIe/SSE2"
 }

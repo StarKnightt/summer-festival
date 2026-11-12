@@ -24,6 +24,7 @@ export class Player {
   /** Extra round obstacles this frame (people, cats). */
   circles: { x: number; z: number; r: number }[] = [];
   distance = 0;
+  private idleT = 0;
 
   constructor(
     private her: Heroine,
@@ -49,7 +50,14 @@ export class Player {
     this.vel.x += (tx * target - this.vel.x) * (1 - Math.exp(-k * dt));
     this.vel.y += (tz * target - this.vel.y) * (1 - Math.exp(-k * dt));
     const sp = this.vel.length();
-    if (len > 0) her.heading = dampAngle(her.heading, Math.atan2(tx, tz), 9, dt);
+    if (len > 0) {
+      her.heading = dampAngle(her.heading, Math.atan2(tx, tz), 9, dt);
+      this.idleT = 0;
+    } else if (this.enabled) {
+      // Standing still: after a moment she turns to face down the street (toward the sea).
+      this.idleT += dt;
+      if (this.idleT > 1.2) her.heading = dampAngle(her.heading, Math.PI, 2.2, dt);
+    }
 
     const p = her.position;
     const ox = p.x, oz = p.z;

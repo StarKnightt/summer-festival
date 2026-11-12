@@ -18,6 +18,16 @@ export function windowGlow(): ToonMaterial {
   return m;
 }
 
+/**
+ * Inside the open shop fronts: lamp-lit wood, shelves and goods. They glow warmly in every light
+ * (a shop is lit inside even at noon, under the deep eave) and brighter after dusk.
+ */
+export function shopInterior(): ToonMaterial {
+  const m = new ToonMaterial({ vertexColors: true, paint: 0.25, rim: 0.15 });
+  m.emissiveNode = Fn(() => vertexColor().mul(vec3(1.0, 0.8, 0.58)).mul(float(0.5).add(U.night.mul(0.35))))();
+  return m;
+}
+
 /** Paper chochin: ribbed paper with black caps, glowing warm from inside in every light. */
 export function lanternPaper(glow = U.lantern): ToonMaterial {
   const m = new ToonMaterial({ color: "#ffffff", paint: 0, rim: 0.3, soft: 0.1 });

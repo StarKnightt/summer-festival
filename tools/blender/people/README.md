@@ -1,6 +1,6 @@
 # people.glb: festival townsfolk NPCs
 
-Five original background characters for the street, built procedurally. The script is deterministic and nothing is downloaded. Output: `public/models/people.glb` (1 607 000 bytes, about 1.53 MiB; the budget is 2.5 MB).
+Five original background characters for the street, built procedurally. The script is deterministic and nothing is downloaded. Output: `public/models/people.glb` (3 167 868 bytes, about 3.02 MiB; the budget is 4 MB). Each character has two LODs on one skeleton: a detailed near mesh for close-ups and the original simple far mesh.
 
 ## Rebuild
 
@@ -10,26 +10,72 @@ E:\blender\blender-5.1.2-windows-x64\blender.exe --background --factory-startup 
 ```
 
 - Add `--no-previews` to skip the Eevee stills.
-- The script lowers its own priority to below-normal. A run takes about 5 s, plus about 10 s for the previews.
+- The script lowers its own priority to below-normal. A run takes about 6 s, plus about 10 s for the previews.
 - It writes `people_summary.json`, the re-import summary.
-- It writes `previews/*.png`: lineups front, 3/4 and back; the game camera; clip frames from a street camera about 4 m away; face close-ups. Previews render on Eevee, and the GPU is asserted (`NVIDIA GeForce RTX 4060`).
-- Code layout: `npc/geo.py` (mesh helpers), `npc/rig.py` (skeleton and weights), `npc/body.py` (body parts and garments), `npc/outfits.py` (the five designs), `npc/anim.py` (procedural clips), `npc/bl.py` (Blender objects and materials), `npc/glbtools.py` (GLB post-process), `npc/preview.py`.
+- It writes `previews/*.png` (gitignored):
+  - `lineup_front`, `lineup_threequarter` and `lineup_back` show the near LODs; `lineup_threequarter_far` shows the far LODs.
+  - `closeup_<variant>_<clip>_<frame>_near_vs_far` are game-camera shots (about 1.5 m high, 2.7 m away), near on the left and far on the right. They cover man and woman in idle, woman mid-walk, sparkler, wave, call, fan and talk.
+  - `clip_<clip>_<frame>` are frames of each clip on the near LODs from a street camera about 4 m away.
+  - `face_<variant>` are face close-ups, near on the left and far on the right.
+- Previews render on Eevee, and the GPU is asserted (`NVIDIA GeForce RTX 4060`). Face features are previewed emissive at their albedo, like the game's unlit face treatment.
+- The build asserts each near mesh is at most 12 000 tris and the GLB is at most 4 MB.
+- Code layout: `npc/geo.py` (mesh helpers), `npc/rig.py` (skeleton and weights), `npc/body.py` (body parts and garments), `npc/outfits.py` (the five far designs), `npc/near.py` (the five near designs), `npc/anim.py` (procedural clips), `npc/bl.py` (Blender objects and materials), `npc/glbtools.py` (GLB post-process), `npc/preview.py`.
 
 ## Nodes
 
-Each variant is its own top-level skinned armature node. Its skinned mesh is its child.
+Each variant is its own top-level skinned armature node. It has two skinned mesh children, bound to the same skin (22 joints):
 
-| node | mesh | look | tris | height (m) | head top | hip | bbox min → max (glTF, m) |
-|---|---|---|---|---|---|---|---|
-| `npc_woman` | `npc_woman_body` | yukata, obi with small bow, hair bun with kanzashi | 6298 | 1.636 (bun) | 1.60 | 0.80 | (-0.338, 0, -0.151) → (0.338, 1.636, 0.180) |
-| `npc_man` | `npc_man_body` | dark yukata, narrow kaku obi | 5356 | 1.75 | 1.74 | 0.875 | (-0.386, 0, -0.148) → (0.386, 1.75, 0.197) |
-| `npc_kid` | `npc_kid_body` | jinbei (top and shorts), short hair | 4696 | 1.206 (cowlick) | 1.15 | 0.50 | (-0.232, 0, -0.111) → (0.232, 1.206, 0.112) |
-| `npc_keeper` | `npc_keeper_body` | happi over dark clothes, twisted hachimaki, neck towel, apron, jika-tabi | 5204 | 1.707 | 1.70 | 0.85 | (-0.372, 0, -0.122) → (0.372, 1.707, 0.186) |
-| `npc_elder` | `npc_elder_body` | stooped, light yukata, grey bun, uchiwa fan in the right hand | 5748 | 1.529 | 1.52 | 0.76 | (-0.341, 0, -0.151) → (0.319, 1.529, 0.313) |
+- `npc_X_near` is the near LOD.
+- `npc_X_body` is the far LOD, unchanged from version 1.
+
+| node | far mesh | far tris | near mesh | near tris | look | height (m) | head top | hip | far bbox min → max (glTF, m) |
+|---|---|---|---|---|---|---|---|---|---|
+| `npc_woman` | `npc_woman_body` | 6298 | `npc_woman_near` | 11938 | yukata, obi with a bow, hair bun with kanzashi | 1.636 (bun) | 1.60 | 0.80 | (-0.338, 0, -0.151) → (0.338, 1.636, 0.180) |
+| `npc_man` | `npc_man_body` | 5356 | `npc_man_near` | 10610 | dark yukata, narrow kaku obi with a flat knot | 1.75 | 1.74 | 0.875 | (-0.386, 0, -0.148) → (0.386, 1.75, 0.197) |
+| `npc_kid` | `npc_kid_body` | 4696 | `npc_kid_near` | 10456 | jinbei (top and shorts), short hair; the near mesh adds a heko-obi | 1.206 (cowlick) | 1.15 | 0.50 | (-0.232, 0, -0.111) → (0.232, 1.206, 0.112) |
+| `npc_keeper` | `npc_keeper_body` | 5204 | `npc_keeper_near` | 11360 | happi over dark clothes, twisted hachimaki, neck towel, apron, jika-tabi | 1.707 | 1.70 | 0.85 | (-0.372, 0, -0.122) → (0.372, 1.707, 0.186) |
+| `npc_elder` | `npc_elder_body` | 5748 | `npc_elder_near` | 11598 | stooped, light yukata, taiko knot, grey bun, uchiwa fan in the right hand | 1.529 | 1.52 | 0.76 | (-0.341, 0, -0.151) → (0.319, 1.529, 0.313) |
 
 - The origin is between the feet on the ground. Characters face +Z. There are no morph targets.
-- The uchiwa is part of `npc_elder_body` and is 100% weighted to `hand_R`, so it follows every clip.
+- The uchiwa is part of both `npc_elder_body` and `npc_elder_near`. It is 100% weighted to `hand_R`, so it follows every clip.
 - The kid is intended to be scaled 0.9–1.05 in game. Scale the node uniformly; clips are scale-agnostic, apart from the root-translation note below.
+
+## LODs (near / far)
+
+| | `npc_X_near` | `npc_X_body` |
+|---|---|---|
+| use | within about 12 m of the camera | beyond 12 m |
+| tris | 10.5k–11.9k (budget 12k) | 4.7k–6.3k |
+| garments | lofted through smooth ring profiles; rounded shoulders, torso tapering into the obi, hem flare and fold ridges | straight tubes |
+| sleeves | soft, thick, draped sode | stiff tubes with a hanging pouch |
+| face | full anime eyes, brows, nose and mouth | small eyes |
+
+**Alignment.** Both meshes are skinned to the same joints and built from the same joint positions, so they line up exactly. Height, head, feet, geta, hands, the hand_R palm/grip point and the head top are identical. Only the garment volume differs: near sleeves hang up to about 5 cm further back.
+
+**Swapping.**
+- Suggested swap distance: 12 m, with about 1 m of hysteresis. `scenes[0].extras.people.lod` holds `swapDistance: 12` and `hysteresis: 1`.
+- Both meshes are children of the armature and the mixer drives the shared skeleton, so a swap is just visibility: `near.visible = d < 12; far.visible = !near.visible`.
+- Do not hide the armature itself.
+- `nodes[npc_X].extras.npc` has `mesh` (far), `nearMesh` and `nearTris`.
+
+**What the near meshes add.**
+- **Robe.** Lofted through monotone-cubic ring profiles: rounded, sloped shoulders with no box corners, a torso tapering into the obi, a slight hem flare, and soft fold ridges, with a little COLOR_0 shade in the grooves. The left-over-right front overlap edge runs down to the hem.
+- **Sode (woman, man, elder).** A rounded tube round the arm runs into a thick bag (about 3.5 cm) behind and below the forearm. It is narrow at the shoulder and wider at the bottom, with rounded corners, and a dark cuff opening the forearm comes out of. The bag is weighted to `sleeve_X1`, so it hangs under gravity in every clip; with a raised forearm it drapes down from it. The kid's jinbei and keeper's happi sleeves are short, soft, flared tubes with a rolled cuff.
+- **Collar.** Thick bands, the wearer's left band over the right.
+- **Obi.** Rounded edges. The back fastening differs per variant:
+  - woman: bow (wings, ends and knot), plus an obijime cord
+  - man: flat kai-no-kuchi knot
+  - kid: soft heko-obi sash with a floppy bow (the far kid has no sash)
+  - elder: rounded taiko
+  - keeper: sash with a small knot
+- **Faces.** Projected decals in the `face` material, with colour in COLOR_0. Each eye has:
+  - an eye white shaded under the lid
+  - an iris that is dark on top, with a lighter lower half, a dark rim and a pupil
+  - two catch-lights, on the same world side for both eyes
+  - a thick upper lash line with an outer flick, and a lower lash
+  - a brow, plus a lid crease on some variants
+- **Face proportions.** The kid has the largest eyes. The man and keeper have flatter lids. The elder has soft, narrow, slightly drooping eyes with a smile crease. The nose hint is a small `skin` decal, so it follows the skin tint. The mouth is small; the kid and keeper have it open.
+- **Hands.** Relaxed mittens with the fingers curled about 34° toward the palm and a resting thumb.
 
 ### Loading: duplicate names
 
@@ -52,7 +98,11 @@ gltf.scene.traverse(o => { if (o.userData.name) o.name = o.userData.name; });
 const npc = SkeletonUtils.clone(gltf.scene.getObjectByName('npc_kid'));   // three/addons/utils/SkeletonUtils.js
 const mixer = new THREE.AnimationMixer(npc);
 mixer.clipAction(THREE.AnimationClip.findByName(gltf.animations, 'walk')).play();
+// 4) LOD: both skinned meshes follow the same bones; toggle visibility by camera distance
+const near = npc.getObjectByName('npc_kid_near'), far = npc.getObjectByName('npc_kid_body');
 ```
+
+`SkeletonUtils.clone` shares materials between clones, and the near and far meshes of a variant use the same glTF materials. If the game tints per instance by cloning or replacing `cloth_main` and `cloth_accent`, apply the tint to both meshes of the instance. Toonify both meshes too; they use the same material names.
 
 ## Skeleton (22 bones, identical on all variants)
 
@@ -68,12 +118,12 @@ root
 ```
 
 - Names, hierarchy, rest directions and rolls are identical across variants (asserted by the build). Only joint positions differ, so every rotation clip plays on every variant.
-- Rest pose: an A-pose with the arms 74° below horizontal.
+- Rest pose: an A-pose with the arms 74° below horizontal. The clips never use the straight rest arm (see below).
 - `sleeve_L1` and `sleeve_R1` drive the hanging yukata sleeve (tamoto). The clips animate them to hang under gravity with a little lag. They can be left alone or driven procedurally.
 
 ## Clips (30 fps, all loop seamlessly, in place)
 
-Each clip has 22 rotation channels plus `root.position`. There are no scale keys and no other translations.
+Each clip has 22 rotation channels plus `root.position`. There are no scale keys and no other translations. Every channel's last key equals its first, so loops are exact.
 
 `root.position` is only a small bob and sway, in metres, for the reference skeleton (`refSkeleton` / `refHip`). It is not forward travel: move the NPC yourself at the clip speed. On another variant, multiply it by `nodes[npc_X].extras.npc.rootScale[clip]` (= hipHeight / refHip). Without the scaling, the kid sinks a few cm in the adult clips and adults barely bob in `run`. The game can also simply ignore root translation.
 
@@ -88,6 +138,25 @@ Each clip has 22 rotation channels plus `root.position`. There are no scale keys
 | `talk` | 4.0 | woman | – | – | planted | conversational hand gestures and nods |
 | `fan` | 4.0 | woman | – | – | planted | idle while fanning with the right hand (elder holds an uchiwa; others can be given one on `hand_R`) |
 | `lookup` | 4.0 | woman | – | – | planted | looking up at the sky (fireworks), slight sway |
+
+### Arms (version 2): loose, never straight
+
+Only the arm, hand and sleeve channels changed. Root, spine, head and legs are unchanged, and so are clip names, durations, 30 fps, in-place motion, walk/run speeds and foot-contact timings.
+
+The relaxed arm, used by every clip:
+- The upper arm hangs 13° out from vertical and 7° forward.
+- The elbow is bent about 24°.
+- The wrist flexes about 12° toward the palm, with 4° ulnar deviation.
+
+Per clip:
+- **idle**: each arm sways slowly on its own phase, with the elbow drifting 18–30° and small wrist shifts.
+- **walk, sparkler (free arm)**: the arms swing ±17° with follow-through. The forearm's swing lags the upper arm's by 7% of the cycle, so the elbow opens on the back-swing and closes on the forward swing (15–33°). The wrist trails further.
+- **run**: the arms pump ±38° with the elbow at 70–103°, plus forearm and wrist lag.
+- **talk, lookup**: gestures and sway. Talk elbows are 54–90°; lookup elbows 19–25°.
+- **wave, call, fan, sparkler**: the gesturing arm keeps its pose and the other arm uses the relaxed arm.
+- The hanging-sleeve bones' lag is now computed cyclically, which closes a 1–2° seam in `run`.
+
+The shared idle does not put the hands at the obi, because all five variants share it.
 
 ### Locomotion speed per variant
 
@@ -109,8 +178,8 @@ There is one material set, shared by all meshes. Metallic is 0 and roughness is 
 
 | material | used for | base colour factor (default) |
 |---|---|---|
-| `skin` | skin | `#f4d3bf` |
-| `face` | eyes, lashes, highlights, brows, blush, mouth (geometry projected onto the head) | white; colours come from COLOR_0. Do not tint. |
+| `skin` | skin (and the near mesh's nose hint, a COLOR_0 shade) | `#f4d3bf` |
+| `face` | eyes (whites, iris, pupil, catch-lights), lashes, brows, blush, mouth (geometry projected onto the head) | white; colours come from COLOR_0. Do not tint. |
 | `hair` | hair, buns | `#3b2b26` |
 | `cloth_main` | main garment (yukata, jinbei, happi) | white × `people_cloth_pattern` texture |
 | `cloth_accent` | obi, bow, collar bands, hachimaki, towel, geta straps (hanao), fan disc | `#e8c35a` |
@@ -153,17 +222,23 @@ Use it for the sparkler, a held fan, a goldfish bag or a candy apple.
 
 ## Extras
 
-- `nodes[npc_X].extras.npc` holds height, headTop, hipHeight, tris, walkSpeed, runSpeed, rootScale, handR_palm, headTopOffset, bbox and tints.
-- `scenes[0].extras.people` holds clip metadata: frames, duration, loop, speed, stride, contacts, events, refSkeleton, refHip and the rootZ/rootX ranges.
+- `nodes[npc_X].extras.npc` holds mesh (the far mesh), nearMesh, height, headTop, hipHeight, tris (far), nearTris, walkSpeed, runSpeed, rootScale, handR_palm, headTopOffset, bbox (far mesh) and tints. All values except the two new fields are unchanged from version 1.
+- `scenes[0].extras.people` (version 2) holds clip metadata: frames, duration, loop, speed, stride, contacts, events, refSkeleton, refHip and the rootZ/rootX ranges. It also holds `lod` (near/far name patterns, swapDistance 12, hysteresis 1).
 
 ## Re-import check (Blender glTF importer)
 
 | item | result |
 |---|---|
 | armatures | 5, with 22 bones each |
-| skinned meshes | 5, with tris as above |
+| skinned meshes | 10 (5 `_body` + 5 `_near`), with tris as above |
 | actions | 9 |
+| scale channels | 0 |
 | texture | 1 PNG |
 | vertex influences | max 4 (normalized) |
+| file size | 3 167 868 bytes |
+
+### Vertex attribute storage
+
+`WEIGHTS_0` and `COLOR_0` are stored as normalized `UNSIGNED_BYTE` (core glTF 2.0, no extension). Weights sum to exactly 255 per vertex. `GLTFLoader` and Blender read this natively. Code that reads `geometry.attributes.skinWeight.array` or `color.array` directly gets a `Uint8Array` with `normalized: true`. The far meshes' positions, normals, UVs, joints and indices are bit-identical to version 1; weights and colours differ only by this rounding (≤ 0.003).
 
 The importer also adds five 80-tri `Icosphere` objects. These are its own bone-display shapes and are not in the file.
