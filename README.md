@@ -13,6 +13,8 @@ and night are a click away, and the lanterns glow in every light.
 
 **Play it: https://starknightt.github.io/summer-festival/**
 
+**Also on Wavedash: https://wavedash.com/games/summer-festival**
+
 It needs a browser with WebGPU (current Chrome or Edge on a desktop or laptop), a keyboard and a mouse. It was built
 in Chrome on Windows and measured on an RTX 4060. The first visit downloads about 11 MB.
 

@@ -3,6 +3,7 @@ import { Game } from "./game/game";
 import { Play } from "./game/play";
 
 import { preload } from "./core/preload";
+import { wavedash } from "./wavedash";
 
 const title = document.getElementById("title")!;
 const bar = title.querySelector(".bar i") as HTMLElement;
@@ -48,6 +49,7 @@ const setBar = () => {
   const k = Math.max(shown, Math.min(1, bytesK * 0.7 + stageK * 0.3));
   shown = k;
   bar.style.transform = `scaleX(${k})`;
+  wavedash.progress(k * 0.99);
   pct.textContent = k >= 1 ? "ready" : `loading the festival · ${Math.floor(k * 100)}%`;
   const lit = Math.floor(k * N + 0.15);
   lanterns.forEach((l, i) => l.classList.toggle("lit", i < lit));
@@ -68,6 +70,8 @@ async function boot() {
   play.warmUp();
   bytesK = 1; stageK = 1; setBar();
   game.start();
+  // Lifts Wavedash's own loading screen (a no-op anywhere else).
+  wavedash.ready();
   // The world renders behind the title card; it clears on the first click or key.
   title.classList.add("scene");
   setTimeout(() => title.classList.add("ready"), 400);
@@ -90,4 +94,6 @@ boot().catch((e) => {
   f.className = "fatal";
   f.textContent = /webgpu|adapter/i.test(String(e)) ? "This festival needs a browser with WebGPU (recent Chrome or Edge)." : "Something went wrong loading the festival. Please reload.";
   document.body.append(f);
+  // Let the message show instead of Wavedash's loader spinning forever.
+  wavedash.ready();
 });
